@@ -11,7 +11,7 @@
 std::string cache_root_dir("/home/leilani/_scalar_cache_dir2");
 std::string sig_root_dir("/home/leilani/_scalar_sig_dir2");
 std::string dbname("scalar"), user("leilani_testuser");
-std::string query("select * from ndsi_agg_7_18_2013"), hased_query("2a0cf5267692de290efac7e3b6d5a593"),threshold("90000");
+std::string query("select * from ndsi_agg_7_18_2013"), hashed_query("2a0cf5267692de290efac7e3b6d5a593"),threshold("90000");
 */
 std::string cache_root_dir("/home/leibatt/projects/user_study/scalar_backend/_scalar_cache_dir2");
 std::string sig_root_dir("/home/leibatt/projects/user_study/scalar_backend/_scalar_sig_dir2");
