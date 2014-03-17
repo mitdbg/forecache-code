@@ -13,14 +13,13 @@ void ComputeSignatures::writeFile(std::string filepath, std::string data) {
 	boost::filesystem::path p(filepath);
 	p = p.parent_path();
 	if(!(boost::filesystem::exists(p))) {
-		if(boost::filesystem::create_directories(p)) {
-			std::ofstream o(filepath.c_str());
-			assert(o.is_open());
-			size_t bytes = data.size();
-			const char * towrite = data.c_str();
-			o.write(towrite,bytes);
-		}
+		boost::filesystem::create_directories(p);
 	}
+	std::ofstream o(filepath.c_str());
+	assert(o.is_open());
+	size_t bytes = data.size();
+	const char * towrite = data.c_str();
+	o.write(towrite,bytes);
 }
 
 // char array must be deleted by caller
