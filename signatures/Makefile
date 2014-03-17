@@ -8,7 +8,7 @@ SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 CFLAGS := -g # -Wall
-LIB := -pthread -L lib -lpqxx -lboost_thread-mt -lboost_filesystem-mt -lboost_system-mt
+LIB := -pthread -L lib -lpqxx -lboost_filesystem-mt -lboost_system-mt #-lboost_thread-mt 
 INC := -Iinclude -I include/rapidjson -I/usr/include
 
 all: analyzeTraces
