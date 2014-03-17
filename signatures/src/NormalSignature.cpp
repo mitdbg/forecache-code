@@ -6,9 +6,14 @@
 #include <stdint.h> // int64_t, etc.
 #include <sstream> //std::ostringstream
 #include "NormalSignature.h"
+#include "rapidjson/document.h"
 
 NormalSignature::NormalSignature(std::vector<double> &input) {
 	computeSignature(input);
+}
+
+NormalSignature::NormalSignature(const char *json) {
+	parseSigData(json);
 }
 
 void NormalSignature::computeSignature(std::vector<double> &input) {
@@ -28,3 +33,22 @@ std::string NormalSignature::getSignature() {
 	sig << "{\"mean\":" << mean << ", \"stddev\":" << stddev << "}";
 	return sig.str();
 }
+
+void NormalSignature::parseSigData(const char *json) {
+	rapidjson::Document root;
+	root.Parse<0>(json);
+
+	mean = root["mean"].GetDouble();
+	stddev = root["stddev"].GetDouble();
+}
+
+double NormalSignature::computeSimilarity(NormalSignature &other) {
+	double md = (mean - other.mean) * (mean - other.mean);
+	double sd = (stddev - other.stddev) * (stddev - other.stddev);
+	double similarity = (md + sd)/2;
+	return std::sqrt(similarity);
+}
+
+void NormalSignature::normalize(std::vector<double> &input) {
+}
+

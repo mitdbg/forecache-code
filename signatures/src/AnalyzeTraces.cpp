@@ -18,7 +18,7 @@ std::string sig_root_dir("/home/leibatt/projects/user_study/scalar_backend/_scal
 std::string dbname("test"), user("testuser");
 std::string query("select * from cali100"),hashed_query("85794fe89a8b0c23ce726cca7655c8bc"),threshold("90000");
 
-std::string warmup_threshold("10000"),warmup_hashed_query("39df90e13a84cad54463717b24ef833a");
+std::string attr1("attrs.avg_ndsi"),attr2("attrs.max_land_sea_mask"),warmup_threshold("10000"),warmup_hashed_query("39df90e13a84cad54463717b24ef833a");
 
 std::string password("password"), host("127.0.0.1"), port("5432");
 
@@ -172,7 +172,7 @@ void computeSignatures(const boost::filesystem::path &dir_path) {
 			//ComputeSignatures::parseTileData(data);
 			Tile tile(data);
 			//ComputeSignatures::computeNormalSignature(tile,"attrs.avg_ndvi");
-			std::string sig = ComputeSignatures::computeNormalSignature(tile,"attrs.avg_ndsi");	
+			std::string sig = ComputeSignatures::computeNormalSignature(tile,attr1.c_str());
 			//std::cout << "signature: " << sig << std::endl;
 			boost::filesystem::path zoompath = filepath.parent_path();
 			boost::filesystem::path thresholdpath = zoompath.parent_path();
