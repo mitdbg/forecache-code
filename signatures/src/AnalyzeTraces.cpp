@@ -10,11 +10,13 @@
 /*
 std::string cache_root_dir("/home/leilani/_scalar_cache_dir2");
 std::string sig_root_dir("/home/leilani/_scalar_sig_dir2");
+std::string csv_root_dir("/home/leilani/_scalar_csv_dir2");
 std::string dbname("scalar"), user("leilani_testuser");
 std::string query("select * from ndsi_agg_7_18_2013"), hashed_query("2a0cf5267692de290efac7e3b6d5a593"),threshold("90000");
 */
 std::string cache_root_dir("/home/leibatt/projects/user_study/scalar_backend/_scalar_cache_dir2");
 std::string sig_root_dir("/home/leibatt/projects/user_study/scalar_backend/_scalar_sig_dir2");
+std::string csv_root_dir("/home/leibatt/projects/user_study/scalar_backend/_scalar_csv_dir2");
 std::string dbname("test"), user("testuser");
 std::string query("select * from cali100"),hashed_query("85794fe89a8b0c23ce726cca7655c8bc"),threshold("90000");
 
@@ -156,6 +158,36 @@ void sigExample() {
 
 }
 
+void moveToCsv(const boost::filesystem::path &dir_path) {
+	if(!boost::filesystem::exists(dir_path)) {
+		return;
+	}
+	boost::filesystem::directory_iterator end_itr; // to check end of iterator
+	for(boost::filesystem::directory_iterator itr(dir_path); itr != end_itr; ++itr) {
+		if(boost::filesystem::is_directory(itr->status())) {
+			moveToCsv(itr->path()); // recurse on new dir
+		} else if (boost::filesystem::is_regular_file(itr->status())) { // see below
+			boost::filesystem::path filepath = itr->path();
+			//std::cout << "filename: " << filepath.string() << std::endl;
+			const char* data = ComputeSignatures::loadFile(filepath.string());
+			Tile tile(data);
+			std::vector<double> attr1data;
+			std::vector<double> attr2data;
+			ComputeSignatures::getAttributeVector(tile,attr1.c_str(),attr1data);
+			ComputeSignatures::getAttributeVector(tile,attr2.c_str(),attr2data);
+			boost::filesystem::path zoompath = filepath.parent_path();
+			boost::filesystem::path thresholdpath = zoompath.parent_path();
+			boost::filesystem::path querypath = thresholdpath.parent_path().filename();
+			zoompath = zoompath.filename();
+			thresholdpath = thresholdpath.filename();
+			std::string csvpath = ComputeSignatures::buildPath(csv_root_dir, querypath.string(), thresholdpath.string(), zoompath.string(), filepath.filename().string());
+			std::cout << "csvpath: " << csvpath << std::endl;
+			ComputeSignatures::writeCsv(csvpath+".csv",attr1data,attr2data);
+			delete data;
+		}
+	}
+}
+
 void computeSignatures(const boost::filesystem::path &dir_path) {
 	if(!boost::filesystem::exists(dir_path)) {
 		return;
@@ -213,6 +245,7 @@ int main (int argc, char **argv) {
 	getTracesForUsers(conn);
 	//sigExample();
 	boost::filesystem::path p, rt(cache_root_dir + "/"+hashed_query);
-	computeSignatures(rt);
+	//computeSignatures(rt);
+	moveToCsv(rt);
 	return 0;
 }

@@ -22,6 +22,20 @@ void ComputeSignatures::writeFile(std::string filepath, std::string data) {
 	o.write(towrite,bytes);
 }
 
+void ComputeSignatures::writeCsv(std::string filepath, std::vector<double> attr1, std::vector<double> attr2) {
+	assert(attr1.size() == attr2.size());
+	boost::filesystem::path p(filepath);
+	p = p.parent_path();
+	if(!(boost::filesystem::exists(p))) {
+		boost::filesystem::create_directories(p);
+	}
+	std::ofstream o(filepath.c_str());
+	assert(o.is_open());
+	for(size_t i = 0; i < attr1.size(); i++) {
+		o << attr1[i] << "," << attr2[i] << std::endl;
+	}
+}
+
 // char array must be deleted by caller
 const char* ComputeSignatures::loadFile(std::string filepath) {
 	char *returnval = NULL;
