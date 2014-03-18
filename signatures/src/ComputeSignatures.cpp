@@ -167,7 +167,7 @@ std::string ComputeSignatures::computeHistogramSignature(Tile &tile, const char 
 	double max = range.first;
 	double min = range.second;
 	//std::cout << "input size: " << input.size() << std::endl;;
-	HistogramSignature sig(input,min,max,1.0 * bins);
+	HistogramSignature sig(input,min,max,1.0 * bins,1.0 * input.size());
 	return sig.getSignature();
 }
 
@@ -186,7 +186,7 @@ std::string ComputeSignatures::computeFilteredHistogramSignature(Tile &tile, con
 		max = range.first;
 		min = range.second;
 	}
-	//std::cout << "input size: " << input.size() << std::endl;;
-	HistogramSignature sig(filteredInput,min,max,1.0 * bins);
+	//std::cout << "input size: " << input.size() << std::endl;
+	HistogramSignature sig(filteredInput,min,max,1.0 * bins,1.0 * input.size());
 	return sig.getSignature();
 }

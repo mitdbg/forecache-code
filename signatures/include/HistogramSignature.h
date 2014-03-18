@@ -8,7 +8,7 @@ class HistogramSignature {
 public:
 	std::vector<double> histogram;
 	// construct from vector of attribute values
-	HistogramSignature(std::vector<double> &input, double mn, double mx, double bins);
+	HistogramSignature(std::vector<double> &input, double mn, double mx, double bins, double origcount);
 	// construct from pre-computed signature read on disk
 	HistogramSignature(const char *json);
 	// returns signature encoded as a json object
@@ -17,7 +17,7 @@ public:
 	double computeSimilarity(HistogramSignature &other);
 private:
 	// computes mean and standard deviation for a single attribute
-	void computeSignature(std::vector<double> &input, double mn, double mx, double bins);
+	void computeSignature(std::vector<double> &input, double mn, double mx, double bins, double origcount);
 	// retrieves mean and standard deviation from json string
 	void parseSigData(const char *json);
 };

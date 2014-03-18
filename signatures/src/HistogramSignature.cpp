@@ -10,25 +10,26 @@
 
 double MY_DEFAULT_MIN = .0001;
 
-HistogramSignature::HistogramSignature(std::vector<double> &input, double mn, double mx, double bins) {
-	computeSignature(input,mn,mx,bins);
+HistogramSignature::HistogramSignature(std::vector<double> &input, double mn, double mx, double bins, double origcount) {
+	computeSignature(input,mn,mx,bins,origcount);
 }
 
 HistogramSignature::HistogramSignature(const char *json) {
 	parseSigData(json);
 }
 
-void HistogramSignature::computeSignature(std::vector<double> &input, double mn, double mx, double bins) {
+void HistogramSignature::computeSignature(std::vector<double> &input, double mn, double mx, double bins, double origcount) {
 	histogram.clear();
 	histogram.resize(bins);
 	double binwidth = (mx-mn) / bins;
-	double count = input.size();
 	for(size_t i = 0; i < input.size(); i++) {
 		histogram[(input[i]-mn)/binwidth]++;
 	}
 	for(size_t i = 0; i < histogram.size(); i++) {
 		if(histogram[i] == 0) { // don't let any bins be 0
 			histogram[i] = MY_DEFAULT_MIN;
+		} else { // normalize
+			histogram[i] /= origcount;
 		}
 	}
 }
