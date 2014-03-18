@@ -178,10 +178,14 @@ std::string ComputeSignatures::computeFilteredHistogramSignature(Tile &tile, con
 	filteredInput = filterVector(input,filter,filterval);
 	std::cout << "input: " << input.size() << ", filtered: " << filteredInput.size() << std::endl;
 
-	std::pair<double,double> range;
-	getMaxMin(tile,label,range);
-	double max = range.first;
-	double min = range.second;
+	double max = 0;
+	double min= 0;
+	if(filteredInput.size() > 0) {
+		std::pair<double,double> range;
+		getMaxMin(tile,label,range);
+		max = range.first;
+		min = range.second;
+	}
 	//std::cout << "input size: " << input.size() << std::endl;;
 	HistogramSignature sig(filteredInput,min,max,1.0 * bins);
 	return sig.getSignature();
