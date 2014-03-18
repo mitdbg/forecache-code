@@ -10,11 +10,11 @@
 
 double MY_DEFAULT_MIN = .0001;
 
-HistogramSignature::HistogramSignature(std::vector<double> &input, double mn, double mx, double bins, double origcount) {
+HistogramSignature::HistogramSignature(std::vector<double> &input, double mn, double mx, double bins, double origcount) : pos(), histogram() {
 	computeSignature(input,mn,mx,bins,origcount);
 }
 
-HistogramSignature::HistogramSignature(const char *json) {
+HistogramSignature::HistogramSignature(const char *json) : pos(), histogram() {
 	parseSigData(json);
 }
 
