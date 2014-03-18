@@ -50,6 +50,21 @@ const std::string check_task =
 const std::string get_users =
 	"SELECT id FROM users";
 
+struct SD {
+	std::string filename;
+	double distance;
+
+	// for sorting histogram comparisons
+	bool const operator<(const SD &o) const {
+	  return distance < o.distance;
+	}
+};
+
+// sort cells in a chunk by coordinates
+void sortComparisons(std::vector<SD> &distances) {
+	std::sort(distances.begin(), distances.end());
+}
+
 bool checkTask(pqxx::connection &conn, int user_id, std::string taskname) {
 	try {
 		pqxx::nontransaction N(conn);
@@ -189,22 +204,26 @@ void moveToCsv(const boost::filesystem::path &dir_path) {
 	}
 }
 
-void compareWithSignature(const boost::filesystem::path &dir_path,std::string sigextension, HistogramSignature &sig) {
+void compareWithSignature(const boost::filesystem::path &dir_path,std::string sigextension, HistogramSignature &sig, std::vector<SD> &comparisons) {
 	if(!boost::filesystem::exists(dir_path)) {
 		return;
 	}
 	boost::filesystem::directory_iterator end_itr; // to check end of iterator
 	for(boost::filesystem::directory_iterator itr(dir_path); itr != end_itr; ++itr) {
 		if(boost::filesystem::is_directory(itr->status())) {
-			compareWithSignature(itr->path(),sigextension,sig); // recurse on new dir
+			compareWithSignature(itr->path(),sigextension,sig,comparisons); // recurse on new dir
 		} else if (boost::filesystem::is_regular_file(itr->status())) { // see below
 			boost::filesystem::path filepath = itr->path();
 			if(filepath.extension().string() == sigextension) {
-				std::cout << "filename: " << filepath.string() << std::endl;
+				//std::cout << "filename: " << filepath.string() << std::endl;
 				const char* json = ComputeSignatures::loadFile(filepath.string());
 				HistogramSignature othersig(json);
 				//std::cout << "signature: " << othersig.getSignature() << std::endl;
-				std::cout << "distance: " << sig.computeSimilarity(othersig) << std::endl;
+				//std::cout << "distance: " << sig.computeSimilarity(othersig) << std::endl;
+				SD c;
+				c.distance = sig.computeSimilarity(othersig);
+				c.filename = filepath.string();
+				comparisons.push_back(c);
 /*
 				boost::filesystem::path zoompath = filepath.parent_path();
 				boost::filesystem::path thresholdpath = zoompath.parent_path();
@@ -240,7 +259,13 @@ void compareSignatures(const std::string origpath, const boost::filesystem::path
 				HistogramSignature sig(json);
 				//std::cout << "signature: " << sig.getSignature() << std::endl;
 				boost::filesystem::path p(origpath);
-				compareWithSignature(p,sigextension,sig);
+				std::vector<SD> comparisons;
+				compareWithSignature(p,sigextension,sig,comparisons);
+				std::sort(comparisons.begin(),comparisons.end());
+				for(size_t i = 0; i < comparisons.size(); i++) {
+					SD c = comparisons[i];
+					std::cout << "compare: " << c.filename << ", distance: " << c.distance << std::endl;
+				}
 				std::cout << std::endl << std::endl;
 				delete json;
 			}
