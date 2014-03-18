@@ -6,6 +6,7 @@
 #include <pqxx/pqxx> // to connect to postgres
 #include <boost/filesystem.hpp> // boost::filesystem::*
 #include "ComputeSignatures.h"
+#include "HistogramSignature.h"
 
 /*
 std::string cache_root_dir("/home/leilani/_scalar_cache_dir2");
@@ -188,6 +189,66 @@ void moveToCsv(const boost::filesystem::path &dir_path) {
 	}
 }
 
+void compareWithSignature(const boost::filesystem::path &dir_path,std::string sigextension, HistogramSignature &sig) {
+	if(!boost::filesystem::exists(dir_path)) {
+		return;
+	}
+	boost::filesystem::directory_iterator end_itr; // to check end of iterator
+	for(boost::filesystem::directory_iterator itr(dir_path); itr != end_itr; ++itr) {
+		if(boost::filesystem::is_directory(itr->status())) {
+			compareWithSignature(itr->path(),sigextension,sig); // recurse on new dir
+		} else if (boost::filesystem::is_regular_file(itr->status())) { // see below
+			boost::filesystem::path filepath = itr->path();
+			if(filepath.extension().string() == sigextension) {
+				std::cout << "filename: " << filepath.string() << std::endl;
+				const char* json = ComputeSignatures::loadFile(filepath.string());
+				HistogramSignature othersig(json);
+				//std::cout << "signature: " << othersig.getSignature() << std::endl;
+				std::cout << "distance: " << sig.computeSimilarity(othersig) << std::endl;
+/*
+				boost::filesystem::path zoompath = filepath.parent_path();
+				boost::filesystem::path thresholdpath = zoompath.parent_path();
+				boost::filesystem::path querypath = thresholdpath.parent_path().filename();
+				zoompath = zoompath.filename();
+				thresholdpath = thresholdpath.filename();
+				std::string sigpath = ComputeSignatures::buildPath(sig_root_dir, querypath.string(), thresholdpath.string(), zoompath.string(), filepath.filename().string());
+				//std::cout << "sigpath: " << sigpath << std::endl;
+				//ComputeSignatures::writeFile(sigpath+".normalsig",sig);
+				ComputeSignatures::writeFile(sigpath+".histsig",sig);
+*/
+				delete json;
+			}
+		}
+	}
+}
+
+
+void compareSignatures(const std::string origpath, const boost::filesystem::path &dir_path,std::string sigextension) {
+	
+	if(!boost::filesystem::exists(dir_path)) {
+		return;
+	}
+	boost::filesystem::directory_iterator end_itr; // to check end of iterator
+	for(boost::filesystem::directory_iterator itr(dir_path); itr != end_itr; ++itr) {
+		if(boost::filesystem::is_directory(itr->status())) {
+			compareSignatures(origpath,itr->path(),sigextension); // recurse on new dir
+		} else if (boost::filesystem::is_regular_file(itr->status())) { // see below
+			boost::filesystem::path filepath = itr->path();
+			if(filepath.extension().string() == sigextension) {
+				std::cout << "filename: " << filepath.string() << std::endl;
+				const char* json = ComputeSignatures::loadFile(filepath.string());
+				HistogramSignature sig(json);
+				//std::cout << "signature: " << sig.getSignature() << std::endl;
+				boost::filesystem::path p(origpath);
+				compareWithSignature(p,sigextension,sig);
+				std::cout << std::endl << std::endl;
+				delete json;
+			}
+		}
+	}
+}
+
+
 void computeSignatures(const boost::filesystem::path &dir_path) {
 	if(!boost::filesystem::exists(dir_path)) {
 		return;
@@ -243,12 +304,14 @@ int main (int argc, char **argv) {
 		exit(0);
 	}
 	// setup for parameterized queries
-	prepareStatements(conn);
+	//prepareStatements(conn);
 	// execute queries to get user traces
-	getTracesForUsers(conn);
+	//getTracesForUsers(conn);
 	//sigExample();
-	boost::filesystem::path p, rt(cache_root_dir + "/"+hashed_query);
-	computeSignatures(rt);
+	boost::filesystem::path p, rt(cache_root_dir + "/"+hashed_query + "/" + threshold);
+	boost::filesystem::path sigrt(sig_root_dir + "/"+hashed_query + "/" + threshold + "/" + "0");
+	compareSignatures(sigrt.string(),sigrt,std::string(".histsig"));
+	//computeSignatures(rt);
 	//moveToCsv(rt);
 	return 0;
 }
