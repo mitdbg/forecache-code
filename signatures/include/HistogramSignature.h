@@ -1,12 +1,13 @@
 #ifndef _HISTOGRAM_SIGNATURE_
 #define _HISTOGRAM_SIGNATURE_
 
-#include "Tile.h"
 #include <vector>
+#include "Tile.h"
 
 class HistogramSignature {
 public:
 	std::vector<double> histogram;
+	std::vector<double> pos;
 	// construct from vector of attribute values
 	HistogramSignature(std::vector<double> &input, double mn, double mx, double bins, double origcount);
 	// construct from pre-computed signature read on disk

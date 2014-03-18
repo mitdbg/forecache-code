@@ -3,10 +3,12 @@
 
 #include <map> //std::map
 #include <string> // std::string
+#include<vector> // std::vector
 #include "rapidjson/document.h"
 
 class Tile {
 public:
+	std::vector<double> pos;
 	rapidjson::Document root;
 	rapidjson::Value *dimsObj;
 	rapidjson::Value *attrsObj;

@@ -1,6 +1,7 @@
 #include <fstream> // std::ifstream
 #include <iostream> // std::cout
 #include <map> // std::map
+#include <cmath> // std::sqrt, std::pow
 #include <boost/filesystem.hpp> // boost::filesystem::*
 #include "ComputeSignatures.h"
 #include "NormalSignature.h"
@@ -149,6 +150,15 @@ void ComputeSignatures::getMaxMin(Tile &tile, const char * label, std::pair<doub
 	double min = (*tile.attrsObj)[label]["min"].GetDouble();
 	input.first = max;
 	input.second = min;
+}
+
+double ComputeSignatures::getEuclideanDistance(std::vector<double> &d1, std::vector<double> &d2) {
+	assert(d1.size() == d2.size());
+	double dist = 0;
+	for(size_t i = 0; i < d1.size(); i++) {
+		dist += std::pow(d1[i] - d2[i],2);
+	}
+	return std::sqrt(dist);
 }
 
 std::string ComputeSignatures::computeNormalSignature(Tile &tile, const char * label) {

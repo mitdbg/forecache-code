@@ -5,6 +5,7 @@
 #include <vector> // std::vector
 #include <pqxx/pqxx> // to connect to postgres
 #include <boost/filesystem.hpp> // boost::filesystem::*
+#include <boost/algorithm/string.hpp> // boost::algorithm::split
 #include "ComputeSignatures.h"
 #include "HistogramSignature.h"
 
@@ -20,6 +21,8 @@ std::string sig_root_dir("/home/leibatt/projects/user_study/scalar_backend/_scal
 std::string csv_root_dir("/home/leibatt/projects/user_study/scalar_backend/_scalar_csv_dir2");
 std::string dbname("test"), user("testuser");
 std::string query("select * from cali100"),hashed_query("85794fe89a8b0c23ce726cca7655c8bc"),threshold("90000");
+
+double distance_threshold[] = {0,1,1,2,2,3,3,4,4};
 
 std::string attr1("attrs.avg_ndsi"),attr2("attrs.max_land_sea_mask"),warmup_threshold("10000"),warmup_hashed_query("39df90e13a84cad54463717b24ef833a");
 
@@ -50,6 +53,11 @@ const std::string check_task =
 const std::string get_users =
 	"SELECT id FROM users";
 
+const std::string get_tile_id = 
+	"SELECT tile_id \
+	FROM tile_hash \
+	WHERE tile_hash=$1";
+
 struct SD {
 	std::string filename;
 	double distance;
@@ -63,6 +71,38 @@ struct SD {
 // sort cells in a chunk by coordinates
 void sortComparisons(std::vector<SD> &distances) {
 	std::sort(distances.begin(), distances.end());
+}
+
+std::string getTileId(pqxx::connection &conn, std::string tile_hash) {
+	std::string d("");
+	try {
+		pqxx::nontransaction N(conn);
+		pqxx::result R(N.prepared("get_tile_id")(tile_hash).exec());
+		if(R.begin() == R.end()) {
+			std::cout << "query returned nothing" << std::endl;
+			return d;
+		}
+		pqxx::result::const_iterator itr = R.begin();
+		d = itr[0].as<std::string>();
+	} catch (const std::exception &e) {
+		std::cerr << e.what() << std::endl;
+	}
+	return d;
+}
+
+void getPosition(pqxx::connection &conn, std::vector<double> &pos, std::string tile_hash) {
+	std::vector<std::string> tokens;
+
+	std::string tile_id = getTileId(conn,tile_hash);
+	assert(tile_id.size() > 0);
+
+	std::string stripped = tile_id.substr(1,tile_id.size()-2); // remove brackets
+	boost::split(tokens,stripped,boost::is_any_of(",")); // split on commas
+	for(size_t i = 0; i < tokens.size(); i++) {
+		assert(tokens[i].size() > 0);
+		pos.push_back(std::atof(tokens[i].c_str()));
+		//std::cout << "pos[" << i << "]: " << pos[i] << std::endl;
+	}
 }
 
 bool checkTask(pqxx::connection &conn, int user_id, std::string taskname) {
@@ -135,6 +175,7 @@ void prepareStatements(pqxx::connection &conn) {
 	conn.prepare("get_hashed_traces",get_hashed_traces)("integer")("varchar", pqxx::prepare::treat_string);
 	conn.prepare("get_user_traces",get_user_traces)("integer")("varchar", pqxx::prepare::treat_string);
 	conn.prepare("check_task",check_task)("integer")("varchar", pqxx::prepare::treat_string);
+	conn.prepare("get_tile_id",get_tile_id)("varchar", pqxx::prepare::treat_string);
 }
 
 void getTracesForUsers(pqxx::connection &conn) {
@@ -204,37 +245,42 @@ void moveToCsv(const boost::filesystem::path &dir_path) {
 	}
 }
 
-void compareWithSignature(const boost::filesystem::path &dir_path,std::string sigextension, HistogramSignature &sig, std::vector<SD> &comparisons) {
+void compareWithSignature(pqxx::connection &conn, const boost::filesystem::path &dir_path,std::string sigextension, HistogramSignature &sig, std::vector<SD> &comparisons) {
 	if(!boost::filesystem::exists(dir_path)) {
 		return;
 	}
 	boost::filesystem::directory_iterator end_itr; // to check end of iterator
 	for(boost::filesystem::directory_iterator itr(dir_path); itr != end_itr; ++itr) {
 		if(boost::filesystem::is_directory(itr->status())) {
-			compareWithSignature(itr->path(),sigextension,sig,comparisons); // recurse on new dir
+			compareWithSignature(conn,itr->path(),sigextension,sig,comparisons); // recurse on new dir
 		} else if (boost::filesystem::is_regular_file(itr->status())) { // see below
 			boost::filesystem::path filepath = itr->path();
 			if(filepath.extension().string() == sigextension) {
 				//std::cout << "filename: " << filepath.string() << std::endl;
 				const char* json = ComputeSignatures::loadFile(filepath.string());
 				HistogramSignature othersig(json);
-				//std::cout << "signature: " << othersig.getSignature() << std::endl;
-				//std::cout << "distance: " << sig.computeSimilarity(othersig) << std::endl;
-				SD c;
-				c.distance = sig.computeSimilarity(othersig);
-				c.filename = filepath.string();
-				comparisons.push_back(c);
-/*
+				getPosition(conn,othersig.pos,filepath.stem().string());
+				double dist = ComputeSignatures::getEuclideanDistance(sig.pos,othersig.pos);
 				boost::filesystem::path zoompath = filepath.parent_path();
 				boost::filesystem::path thresholdpath = zoompath.parent_path();
 				boost::filesystem::path querypath = thresholdpath.parent_path().filename();
 				zoompath = zoompath.filename();
 				thresholdpath = thresholdpath.filename();
-				std::string sigpath = ComputeSignatures::buildPath(sig_root_dir, querypath.string(), thresholdpath.string(), zoompath.string(), filepath.filename().string());
-				//std::cout << "sigpath: " << sigpath << std::endl;
-				//ComputeSignatures::writeFile(sigpath+".normalsig",sig);
-				ComputeSignatures::writeFile(sigpath+".histsig",sig);
+				int currzoom = std::atoi(zoompath.string().c_str());
+
+				if(dist <= distance_threshold[currzoom]) {
+					std::cout << "dist: " << dist << std::endl;
+					SD c;
+					c.distance = sig.computeSimilarity(othersig);
+					c.filename = filepath.string();
+					comparisons.push_back(c);
+/*
+					std::string sigpath = ComputeSignatures::buildPath(sig_root_dir, querypath.string(), thresholdpath.string(), zoompath.string(), filepath.filename().string());
+					//std::cout << "sigpath: " << sigpath << std::endl;
+					//ComputeSignatures::writeFile(sigpath+".normalsig",sig);
+					ComputeSignatures::writeFile(sigpath+".histsig",sig);
 */
+				}
 				delete json;
 			}
 		}
@@ -242,7 +288,7 @@ void compareWithSignature(const boost::filesystem::path &dir_path,std::string si
 }
 
 
-void compareSignatures(const std::string origpath, const boost::filesystem::path &dir_path,std::string sigextension) {
+void compareSignatures(pqxx::connection &conn, const std::string origpath, const boost::filesystem::path &dir_path,std::string sigextension) {
 	
 	if(!boost::filesystem::exists(dir_path)) {
 		return;
@@ -250,21 +296,22 @@ void compareSignatures(const std::string origpath, const boost::filesystem::path
 	boost::filesystem::directory_iterator end_itr; // to check end of iterator
 	for(boost::filesystem::directory_iterator itr(dir_path); itr != end_itr; ++itr) {
 		if(boost::filesystem::is_directory(itr->status())) {
-			compareSignatures(origpath,itr->path(),sigextension); // recurse on new dir
+			compareSignatures(conn,origpath,itr->path(),sigextension); // recurse on new dir
 		} else if (boost::filesystem::is_regular_file(itr->status())) { // see below
 			boost::filesystem::path filepath = itr->path();
 			if(filepath.extension().string() == sigextension) {
 				std::cout << "filename: " << filepath.string() << std::endl;
 				const char* json = ComputeSignatures::loadFile(filepath.string());
 				HistogramSignature sig(json);
+				getPosition(conn,sig.pos,filepath.stem().string());
 				//std::cout << "signature: " << sig.getSignature() << std::endl;
 				boost::filesystem::path p(origpath);
 				std::vector<SD> comparisons;
-				compareWithSignature(p,sigextension,sig,comparisons);
+				compareWithSignature(conn,p,sigextension,sig,comparisons);
 				std::sort(comparisons.begin(),comparisons.end());
 				for(size_t i = 0; i < comparisons.size(); i++) {
 					SD c = comparisons[i];
-					std::cout << "compare: " << c.filename << ", distance: " << c.distance << std::endl;
+					std::cout << "compare: " << c.filename << ", hist distance: " << c.distance << std::endl;
 				}
 				std::cout << std::endl << std::endl;
 				delete json;
@@ -329,13 +376,13 @@ int main (int argc, char **argv) {
 		exit(0);
 	}
 	// setup for parameterized queries
-	//prepareStatements(conn);
+	prepareStatements(conn);
 	// execute queries to get user traces
 	//getTracesForUsers(conn);
 	//sigExample();
 	boost::filesystem::path p, rt(cache_root_dir + "/"+hashed_query + "/" + threshold);
 	boost::filesystem::path sigrt(sig_root_dir + "/"+hashed_query + "/" + threshold + "/" + "0");
-	compareSignatures(sigrt.string(),sigrt,std::string(".histsig"));
+	compareSignatures(conn,sigrt.string(),sigrt,std::string(".histsig"));
 	//computeSignatures(rt);
 	//moveToCsv(rt);
 	return 0;
