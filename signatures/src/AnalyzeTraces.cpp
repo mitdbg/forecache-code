@@ -204,7 +204,9 @@ void computeSignatures(const boost::filesystem::path &dir_path) {
 			//ComputeSignatures::parseTileData(data);
 			Tile tile(data);
 			//ComputeSignatures::computeNormalSignature(tile,"attrs.avg_ndvi");
-			std::string sig = ComputeSignatures::computeNormalSignature(tile,attr1.c_str());
+			//std::string sig = ComputeSignatures::computeNormalSignature(tile,attr1.c_str());
+			//std::string sig = ComputeSignatures::computeHistogramSignature(tile,attr1.c_str(), 400);
+			std::string sig = ComputeSignatures::computeFilteredHistogramSignature(tile,attr1.c_str(),attr2.c_str(),1.0, 400);
 			//std::cout << "signature: " << sig << std::endl;
 			boost::filesystem::path zoompath = filepath.parent_path();
 			boost::filesystem::path thresholdpath = zoompath.parent_path();
@@ -213,7 +215,8 @@ void computeSignatures(const boost::filesystem::path &dir_path) {
 			thresholdpath = thresholdpath.filename();
 			std::string sigpath = ComputeSignatures::buildPath(sig_root_dir, querypath.string(), thresholdpath.string(), zoompath.string(), filepath.filename().string());
 			//std::cout << "sigpath: " << sigpath << std::endl;
-			ComputeSignatures::writeFile(sigpath+".normalsig",sig);
+			//ComputeSignatures::writeFile(sigpath+".normalsig",sig);
+			ComputeSignatures::writeFile(sigpath+".histsig",sig);
 			delete data;
 		}
 	}
@@ -245,7 +248,7 @@ int main (int argc, char **argv) {
 	getTracesForUsers(conn);
 	//sigExample();
 	boost::filesystem::path p, rt(cache_root_dir + "/"+hashed_query);
-	//computeSignatures(rt);
-	moveToCsv(rt);
+	computeSignatures(rt);
+	//moveToCsv(rt);
 	return 0;
 }

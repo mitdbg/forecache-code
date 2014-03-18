@@ -4,6 +4,7 @@
 #include <boost/filesystem.hpp> // boost::filesystem::*
 #include "ComputeSignatures.h"
 #include "NormalSignature.h"
+#include "HistogramSignature.h"
 
 /*
 data types: double, int64, uint64
@@ -132,10 +133,56 @@ void ComputeSignatures::getAttributeVector(Tile &tile, const char * label, std::
 	//std::cout << std::endl;
 }
 
+std::vector<double> ComputeSignatures::filterVector(std::vector<double> &input, std::vector<double> &filter, double filterval) {
+	assert(input.size() == filter.size());
+	std::vector<double> output;
+	for(size_t i = 0; i < input.size(); i++) {
+		if(filter[i] == filterval) {
+			output.push_back(input[i]);
+		}
+	}
+	return output;
+}
+
+void ComputeSignatures::getMaxMin(Tile &tile, const char * label, std::pair<double,double> &input) {
+	double max = (*tile.attrsObj)[label]["max"].GetDouble();
+	double min = (*tile.attrsObj)[label]["min"].GetDouble();
+	input.first = max;
+	input.second = min;
+}
+
 std::string ComputeSignatures::computeNormalSignature(Tile &tile, const char * label) {
 	std::vector<double> input;
 	getAttributeVector(tile,label, input);
 	//std::cout << "input size: " << input.size() << std::endl;;
 	NormalSignature sig(input);
+	return sig.getSignature();
+}
+
+std::string ComputeSignatures::computeHistogramSignature(Tile &tile, const char * label, int bins) {
+	std::vector<double> input;
+	getAttributeVector(tile,label, input);
+	std::pair<double,double> range;
+	getMaxMin(tile,label,range);
+	double max = range.first;
+	double min = range.second;
+	//std::cout << "input size: " << input.size() << std::endl;;
+	HistogramSignature sig(input,min,max,1.0 * bins);
+	return sig.getSignature();
+}
+
+std::string ComputeSignatures::computeFilteredHistogramSignature(Tile &tile, const char * label,const char *label2, double filterval, int bins) {
+	std::vector<double> input, filter, filteredInput;
+	getAttributeVector(tile,label, input);
+	getAttributeVector(tile,label2, filter);
+	filteredInput = filterVector(input,filter,filterval);
+	std::cout << "input: " << input.size() << ", filtered: " << filteredInput.size() << std::endl;
+
+	std::pair<double,double> range;
+	getMaxMin(tile,label,range);
+	double max = range.first;
+	double min = range.second;
+	//std::cout << "input size: " << input.size() << std::endl;;
+	HistogramSignature sig(filteredInput,min,max,1.0 * bins);
 	return sig.getSignature();
 }

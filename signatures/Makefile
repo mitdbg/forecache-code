@@ -13,7 +13,7 @@ INC := -Iinclude -I include/rapidjson -I/usr/include
 
 all: analyzeTraces
 
-analyzeTraces: $(BUILDDIR)/AnalyzeTraces.o $(BUILDDIR)/ComputeSignatures.o $(BUILDDIR)/NormalSignature.o
+analyzeTraces: $(BUILDDIR)/AnalyzeTraces.o $(BUILDDIR)/ComputeSignatures.o $(BUILDDIR)/NormalSignature.o $(BUILDDIR)/HistogramSignature.o
 	$(CC) $^ -o $(TARGETDIR)/$@ $(LIB)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
