@@ -269,10 +269,9 @@ void compareWithSignature(pqxx::connection &conn, const boost::filesystem::path 
 				int currzoom = std::atoi(zoompath.string().c_str());
 
 				if(dist <= distance_threshold[currzoom]) {
-					std::cout << "dist: " << dist << std::endl;
 					SD c;
 					c.distance = sig.computeSimilarity(othersig);
-					c.filename = filepath.string();
+					c.filename = getTileId(conn,filepath.stem().string());
 					comparisons.push_back(c);
 /*
 					std::string sigpath = ComputeSignatures::buildPath(sig_root_dir, querypath.string(), thresholdpath.string(), zoompath.string(), filepath.filename().string());
@@ -300,7 +299,9 @@ void compareSignatures(pqxx::connection &conn, const std::string origpath, const
 		} else if (boost::filesystem::is_regular_file(itr->status())) { // see below
 			boost::filesystem::path filepath = itr->path();
 			if(filepath.extension().string() == sigextension) {
-				std::cout << "filename: " << filepath.string() << std::endl;
+				//std::cout << "filename: " << filepath.string() << std::endl;
+				std::cout << "similarity for: " << getTileId(conn,filepath.stem().string()) << std::endl;
+				
 				const char* json = ComputeSignatures::loadFile(filepath.string());
 				HistogramSignature sig(json);
 				getPosition(conn,sig.pos,filepath.stem().string());
@@ -311,7 +312,7 @@ void compareSignatures(pqxx::connection &conn, const std::string origpath, const
 				std::sort(comparisons.begin(),comparisons.end());
 				for(size_t i = 0; i < comparisons.size(); i++) {
 					SD c = comparisons[i];
-					std::cout << "compare: " << c.filename << ", hist distance: " << c.distance << std::endl;
+					std::cout << "recommend: " << c.filename << ", hist distance: " << c.distance << std::endl;
 				}
 				std::cout << std::endl << std::endl;
 				delete json;
