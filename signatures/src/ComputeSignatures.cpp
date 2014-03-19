@@ -6,6 +6,7 @@
 #include "ComputeSignatures.h"
 #include "NormalSignature.h"
 #include "HistogramSignature.h"
+#include "GroupedHistogramSignature.h"
 
 /*
 data types: double, int64, uint64
@@ -198,5 +199,31 @@ std::string ComputeSignatures::computeFilteredHistogramSignature(Tile &tile, con
 	}
 	//std::cout << "input size: " << input.size() << std::endl;
 	HistogramSignature sig(filteredInput,min,max,1.0 * bins,1.0 * input.size());
+	return sig.getSignature();
+}
+
+std::string ComputeSignatures::computeGroupedHistogramSignature(Tile &tile, const char * label,const char *label2, std::vector<double> filtervals, int bins) {
+	std::vector<double> input, filter;
+	std::vector<std::vector<double> > filteredInputGroups;
+	getAttributeVector(tile,label, input);
+	getAttributeVector(tile,label2, filter);
+	size_t sizes = 0;
+	for(size_t i = 0; i < filtervals.size(); i++) {
+		filteredInputGroups.push_back(filterVector(input,filter,filtervals[i]));
+		sizes += filteredInputGroups[i].size();
+	}
+	assert(filteredInputGroups.size() > 0);
+	//std::cout << "input: " << input.size() << ", filtered: " << filteredInput.size() << std::endl;
+
+	double max = 0;
+	double min= 0;
+	if(sizes > 0) { // if there are values after filtering
+		std::pair<double,double> range;
+		getMaxMin(tile,label,range);
+		max = range.first;
+		min = range.second;
+	}
+	//std::cout << "input size: " << input.size() << std::endl;
+	GroupedHistogramSignature sig(filteredInputGroups,min,max,1.0 * bins,1.0 * input.size());
 	return sig.getSignature();
 }

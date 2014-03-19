@@ -20,6 +20,7 @@ public:
 	static std::string computeNormalSignature(Tile &tile, const char * label);
 	static std::string computeHistogramSignature(Tile &tile, const char * label, int bins);
 	static std::string computeFilteredHistogramSignature(Tile &tile, const char * label,const char *label2, double filterval, int bins);
+	static std::string computeGroupedHistogramSignature(Tile &tile, const char *label, const char *label2, std::vector<double> filtervals, int bins);
 	static void getAttributeVector(Tile &tile, const char * label, std::vector<double> &input);
 	static std::vector<double> filterVector(std::vector<double> &input, std::vector<double> &filter, double filterval);
 	static void getMaxMin(Tile &tile, const char * label, std::pair<double,double> &input);

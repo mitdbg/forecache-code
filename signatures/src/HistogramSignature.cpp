@@ -8,8 +8,6 @@
 #include "HistogramSignature.h"
 #include "rapidjson/document.h"
 
-double MY_DEFAULT_MIN = .0001;
-
 HistogramSignature::HistogramSignature(std::vector<double> &input, double mn, double mx, double bins, double origcount) : pos(), histogram() {
 	computeSignature(input,mn,mx,bins,origcount);
 }

@@ -8,6 +8,7 @@
 #include <boost/algorithm/string.hpp> // boost::algorithm::split
 #include "ComputeSignatures.h"
 #include "HistogramSignature.h"
+#include "GroupedHistogramSignature.h"
 
 /*
 std::string cache_root_dir("/home/leilani/_scalar_cache_dir2");
@@ -23,6 +24,10 @@ std::string dbname("test"), user("testuser");
 std::string query("select * from cali100"),hashed_query("85794fe89a8b0c23ce726cca7655c8bc"),threshold("90000");
 
 double distance_threshold[] = {0,1,1,2,2,3,3,4,4};
+
+// filter by land sea mask value
+double fv[] = {1,7};
+int nfv = 2;
 
 std::string attr1("attrs.avg_ndsi"),attr2("attrs.max_land_sea_mask"),warmup_threshold("10000"),warmup_hashed_query("39df90e13a84cad54463717b24ef833a");
 
@@ -340,7 +345,12 @@ void computeSignatures(const boost::filesystem::path &dir_path) {
 			//ComputeSignatures::computeNormalSignature(tile,"attrs.avg_ndvi");
 			//std::string sig = ComputeSignatures::computeNormalSignature(tile,attr1.c_str());
 			//std::string sig = ComputeSignatures::computeHistogramSignature(tile,attr1.c_str(), 400);
-			std::string sig = ComputeSignatures::computeFilteredHistogramSignature(tile,attr1.c_str(),attr2.c_str(),1.0, 400);
+			//std::string sig = ComputeSignatures::computeFilteredHistogramSignature(tile,attr1.c_str(),attr2.c_str(),1.0, 400);
+			std::vector<double> filtervals;
+			for(int i = 0; i < nfv; i++) {
+				filtervals.push_back(fv[i]);
+			}
+			std::string sig = ComputeSignatures::computeGroupedHistogramSignature(tile,attr1.c_str(),attr2.c_str(),filtervals, 400);
 			//std::cout << "signature: " << sig << std::endl;
 			boost::filesystem::path zoompath = filepath.parent_path();
 			boost::filesystem::path thresholdpath = zoompath.parent_path();
@@ -350,7 +360,7 @@ void computeSignatures(const boost::filesystem::path &dir_path) {
 			std::string sigpath = ComputeSignatures::buildPath(sig_root_dir, querypath.string(), thresholdpath.string(), zoompath.string(), filepath.filename().string());
 			//std::cout << "sigpath: " << sigpath << std::endl;
 			//ComputeSignatures::writeFile(sigpath+".normalsig",sig);
-			ComputeSignatures::writeFile(sigpath+".histsig",sig);
+			ComputeSignatures::writeFile(sigpath+".ghistsig",sig);
 			delete data;
 		}
 	}
@@ -383,8 +393,8 @@ int main (int argc, char **argv) {
 	//sigExample();
 	boost::filesystem::path p, rt(cache_root_dir + "/"+hashed_query + "/" + threshold);
 	boost::filesystem::path sigrt(sig_root_dir + "/"+hashed_query + "/" + threshold + "/" + "0");
-	compareSignatures(conn,sigrt.string(),sigrt,std::string(".histsig"));
-	//computeSignatures(rt);
+	//compareSignatures(conn,sigrt.string(),sigrt,std::string(".histsig"));
+	computeSignatures(rt);
 	//moveToCsv(rt);
 	return 0;
 }
