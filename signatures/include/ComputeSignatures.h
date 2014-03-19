@@ -7,6 +7,7 @@
 
 class ComputeSignatures {
 public:
+	static void initializeRanges();
 	// takes a filepath and retrieves the contents as a string
 	static const char* loadFile(std::string filepath);
 	//writes string to designated filepath

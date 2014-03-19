@@ -12,6 +12,17 @@
 data types: double, int64, uint64
 */
 
+
+bool use_globals = true;
+std::map<std::string, std::pair<double, double> > rangemap;
+
+void ComputeSignatures::initializeRanges() {
+	rangemap["attrs.avg_ndsi"] = std::pair<double,double>(-1.0,1.0);
+	rangemap["attrs.max_land_sea_mask"] = std::pair<double,double>(0.0,7.0);
+	rangemap["dims.latitude_e4ndsi_06_03_2013ndsi_agg_7_18_2013"] = std::pair<double,double>(0.0,22222.0);
+	rangemap["dims.longitude_e4ndsi_06_03_2013ndsi_agg_7_18_2013"] = std::pair<double,double>(0.0,44444.0);
+}
+
 void ComputeSignatures::writeFile(std::string filepath, std::string data) {
 	boost::filesystem::path p(filepath);
 	p = p.parent_path();
@@ -147,10 +158,22 @@ std::vector<double> ComputeSignatures::filterVector(std::vector<double> &input, 
 }
 
 void ComputeSignatures::getMaxMin(Tile &tile, const char * label, std::pair<double,double> &input) {
-	double max = (*tile.attrsObj)[label]["max"].GetDouble();
-	double min = (*tile.attrsObj)[label]["min"].GetDouble();
+	double max = 0;
+	double min = 0;
+	if(use_globals) {
+		if(rangemap.size() == 0) {
+			initializeRanges();
+		}
+		std::string l(label);
+		max = rangemap[l].first;
+		min = rangemap[l].second;
+	} else {
+		double max = (*tile.attrsObj)[label]["max"].GetDouble();
+		double min = (*tile.attrsObj)[label]["min"].GetDouble();
+	}
 	input.first = max;
 	input.second = min;
+	std::cout << "max: " << max << ", min: " << min << std::endl;
 }
 
 double ComputeSignatures::getEuclideanDistance(std::vector<double> &d1, std::vector<double> &d2) {
