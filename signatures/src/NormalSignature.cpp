@@ -30,7 +30,10 @@ void NormalSignature::computeSignature(std::vector<double> &input) {
 
 std::string NormalSignature::getSignature() {
 	std::ostringstream sig;
-	sig << "{\"mean\":" << mean << ", \"stddev\":" << stddev << "}";
+	//sig << "{\"mean\":" << mean << ", \"stddev\":" << stddev << "}";
+
+	// treat as a histogram
+	sig << "{\"histogram\":[" << mean << ", " << stddev << "]}";
 	return sig.str();
 }
 
