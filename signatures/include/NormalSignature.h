@@ -7,6 +7,7 @@ class NormalSignature {
 public:
 	double mean;
 	double stddev;
+	std::vector<double> pos;
 	// construct from vector of attribute values
 	NormalSignature(std::vector<double> &input);
 	// construct from pre-computed signature read on disk

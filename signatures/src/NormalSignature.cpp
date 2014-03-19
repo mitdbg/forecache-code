@@ -8,11 +8,11 @@
 #include "NormalSignature.h"
 #include "rapidjson/document.h"
 
-NormalSignature::NormalSignature(std::vector<double> &input) {
+NormalSignature::NormalSignature(std::vector<double> &input) : pos() {
 	computeSignature(input);
 }
 
-NormalSignature::NormalSignature(const char *json) {
+NormalSignature::NormalSignature(const char *json) : pos() {
 	parseSigData(json);
 }
 
@@ -43,10 +43,9 @@ void NormalSignature::parseSigData(const char *json) {
 }
 
 double NormalSignature::computeSimilarity(NormalSignature &other) {
-	double md = (mean - other.mean) * (mean - other.mean);
-	double sd = (stddev - other.stddev) * (stddev - other.stddev);
-	double similarity = (md + sd)/2;
-	return std::sqrt(similarity);
+	double md = std::pow(mean - other.mean,2);
+	double sd = std::pow(stddev - other.stddev,2);
+	return (md + sd);
 }
 
 void NormalSignature::normalize(std::vector<double> &input) {
