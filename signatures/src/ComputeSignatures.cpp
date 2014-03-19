@@ -165,15 +165,15 @@ void ComputeSignatures::getMaxMin(Tile &tile, const char * label, std::pair<doub
 			initializeRanges();
 		}
 		std::string l(label);
-		max = rangemap[l].first;
-		min = rangemap[l].second;
+		max = rangemap[l].second;
+		min = rangemap[l].first;
 	} else {
 		double max = (*tile.attrsObj)[label]["max"].GetDouble();
 		double min = (*tile.attrsObj)[label]["min"].GetDouble();
 	}
 	input.first = max;
 	input.second = min;
-	std::cout << "max: " << max << ", min: " << min << std::endl;
+	//std::cout << "max: " << max << ", min: " << min << std::endl;
 }
 
 double ComputeSignatures::getEuclideanDistance(std::vector<double> &d1, std::vector<double> &d2) {
@@ -189,17 +189,25 @@ std::string ComputeSignatures::computeNormalSignature(Tile &tile, const char * l
 	std::vector<double> input;
 	getAttributeVector(tile,label, input);
 	//std::cout << "input size: " << input.size() << std::endl;;
-	NormalSignature sig(input);
+	double max = 0;
+	double min = 0;
+	if(input.size() > 0) {
+		std::pair<double,double> range;
+		getMaxMin(tile,label,range);
+		max = range.first;
+		min = range.second;
+	}
+	NormalSignature sig(input,min,max);
 	return sig.getSignature();
 }
 
 std::string ComputeSignatures::computeHistogramSignature(Tile &tile, const char * label, int bins) {
 	std::vector<double> input;
 	getAttributeVector(tile,label, input);
-	std::pair<double,double> range;
 	double max = 0;
 	double min = 0;
 	if(input.size() > 0) {
+		std::pair<double,double> range;
 		getMaxMin(tile,label,range);
 		max = range.first;
 		min = range.second;

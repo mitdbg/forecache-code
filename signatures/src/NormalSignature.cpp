@@ -8,18 +8,28 @@
 #include "NormalSignature.h"
 #include "rapidjson/document.h"
 
-NormalSignature::NormalSignature(std::vector<double> &input) : pos() {
-	computeSignature(input);
+bool normalize_input = true;
+
+NormalSignature::NormalSignature(std::vector<double> &input, double min, double max) : pos() {
+	computeSignature(input, min, max);
 }
 
 NormalSignature::NormalSignature(const char *json) : pos() {
 	parseSigData(json);
 }
 
-void NormalSignature::computeSignature(std::vector<double> &input) {
-	double sum,count;
-	count = 1.0 * input.size();
-	sum = std::accumulate(input.begin(),input.end(),0.0);
+void NormalSignature::computeSignature(std::vector<double> &input, double min, double max) {
+	double sum = 0;
+	double count = 1.0 * input.size();
+	if(normalize_input) {
+		double range = max - min;
+		for(size_t i = 0; i < count; i++) {
+			input[i] = (input[i] - min) / range; // normalize in place
+			sum += input[i]; // sum normalized version;
+		}
+	} else {
+		sum = std::accumulate(input.begin(),input.end(),0.0);
+	}
 	mean = sum / count;
 	std::vector<double> diff(input.size());
 	std::transform(input.begin(), input.end(), diff.begin(), std::bind2nd(std::minus<double>(), mean));

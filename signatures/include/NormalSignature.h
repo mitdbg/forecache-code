@@ -9,7 +9,7 @@ public:
 	double stddev;
 	std::vector<double> pos;
 	// construct from vector of attribute values
-	NormalSignature(std::vector<double> &input);
+	NormalSignature(std::vector<double> &input,double min, double max);
 	// construct from pre-computed signature read on disk
 	NormalSignature(const char *json);
 	// returns signature encoded as a json object
@@ -20,7 +20,7 @@ public:
 	void normalize(std::vector<double> &input);
 private:
 	// computes mean and standard deviation for a single attribute
-	void computeSignature(std::vector<double> &input);
+	void computeSignature(std::vector<double> &input, double min, double max);
 	// retrieves mean and standard deviation from json string
 	void parseSigData(const char *json);
 };
