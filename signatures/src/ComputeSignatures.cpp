@@ -174,9 +174,13 @@ std::string ComputeSignatures::computeHistogramSignature(Tile &tile, const char 
 	std::vector<double> input;
 	getAttributeVector(tile,label, input);
 	std::pair<double,double> range;
-	getMaxMin(tile,label,range);
-	double max = range.first;
-	double min = range.second;
+	double max = 0;
+	double min = 0;
+	if(input.size() > 0) {
+		getMaxMin(tile,label,range);
+		max = range.first;
+		min = range.second;
+	}
 	//std::cout << "input size: " << input.size() << std::endl;;
 	HistogramSignature sig(input,min,max,1.0 * bins,1.0 * input.size());
 	return sig.getSignature();
