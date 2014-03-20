@@ -22,7 +22,9 @@ public:
 	static std::string computeHistogramSignature(Tile &tile, const char * label, int bins);
 	static std::string computeFilteredHistogramSignature(Tile &tile, const char * label,const char *label2, double filterval, int bins);
 	static std::string computeGroupedHistogramSignature(Tile &tile, const char *label, const char *label2, std::vector<double> filtervals, int bins);
+	static std::string computeCorrelationSignature(Tile &tile, const char *dimlabel, const char *attrlabel);
 	static void getAttributeVector(Tile &tile, const char * label, std::vector<double> &input);
+	static void getDimensionVector(Tile &tile, const char * label, std::vector<double> &input);
 	static std::vector<double> filterVector(std::vector<double> &input, std::vector<double> &filter, double filterval);
 	static void getMaxMin(Tile &tile, const char * label, std::pair<double,double> &input);
 	static double getEuclideanDistance(std::vector<double> &d1, std::vector<double> &d2);

@@ -17,7 +17,7 @@ public:
 	// returns a similarity score between this signature and another signature
 	double computeSimilarity(GroupedHistogramSignature &other);
 private:
-	static const double MY_DEFAULT_MIN = .0001;
+	static const double MY_DEFAULT_MIN = 1e-10;
 	// computes histogram for a group of attributes or filters
 	void computeSignature(std::vector<std::vector<double> > &input, double mn, double mx, double bins, double origcount);
 	// retrieves histogram from json string

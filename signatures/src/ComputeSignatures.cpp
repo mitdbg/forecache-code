@@ -7,6 +7,7 @@
 #include "NormalSignature.h"
 #include "HistogramSignature.h"
 #include "GroupedHistogramSignature.h"
+#include "CorrelationSignature.h"
 
 /*
 data types: double, int64, uint64
@@ -21,6 +22,8 @@ void ComputeSignatures::initializeRanges() {
 	rangemap["attrs.max_land_sea_mask"] = std::pair<double,double>(0.0,7.0);
 	rangemap["dims.latitude_e4ndsi_06_03_2013ndsi_agg_7_18_2013"] = std::pair<double,double>(0.0,22222.0);
 	rangemap["dims.longitude_e4ndsi_06_03_2013ndsi_agg_7_18_2013"] = std::pair<double,double>(0.0,44444.0);
+	rangemap["dims.xthesis2"] = std::pair<double,double>(1.0,3600.0);
+	rangemap["dims.ythesis2"] = std::pair<double,double>(1.0,1800.0);
 }
 
 void ComputeSignatures::writeFile(std::string filepath, std::string data) {
@@ -135,6 +138,15 @@ void ComputeSignatures::parseTileData(const char *json) {
 		std::cout << "member name: " << itr->name.GetString() << std::endl;
 		std::cout << "member type: " << itr->value.GetType() << std::endl;
 	}
+}
+
+void ComputeSignatures::getDimensionVector(Tile &tile, const char * label, std::vector<double> &input) {
+	const rapidjson::Value &dim = (*tile.dimsObj)[label]["data"];
+	for(rapidjson::SizeType i = 0; i < dim.Size(); i++) {
+		input.push_back(dim[i].GetDouble());
+		//std::cout << input[i] << " ";
+	}
+	//std::cout << std::endl;
 }
 
 void ComputeSignatures::getAttributeVector(Tile &tile, const char * label, std::vector<double> &input) {
@@ -261,4 +273,16 @@ std::string ComputeSignatures::computeGroupedHistogramSignature(Tile &tile, cons
 	//std::cout << "input size: " << input.size() << std::endl;
 	GroupedHistogramSignature sig(filteredInputGroups,min,max,1.0 * bins,1.0 * input.size());
 	return sig.getSignature();
+}
+
+
+std::string ComputeSignatures::computeCorrelationSignature(Tile &tile, const char *dimlabel, const char *attrlabel) {
+	std::vector<double> dim,attr;
+	getDimensionVector(tile,dimlabel, dim);
+	getAttributeVector(tile,attrlabel, attr);
+	
+	//std::cout << "input size: " << attr.size() << std::endl;;
+	CorrelationSignature sig(dim,attr);
+	return sig.getSignature();
+
 }

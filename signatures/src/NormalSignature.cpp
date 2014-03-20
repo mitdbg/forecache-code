@@ -35,6 +35,8 @@ void NormalSignature::computeSignature(std::vector<double> &input, double min, d
 	std::transform(input.begin(), input.end(), diff.begin(), std::bind2nd(std::minus<double>(), mean));
 	double sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
 	stddev = std::sqrt(sq_sum / count);
+	mean += MY_DEFAULT_MIN; // don't let these be 0
+	stddev += MY_DEFAULT_MIN;
 	//std::cout << "mean: " << mean << ", stddev: " << stddev << std::endl;
 }
 

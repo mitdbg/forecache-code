@@ -19,6 +19,7 @@ public:
 	// normalizes input data
 	void normalize(std::vector<double> &input);
 private:
+	static const double MY_DEFAULT_MIN = 1e-10;
 	// computes mean and standard deviation for a single attribute
 	void computeSignature(std::vector<double> &input, double min, double max);
 	// retrieves mean and standard deviation from json string
