@@ -6,22 +6,24 @@
 #include <pqxx/pqxx> // to connect to postgres
 #include <boost/filesystem.hpp> // boost::filesystem::*
 #include <boost/algorithm/string.hpp> // boost::algorithm::split
-#include "ComputeSignatures.h"
+#include "NormalSignature.h"
 #include "HistogramSignature.h"
 #include "GroupedHistogramSignature.h"
+#include "CorrelationSignature.h"
+#include "ComputeSignatures.h"
 
 /*
 std::string cache_root_dir("/home/leilani/_scalar_cache_dir2");
 std::string sig_root_dir("/home/leilani/_scalar_sig_dir2");
 std::string csv_root_dir("/home/leilani/_scalar_csv_dir2");
 std::string dbname("scalar"), user("leilani_testuser");
-std::string query("select * from ndsi_agg_7_18_2013"), hashed_query("2a0cf5267692de290efac7e3b6d5a593"),threshold("90000");
+std::string dim1("dims.latitude_e4ndsi_06_03_2013ndsi_agg_7_18_2013"),dim2("dims.longitude_e4ndsi_06_03_2013ndsi_agg_7_18_2013"),query("select * from ndsi_agg_7_18_2013"), hashed_query("2a0cf5267692de290efac7e3b6d5a593"),threshold("90000");
 */
 std::string cache_root_dir("/home/leibatt/projects/user_study/scalar_backend/_scalar_cache_dir2");
 std::string sig_root_dir("/home/leibatt/projects/user_study/scalar_backend/_scalar_sig_dir2");
 std::string csv_root_dir("/home/leibatt/projects/user_study/scalar_backend/_scalar_csv_dir2");
 std::string dbname("test"), user("testuser");
-std::string query("select * from cali100"),hashed_query("85794fe89a8b0c23ce726cca7655c8bc"),threshold("90000");
+std::string dim1("dims.xthesis2"),dim2("dims.ythesis2"),query("select * from cali100"),hashed_query("85794fe89a8b0c23ce726cca7655c8bc"),threshold("90000");
 
 double distance_threshold[] = {0,1,1,2,2,3,3,4,4};
 
@@ -250,7 +252,7 @@ void moveToCsv(const boost::filesystem::path &dir_path) {
 	}
 }
 
-void compareWithSignature(pqxx::connection &conn, const boost::filesystem::path &dir_path,std::string sigextension, HistogramSignature &sig, std::vector<SD> &comparisons) {
+void compareWithSignature(pqxx::connection &conn, const boost::filesystem::path &dir_path,std::string sigextension, NormalSignature &sig, std::vector<SD> &comparisons) {
 	if(!boost::filesystem::exists(dir_path)) {
 		return;
 	}
@@ -263,7 +265,7 @@ void compareWithSignature(pqxx::connection &conn, const boost::filesystem::path 
 			if(filepath.extension().string() == sigextension) {
 				//std::cout << "filename: " << filepath.string() << std::endl;
 				const char* json = ComputeSignatures::loadFile(filepath.string());
-				HistogramSignature othersig(json);
+				NormalSignature othersig(json);
 				getPosition(conn,othersig.pos,filepath.stem().string());
 				double dist = ComputeSignatures::getEuclideanDistance(sig.pos,othersig.pos);
 				boost::filesystem::path zoompath = filepath.parent_path();
@@ -308,7 +310,7 @@ void compareSignatures(pqxx::connection &conn, const std::string origpath, const
 				std::cout << "similarity for: " << getTileId(conn,filepath.stem().string()) << std::endl;
 				
 				const char* json = ComputeSignatures::loadFile(filepath.string());
-				HistogramSignature sig(json);
+				NormalSignature sig(json);
 				getPosition(conn,sig.pos,filepath.stem().string());
 				//std::cout << "signature: " << sig.getSignature() << std::endl;
 				boost::filesystem::path p(origpath);
@@ -342,15 +344,17 @@ void computeSignatures(const boost::filesystem::path &dir_path) {
 			//std::cout << "data length " << std::strlen(data) << std::endl;
 			//ComputeSignatures::parseTileData(data);
 			Tile tile(data);
-			//ComputeSignatures::computeNormalSignature(tile,"attrs.avg_ndvi");
+			std::string sig = ComputeSignatures::computeCorrelationSignature(tile,dim1.c_str(),attr1.c_str());
 			//std::string sig = ComputeSignatures::computeNormalSignature(tile,attr1.c_str());
 			//std::string sig = ComputeSignatures::computeHistogramSignature(tile,attr1.c_str(), 400);
 			//std::string sig = ComputeSignatures::computeFilteredHistogramSignature(tile,attr1.c_str(),attr2.c_str(),1.0, 400);
+/*
 			std::vector<double> filtervals;
 			for(int i = 0; i < nfv; i++) {
 				filtervals.push_back(fv[i]);
 			}
 			std::string sig = ComputeSignatures::computeGroupedHistogramSignature(tile,attr1.c_str(),attr2.c_str(),filtervals, 400);
+*/
 			//std::cout << "signature: " << sig << std::endl;
 			boost::filesystem::path zoompath = filepath.parent_path();
 			boost::filesystem::path thresholdpath = zoompath.parent_path();
@@ -360,7 +364,8 @@ void computeSignatures(const boost::filesystem::path &dir_path) {
 			std::string sigpath = ComputeSignatures::buildPath(sig_root_dir, querypath.string(), thresholdpath.string(), zoompath.string(), filepath.filename().string());
 			//std::cout << "sigpath: " << sigpath << std::endl;
 			//ComputeSignatures::writeFile(sigpath+".normalsig",sig);
-			ComputeSignatures::writeFile(sigpath+".ghistsig",sig);
+			//ComputeSignatures::writeFile(sigpath+".histsig",sig);
+			ComputeSignatures::writeFile(sigpath+".corrsig",sig);
 			delete data;
 		}
 	}
@@ -394,6 +399,7 @@ int main (int argc, char **argv) {
 	boost::filesystem::path p, rt(cache_root_dir + "/"+hashed_query + "/" + threshold);
 	boost::filesystem::path sigrt(sig_root_dir + "/"+hashed_query + "/" + threshold + "/" + "0");
 	//compareSignatures(conn,sigrt.string(),sigrt,std::string(".histsig"));
+	//compareSignatures(conn,sigrt.string(),sigrt,std::string(".normalsig"));
 	computeSignatures(rt);
 	//moveToCsv(rt);
 	return 0;
