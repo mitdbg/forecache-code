@@ -24,9 +24,7 @@ public class Client {
 						System.out.println("tile id: '" +tile_id+ "'");
 						
 						// do stuff here to analyze trace
-						// need to: retrieve tile from disk, compute signature
-						// this should be done prior to analyzing user traces
-						// eventually need to: find nearest neighbors of al ltiles
+						
 					}
 				}
 			}
