@@ -28,9 +28,12 @@ public class DBInterface {
 	public static String user  = "testuser";
 	public static String dim1 = "dims.xthesis2";
 	public static String dim2  = "dims.ythesis2";
-	public static String query  = "select * from cali100";
+	public static String query  = "select * from thesis2";
 	public static String hashed_query  = "85794fe89a8b0c23ce726cca7655c8bc";
 	public static String threshold  = "90000";
+	
+	public static String warmup_query  = "select * from cali100";
+	public static String warmup_hashed_query  = "39df90e13a84cad54463717b24ef833a";
 
 
 	public static String password = "password";
@@ -40,7 +43,6 @@ public class DBInterface {
 	public static String attr2  = "attrs.max_land_sea_mask";
 
 	public static double [] distance_threshold = {0,1,1,2,2,3,3,4,4};
-	public static String [] tasknames = {"warmup", "task1", "task2", "task3"};
 
 	// filter by land sea mask value
 	public static double [] fv = {1,7};
@@ -199,30 +201,6 @@ public class DBInterface {
 		}
 		return myresult;
 	}
-	
-	public static void getTracesForUsers(Connection conn) {
-		List<Integer> users = getUsers(conn);
-		for(int u = 0; u < users.size(); u++) {
-			int user_id = users.get(u);
-			for(int t = 0; t < tasknames.length; t++) {
-				String taskname = tasknames[t];
-				if(checkTask(conn,user_id,taskname)) {
-					System.out.println("user '" + user_id + "' completed task '" + taskname + "'");
-					List<UserRequest> trace = getHashedTraces(conn,user_id,taskname);
-					System.out.println("found trace of size " + trace.size() + " for task '" + taskname + "' and user '" + user_id + "'");
-					for(int r = 0; r < trace.size(); r++) {
-						String tile_id = trace.get(r).tile_id;
-						System.out.println("tile id: '" +tile_id+ "'");
-						
-						// do stuff here to analyze trace
-						// need to: retrieve tile from disk, compute signature
-						// this should be done prior to analyzing user traces
-						// eventually need to: find nearest neighbors of al ltiles
-					}
-				}
-			}
-		}
-	}
 
 	public static Connection getConnection() {
 		Connection conn = null;
@@ -239,20 +217,7 @@ public class DBInterface {
 		return conn;
 	}
 
-	public static void main(String[] args) {
-		try {
-			Class.forName("org.postgresql.Driver");
-		} catch (ClassNotFoundException e) {
-			System.out.println("Could not find JDBC driver");
-			e.printStackTrace();
-			return;
-		}
-		
-		Connection conn = getConnection();
-		if(conn != null) {
-			// TODO: add stuff here
-		}
-	}
+
 
 	/*
 	 * Local class for storing information about individual tile requests
