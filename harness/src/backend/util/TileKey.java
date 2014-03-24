@@ -90,7 +90,7 @@ public class TileKey {
 	//overrode for hashing in Memory Tile Buffer
 	@Override
 	public int hashCode() {
-		HashCodeBuilder hcb = new HashCodeBuilder(491,36)
+		HashCodeBuilder hcb = new HashCodeBuilder(491,37)
 			.append(this.zoom);
 		
 		for(int i = 0; i < this.id.size(); i++) {
