@@ -86,7 +86,8 @@ public class Client {
 	}
 	
 	public static String buildUrlParams(String hashed_query, String tile_id, int zoom) {
-		String params = "hashed_query="+hashed_query;
+		String params = "";
+		//params += "hashed_query="+hashed_query;
 		params += "&threshold=" + DBInterface.threshold;
 		params += "&zoom=" + zoom;
 		//List<Integer> tile_ints = DBInterface.parseTileIdInteger(tile_id);
@@ -112,6 +113,13 @@ public class Client {
 		*/
 		//getTracesForUsers(conn);
 		//System.out.println("params:" +buildUrlParams("123","[1, 25]", 0));
-		sendRequest("[1, 25]", 0, "123");
+		for(int z = 0; z < 5; z++) {
+			for(int i = 0; i <= z; i++) {
+				for(int j = 0; j <= z; j++) {
+					sendRequest("[0, 0]", 0, "123");
+					sendRequest("["+i+", "+j+"]", z, "123");
+				}
+			}
+		}
 	}
 }

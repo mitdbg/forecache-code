@@ -22,7 +22,7 @@ public class MemoryTileBuffer implements TileBuffer {
 	private PriorityQueue<TimePair> lruQueue; // for identifying lru tiles in storage
 	private final int storagemax;
 	private int size;
-	private final int DEFAULTMAX = 4096; // default buffer size
+	private final int DEFAULTMAX = 14000000; // default buffer size
 	private final int initqueuesize = 50;
 	
 	public MemoryTileBuffer() {
@@ -78,7 +78,7 @@ public class MemoryTileBuffer implements TileBuffer {
 			int tilesize = tile.getDataSize();
 			// make room for new tile in storage
 			while((this.size + tilesize) > this.storagemax) {
-				this.remove_lru_tile(id);
+				this.remove_lru_tile();
 			}
 			// insert new tile into storage
 			this.insert_tile(tile);
@@ -91,6 +91,15 @@ public class MemoryTileBuffer implements TileBuffer {
 	@Override
 	public synchronized void removeTile(TileKey id) {
 		this.remove_tile(id);
+	}
+	
+	@Override
+	public synchronized void touchTile(Tile tile) {
+		TileKey id = tile.getTileKey();
+		if(this.storage.containsKey(id)) {
+			// update metadata
+			this.update_time_pair(id);
+		}
 	}
 	
 	// updates eviction metadata for existing tile id
@@ -118,7 +127,7 @@ public class MemoryTileBuffer implements TileBuffer {
 	protected synchronized void remove_time_pair(TileKey id) {
 		TimePair tp;
 		if(timeMap.containsKey(id)) {
-			tp = new TimePair(id);
+			tp = timeMap.get(id);
 			lruQueue.remove(tp);
 			timeMap.remove(id);
 		}
@@ -135,12 +144,13 @@ public class MemoryTileBuffer implements TileBuffer {
 	}
 	
 	// checks priority queue and removes lru tile
-	protected synchronized void remove_lru_tile(TileKey id) {
+	protected synchronized void remove_lru_tile() {
 		// identify least recently used tile
 		// will be removed from lru queue in remove function
 		TimePair tp = lruQueue.peek();
 		if(tp != null) {
 			TileKey toremove = tp.getTileKey();
+			System.out.println("removing tile: " + toremove);
 			// remove tile from storage
 			this.remove_tile(toremove);
 		}

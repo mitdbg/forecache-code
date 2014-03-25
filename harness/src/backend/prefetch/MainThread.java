@@ -86,8 +86,19 @@ public class MainThread {
 				System.out.println("tile is not in mem-based cache");
 				// go find the tile on disk
 				t = diskbuf.getTile(key);
-				// put the tile in the cache
-				//membuf.insert_tile(t);
+				if(t == null) {
+					System.out.println("tile is not in disk-based cache");
+				} else {
+					System.out.println("found tile in disk-based cache");
+					System.out.println("data size: " + t.getDataSize());
+					// put the tile in the cache
+					membuf.insertTile(t);
+				}
+			} else {
+				System.out.println("found tile in mem-based cache");
+				System.out.println("data size: " + t.getDataSize());
+				// update timestamp
+				membuf.insertTile(t);
 			}
 			long end = System.currentTimeMillis();
 			System.out.println("time to retrieve in seconds: " + ((start - end)/1000));

@@ -87,6 +87,20 @@ public class TileKey {
 		return Math.sqrt(sum);
 	}
 	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("([");
+		if(this.id.size() > 0) {
+			sb.append(this.id.get(0));
+		}
+		for(int i = 1; i < this.id.size(); i++) {
+			sb.append(", ").append(this.id.get(i));
+		}
+		sb.append("], ").append(this.zoom).append(")");
+		return sb.toString();
+	}
+	
 	//overrode for hashing in Memory Tile Buffer
 	@Override
 	public int hashCode() {
@@ -118,7 +132,6 @@ public class TileKey {
 		ImmutableList<Integer> oid = o.getID();
 		ImmutableList<Double> ow = o.getWeights();
 		EqualsBuilder eb = new EqualsBuilder()
-			.appendSuper(super.equals(other))
 			.append(this.zoom,o.getZoom());
 		for(int i = 0; i < this.id.size(); i++) {
 			eb.append(this.id.get(i), oid.get(i))

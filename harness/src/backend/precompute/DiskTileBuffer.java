@@ -28,7 +28,7 @@ public class DiskTileBuffer implements TileBuffer {
 	private PriorityQueue<TimePair> lruQueue; // for identifying lru tiles in storage
 	private final int storagemax;
 	private int size;
-	private final int DEFAULTMAX = 4096; // default buffer size
+	private final int DEFAULTMAX = 100000000; // default buffer size
 	private final int initqueuesize = 50;
 	
 	public DiskTileBuffer(String cache_root_dir, String hashed_query, String threshold) throws Exception {
@@ -113,16 +113,23 @@ public class DiskTileBuffer implements TileBuffer {
 
 	}
 	
+	@Override
+	public synchronized void touchTile(Tile tile) {
+		// TODO Auto-generated method stub
+		
+	}
+	
 	private String build_tile_filepath(TileKey id) {
 		StringBuilder path = new StringBuilder();
 		String tile_hash = get_tile_hash(id);
 		if(tile_hash.length() == 0) {
+			//System.out.println("tile hash length is 0");
 			return null;
 		}
 		path.append(cache_root_dir).append("/").append(hashed_query).append("/")
 		.append(threshold).append("/").append(id.getZoom()).append("/")
 			.append(tile_hash);
-		System.out.println("path: '"+path+"'");
+		//System.out.println("path: '"+path+"'");
 		return path.toString();
 	}
 	
@@ -144,7 +151,7 @@ public class DiskTileBuffer implements TileBuffer {
 			return null;
 		}
 		for(int i = 1; i < l.size(); i++) {
-			tile_id.append(",").append(l.get(i));
+			tile_id.append(", ").append(l.get(i));
 		}
 		tile_id.append("]");
 		return tile_id.toString();
