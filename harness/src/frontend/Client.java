@@ -96,6 +96,18 @@ public class Client {
 		return params;
 	}
 	
+	public static void test() {
+		//System.out.println("params:" +buildUrlParams("123","[1, 25]", 0));
+		for(int z = 0; z < 5; z++) {
+			for(int i = 0; i <= z; i++) {
+				for(int j = 0; j <= z; j++) {
+					//sendRequest("[0, 0]", 0, "123");
+					sendRequest("["+i+", "+j+"]", z, "123");
+				}
+			}
+		}
+	}
+	
 	public static void main(String[] args) {
 		/*
 		try {
@@ -112,14 +124,6 @@ public class Client {
 		}
 		*/
 		//getTracesForUsers(conn);
-		//System.out.println("params:" +buildUrlParams("123","[1, 25]", 0));
-		for(int z = 0; z < 5; z++) {
-			for(int i = 0; i <= z; i++) {
-				for(int j = 0; j <= z; j++) {
-					sendRequest("[0, 0]", 0, "123");
-					sendRequest("["+i+", "+j+"]", z, "123");
-				}
-			}
-		}
+		test();
 	}
 }

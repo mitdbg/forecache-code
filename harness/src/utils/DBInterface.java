@@ -17,6 +17,7 @@ public class DBInterface {
 	public static final String csv_root_dir = "/home/leilani/_scalar_csv_dir2";
 	public static final String dbname  = "scalar";
 	public static final String user  = "leilani_testuser";
+	public static final String arrayname = "ndsi_agg_7_18_2013";
 	public static final String dim1 = "dims.latitude_e4ndsi_06_03_2013ndsi_agg_7_18_2013";
 	public static final String dim2  = "dims.longitude_e4ndsi_06_03_2013ndsi_agg_7_18_2013";
 	public static final String query  = "select * from ndsi_agg_7_18_2013";
@@ -24,11 +25,12 @@ public class DBInterface {
 	public static final String threshold  = "90000";
 	 */
 	
-	public static final String cache_root_dir = "/home/leibatt/projects/user_study/scalar_backend/_scalar_cache_dir2";
+	public static final String cache_root_dir = "/home/leibatt/projects/user_study/scalar_backend/test_cache";
 	public static final String sig_root_dir = "/home/leibatt/projects/user_study/scalar_backend/_scalar_sig_dir2";
 	public static final String csv_root_dir = "/home/leibatt/projects/user_study/scalar_backend/_scalar_csv_dir2";
 	public static final String dbname  = "test";
 	public static final String user  = "testuser";
+	public static final String arrayname = "thesis2";
 	public static final String dim1 = "dims.xthesis2";
 	public static final String dim2  = "dims.ythesis2";
 	public static final String query  = "select * from thesis2";

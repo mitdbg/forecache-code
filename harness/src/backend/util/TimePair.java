@@ -9,10 +9,25 @@ import java.util.Comparator;
 public class TimePair {
 	private long timestamp;
 	private TileKey id;
+	private int tilesize;
 	
 	public TimePair(TileKey id) {
 		this.id = id;
 		this.timestamp = System.currentTimeMillis();
+		this.tilesize = 0;
+	}
+	
+	public TimePair(TileKey id, int tilesize) {
+		this.id = id;
+		this.timestamp = System.currentTimeMillis();
+		this.tilesize = tilesize;
+	}
+	
+	// for inserting pairs at a specific time (e.g. initialization of cache)
+	public TimePair(TileKey id, long timestamp, int tilesize) {
+		this.id = id;
+		this.timestamp = timestamp;
+		this.tilesize = tilesize;
 	}
 	
 	public final long getTimestamp() {
@@ -25,6 +40,10 @@ public class TimePair {
 	
 	public TileKey getTileKey() {
 		return this.id;
+	}
+	
+	public int getTileSize() {
+		return this.tilesize;
 	}
 	
 	// comparator class for ordering lruQueue using timestamps

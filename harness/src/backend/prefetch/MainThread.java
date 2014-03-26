@@ -21,6 +21,8 @@ import utils.UtilityFunctions;
 public class MainThread {
 	public static MemoryTileBuffer membuf;
 	public static DiskTileBuffer diskbuf;
+	public static int histmax = 10;
+	public static TileHistoryQueue hist;
 	
 	public static void setupServer() throws Exception {
 		Server server = new Server(8080);
@@ -30,18 +32,12 @@ public class MainThread {
 		context.addServlet(new ServletHolder(new FetchTileServlet()), "/*");
 		server.start();
 	}
-	
-	public static void warmupCaches() {
-		//TODO: fill this in
-	}
 
 	public static void main(String[] args) throws Exception {
 		// initialize cache managers
 		membuf = new MemoryTileBuffer();
 		diskbuf = new DiskTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
-		
-		//warmup caches
-		warmupCaches();
+		hist = new TileHistoryQueue(histmax);
 		
 		//start the server
 		setupServer();
@@ -93,13 +89,16 @@ public class MainThread {
 					System.out.println("data size: " + t.getDataSize());
 					// put the tile in the cache
 					membuf.insertTile(t);
+					hist.addRecord(t);
 				}
 			} else {
 				System.out.println("found tile in mem-based cache");
 				System.out.println("data size: " + t.getDataSize());
 				// update timestamp
 				membuf.insertTile(t);
+				hist.addRecord(t);
 			}
+			System.out.println("history length: " + hist.getHistoryLength());
 			long end = System.currentTimeMillis();
 			System.out.println("time to retrieve in seconds: " + ((start - end)/1000));
 		}

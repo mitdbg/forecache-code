@@ -54,18 +54,6 @@ public class MemoryTileBuffer implements TileBuffer {
 	}
 
 	@Override
-	public synchronized List<Tile> getAllTiles() {
-		Set<TileKey> ids = this.getAllTileKeys();
-		List<Tile> returnval = new ArrayList<Tile>();
-		for(TileKey id : ids) {
-			if(this.storage.containsKey(id)) {
-				returnval.add(this.storage.get(id));
-			}
-		}
-		return returnval;
-	}
-
-	@Override
 	public synchronized Set<TileKey> getAllTileKeys() {
 		return this.storage.keySet();
 	}

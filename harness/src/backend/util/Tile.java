@@ -10,6 +10,9 @@ public class Tile {
 	private final TileKey id;
 	private final byte[] data;
 	private final int size;
+	private double[] histogram = null;
+	private double[] fhistogram = null;
+	private double[] norm = null;
 	
 	public Tile(TileKey id, byte[] data) {
 		this.id = id;
@@ -34,6 +37,63 @@ public class Tile {
 	
 	public double getDistance(Tile other) {
 		return this.id.getDistance(other.getTileKey());
+	}
+	
+	public double[] getNormalSignature() {
+		if(this.norm == null) {
+			this.norm = Signatures.getNormalSignature(this.data);
+		}
+		double[] returnval = new double[this.norm.length];
+		System.arraycopy(this.norm,0,returnval,0,returnval.length);
+		return returnval;
+	}
+	
+	public double getNormalDistance(Tile other) {
+		double distance = 0;
+		double [] onorm = other.getNormalSignature();
+		if(this.norm == null) {
+			this.norm = Signatures.getNormalSignature(this.data);
+		}
+		distance = Signatures.getHistogramDistance(this.norm, onorm);
+		return distance;
+	}
+	
+	public double[] getHistogramSignature() {
+		if(this.histogram == null) {
+			this.histogram = Signatures.getHistogramSignature(this.data);
+		}
+		double[] returnval = new double[this.histogram.length];
+		System.arraycopy(this.histogram,0,returnval,0,returnval.length);
+		return returnval;
+	}
+	
+	public double getHistogramDistance(Tile other) {
+		double distance = 0;
+		double [] ohist = other.getHistogramSignature();
+		if(this.histogram == null) {
+			this.histogram = Signatures.getHistogramSignature(this.data);
+		}
+		distance = Signatures.getHistogramDistance(this.histogram, ohist);
+		return distance;
+	}
+	
+	public double[] getFilteredHistogramSignature() {
+		if(this.fhistogram == null) {
+			this.fhistogram = Signatures.getFilteredHistogramSignature(this.data);
+		}
+		double[] returnval = new double[this.fhistogram.length];
+		System.arraycopy(this.fhistogram,0,returnval,0,returnval.length);
+		return returnval;
+	}
+	
+	public double getFilteredHistogramDistance(Tile other) {
+		double distance = 0;
+		double [] ofhist = other.getFilteredHistogramSignature();
+		if(this.fhistogram == null) {
+			this.fhistogram = Signatures.getFilteredHistogramSignature(this.data);
+		}
+		distance = Signatures.getHistogramDistance(this.fhistogram, ofhist);
+		return distance;
 	}
 
 }

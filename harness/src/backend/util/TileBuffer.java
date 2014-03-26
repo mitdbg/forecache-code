@@ -11,9 +11,6 @@ public interface TileBuffer {
 	// retrieve a tile from storage
 	public Tile getTile(TileKey id);
 	
-	// get a list of all tiles currently in storage
-	public List<Tile> getAllTiles();
-	
 	// get a list of the keys for all tiles currently in storage
 	public Set<TileKey> getAllTileKeys();
 	

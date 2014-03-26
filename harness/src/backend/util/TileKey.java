@@ -87,6 +87,21 @@ public class TileKey {
 		return Math.sqrt(sum);
 	}
 	
+	public String buildTileString() {
+		StringBuilder tile_id = new StringBuilder();
+		tile_id.append("[");
+		if(this.id.size() > 0) {
+			tile_id.append(this.id.get(0));
+		} else {
+			return null;
+		}
+		for(int i = 1; i < this.id.size(); i++) {
+			tile_id.append(", ").append(this.id.get(i));
+		}
+		tile_id.append("]");
+		return tile_id.toString();
+	}
+	
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
