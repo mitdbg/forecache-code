@@ -8,7 +8,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import frontend.UserRequest;
 
 public class DBInterface {
 	/*
@@ -35,7 +34,7 @@ public class DBInterface {
 	public static final String dim2  = "dims.ythesis2";
 	public static final String query  = "select * from thesis2";
 	public static final String hashed_query  = "85794fe89a8b0c23ce726cca7655c8bc";
-	public static final String threshold  = "90000";
+	public static final String threshold  = "250000";
 	
 	public static final String warmup_query  = "select * from cali100";
 	public static final String warmup_hashed_query  = "39df90e13a84cad54463717b24ef833a";
@@ -106,6 +105,17 @@ public class DBInterface {
 			System.out.println("error occured while getting user id's");
 			e.printStackTrace();
 		}
+		
+		finally {
+			if(conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
 		return myresult;
 	}
 
@@ -133,6 +143,16 @@ public class DBInterface {
 			System.out.println("error occured while getting trace for user '" + user_id + "'");
 			e.printStackTrace();
 		}
+		finally {
+			if(conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
 		return myresult;
 	}
 	
@@ -157,6 +177,16 @@ public class DBInterface {
 		} catch (SQLException e) {
 			System.out.println("error occured while checking task '" + taskname + "' for user '" + user_id + "'");
 			e.printStackTrace();
+		}
+		finally {
+			if(conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 		}
 		return myresult;
 	}
@@ -187,6 +217,16 @@ public class DBInterface {
 			System.out.println("error occured while getting hash trace for user " + user_id + "'");
 			e.printStackTrace();
 		}
+		finally {
+			if(conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
 		return myresult;
 	}
 	
@@ -210,6 +250,16 @@ public class DBInterface {
 			System.out.println("error occured while getting tile hash for tile id: '" + tile_id + "'");
 			e.printStackTrace();
 		}
+		finally {
+			if(conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
 		return myresult;
 	}
 	
@@ -232,6 +282,16 @@ public class DBInterface {
 		} catch (SQLException e) {
 			System.out.println("error occured while getting tile id for hash: '" + tile_hash + "'");
 			e.printStackTrace();
+		}
+		finally {
+			if(conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 		}
 		return myresult;
 	}

@@ -22,7 +22,7 @@ public class MemoryTileBuffer implements TileBuffer {
 	private PriorityQueue<TimePair> lruQueue; // for identifying lru tiles in storage
 	private final int storagemax;
 	private int size;
-	private final int DEFAULTMAX = 14000000; // default buffer size
+	private final int DEFAULTMAX = 34000000; // default buffer size
 	private final int initqueuesize = 50;
 	
 	public MemoryTileBuffer() {

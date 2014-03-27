@@ -4,9 +4,11 @@ import java.net.*;
 import java.io.*;
 import java.util.List;
 
+import backend.prefetch.similarity.MarkovDirectionalModel;
+
 import utils.DBInterface;
+import utils.UserRequest;
 import utils.UtilityFunctions;
-import frontend.UserRequest;
 
 public class Client {
 	public static String backend_host = "localhost";
@@ -24,6 +26,7 @@ public class Client {
 					System.out.println("user '" + user_id + "' completed task '" + taskname + "'");
 					List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
 					System.out.println("found trace of size " + trace.size() + " for task '" + taskname + "' and user '" + user_id + "'");
+					/*
 					for(int r = 0; r < trace.size(); r++) {
 						UserRequest ur = trace.get(r);
 						String tile_id = ur.tile_id;
@@ -35,8 +38,20 @@ public class Client {
 						
 						
 					}
+					*/
 				}
 			}
+		}
+	}
+	
+	public static void test1trace() {
+		int user_id = 27;
+		String taskname = "task1";
+		List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
+		if(trace.size() > 1) {
+			MarkovDirectionalModel md = new MarkovDirectionalModel(3);
+			md.train(trace);
+			md.predict();
 		}
 	}
 	
@@ -108,22 +123,17 @@ public class Client {
 		}
 	}
 	
+	public static void testsequence() {
+		sendRequest("[0, 0]", 0, "123");
+		sendRequest("[0, 0]", 1, "123");
+		sendRequest("[0, 1]", 2, "123");
+		sendRequest("[0, 2]", 3, "123");
+	}
+	
 	public static void main(String[] args) {
-		/*
-		try {
-			Class.forName("org.postgresql.Driver");
-		} catch (ClassNotFoundException e) {
-			System.out.println("Could not find JDBC driver");
-			e.printStackTrace();
-			return;
-		}
-		
-		Connection conn = DBInterface.getConnection();
-		if(conn == null) {
-			return;
-		}
-		*/
-		//getTracesForUsers(conn);
-		test();
+		//getTracesForUsers();
+		//test();
+		//test1trace();
+		testsequence();
 	}
 }

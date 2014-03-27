@@ -18,7 +18,9 @@ import java.util.Map;
 import utils.DBInterface;
 import utils.UtilityFunctions;
 
+import backend.util.Direction;
 import backend.util.Params;
+import backend.util.Signatures;
 import backend.util.Tile;
 import backend.util.TileKey;
 
@@ -194,9 +196,10 @@ public class ScidbTileInterface {
 		List<Integer> tile_id = UtilityFunctions.parseTileIdInteger(idstr);
 		TileKey id = new TileKey(tile_id,zoom);
 		Tile result = sti.getTile(id);
-		double[] histogram = result.getHistogramSignature();
+		//double[] histogram = result.getHistogramSignature();
 		//double[] norm = result.getNormalSignature();
-		double[] fhistogram = result.getFilteredHistogramSignature();
+		//double[] fhistogram = result.getFilteredHistogramSignature();
+		System.out.println("enum down: " + Direction.DOWN);
 	}
 
 }

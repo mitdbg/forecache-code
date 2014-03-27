@@ -1,4 +1,4 @@
-package frontend;
+package utils;
 
 /*
  * Local class for storing information about individual tile requests

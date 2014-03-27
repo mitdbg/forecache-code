@@ -13,6 +13,9 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 import backend.precompute.DiskTileBuffer;
+import backend.prefetch.similarity.MarkovDirectionalModel;
+import backend.prefetch.similarity.TrainModels;
+import backend.util.Model;
 import backend.util.Tile;
 import backend.util.TileKey;
 import utils.DBInterface;
@@ -23,6 +26,36 @@ public class MainThread {
 	public static DiskTileBuffer diskbuf;
 	public static int histmax = 10;
 	public static TileHistoryQueue hist;
+	
+	// General Model variables
+	public static final Model[] modellabels = {Model.MARKOV};
+	public static final String taskname = "task1";
+	public static final int[] user_ids = {27};
+	
+	// global model objects
+	public static MarkovDirectionalModel mdm;
+	
+	public static void setupModels() {
+		for(int i = 0; i < modellabels.length; i++) {
+			Model label = modellabels[i];
+			switch(label) {
+				case MARKOV: mdm = new MarkovDirectionalModel(MarkovDirectionalModel.defaultlen,hist);
+				break;
+				default://do nothing
+			}
+		}
+	}
+	
+	public static void trainModels() {
+		for(int i = 0; i < modellabels.length; i++) {
+			Model label = modellabels[i];
+			switch(label) {
+				case MARKOV: TrainModels.TrainMarkovDirectionalModel(user_ids, taskname, mdm);
+				break;
+				default://do nothing
+			}
+		}
+	}
 	
 	public static void setupServer() throws Exception {
 		Server server = new Server(8080);
@@ -41,6 +74,10 @@ public class MainThread {
 		
 		//start the server
 		setupServer();
+		
+		//setup models for prediction
+		setupModels();
+		trainModels();
 	}
 	
 	/**
@@ -90,6 +127,7 @@ public class MainThread {
 					// put the tile in the cache
 					membuf.insertTile(t);
 					hist.addRecord(t);
+					mdm.predict();
 				}
 			} else {
 				System.out.println("found tile in mem-based cache");
@@ -97,6 +135,7 @@ public class MainThread {
 				// update timestamp
 				membuf.insertTile(t);
 				hist.addRecord(t);
+				mdm.predict();
 			}
 			System.out.println("history length: " + hist.getHistoryLength());
 			long end = System.currentTimeMillis();

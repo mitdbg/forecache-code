@@ -1,6 +1,9 @@
 package backend.prefetch;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import utils.UserRequest;
 
 import backend.util.Tile;
 import backend.util.TileKey;
@@ -48,6 +51,34 @@ public class TileHistoryQueue {
 	// returns the length of the history
 	public synchronized int getHistoryLength() {
 		return history.size();
+	}
+	
+	// returns history as user requests for directional models
+	public synchronized List<UserRequest> getHistoryTrace() {
+		List<UserRequest> myresult = new ArrayList<UserRequest>();
+		for(int i = 0; i < history.size(); i++) {
+			TileRecord tr = history.get(i);
+			TileKey tk = tr.MyTile.getTileKey();
+			UserRequest temp = new UserRequest(tk.buildTileString(),tk.getZoom());
+			myresult.add(temp);
+		}
+		return myresult;
+	}
+	
+	// returns last k elements in history as user requests for directional models
+	public synchronized List<UserRequest> getHistoryTrace(int length) {
+		List<UserRequest> myresult = new ArrayList<UserRequest>();
+		int start = history.size() - length;
+		if(start < 0) {
+			start = 0;
+		}
+		for(int i = start; i < history.size(); i++) {
+			TileRecord tr = history.get(i);
+			TileKey tk = tr.MyTile.getTileKey();
+			UserRequest temp = new UserRequest(tk.buildTileString(),tk.getZoom());
+			myresult.add(temp);
+		}
+		return myresult;
 	}
 
 	private class TileRecord {
