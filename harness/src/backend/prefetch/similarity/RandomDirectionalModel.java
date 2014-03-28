@@ -14,6 +14,7 @@ import backend.util.Params;
 import backend.util.ParamsMap;
 import backend.util.TileKey;
 
+import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
 
@@ -25,7 +26,7 @@ public class RandomDirectionalModel {
 
 	public RandomDirectionalModel(TileHistoryQueue ref) {
 		this.history = ref; // reference to (syncrhonized) global history object
-		this.paramsMap = new ParamsMap(ParamsMap.defaultparamsfile,ParamsMap.defaultdelim);
+		this.paramsMap = new ParamsMap(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		this.generator = new Random(seed); // use seed for consistency
 	}
 	
