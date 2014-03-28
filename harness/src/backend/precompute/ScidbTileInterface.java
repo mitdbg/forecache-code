@@ -20,6 +20,7 @@ import utils.UtilityFunctions;
 
 import backend.util.Direction;
 import backend.util.Params;
+import backend.util.ParamsMap;
 import backend.util.Signatures;
 import backend.util.Tile;
 import backend.util.TileKey;
@@ -28,7 +29,7 @@ import backend.util.TileKey;
  * calls SciDB from command line
  */
 public class ScidbTileInterface {
-	private Map<String,Map<Integer,Params>> paramsMap;
+	private ParamsMap paramsMap;
 	public static String defaultparamsfile = "/home/leibatt/projects/user_study/scalar_backend/thesis2_params.tsv";
 	public static String defualtdelim = "\t";
 	private String paramsfile;
@@ -37,8 +38,7 @@ public class ScidbTileInterface {
 	public ScidbTileInterface(String paramsfile, String delim) {
 		this.paramsfile = paramsfile;
 		this.delim = delim;
-		this.paramsMap = new HashMap<String, Map<Integer, Params>>();
-		parseParamsFile();
+		this.paramsMap = new ParamsMap(paramsfile,delim);
 	}
 	
 	// inserts parameters into aggregation query
@@ -131,58 +131,6 @@ public class ScidbTileInterface {
 		return result;
 	}
 	
-	public void parseParamsFile() {
-		File pf = new File(this.paramsfile);
-		try {
-			BufferedReader br = new BufferedReader(new FileReader(pf));
-			for(String line; (line = br.readLine()) != null;) {
-				String[] tokens = line.split(delim);
-				if(tokens.length != 7) {
-					System.out.println("Error in params file. line does not have correct number of items!");
-					return;
-				}
-				String tile_id = "";
-				int zoom = -1;
-				Params p = new Params();
-				for(int i = 0; i < tokens.length; i++) {
-					switch(i) {
-						case 0: tile_id = tokens[i];
-								//System.out.println("tile id: '"+tile_id+"'");
-								break;
-						case 1: zoom = Integer.parseInt(tokens[i]);
-								//System.out.println("zoom: "+zoom);
-								break;
-						case 2: p.xmin = Integer.parseInt(tokens[i]);
-								break;
-						case 3: p.ymin = Integer.parseInt(tokens[i]);
-								break;
-						case 4: p.xmax = Integer.parseInt(tokens[i]);
-								break;
-						case 5: p.ymax = Integer.parseInt(tokens[i]);
-								break;
-						case 6: p.width = Integer.parseInt(tokens[i]);
-								break;
-						default:
-					}
-				}
-				if((zoom >= 0) && (tile_id != null)) {
-					//System.out.println("tile id: '"+tile_id+"'");
-					//System.out.println("zoom: "+zoom);
-					Map<Integer, Params> temp = this.paramsMap.get(tile_id);
-					if(temp == null) {
-						temp = new HashMap<Integer, Params>();
-						this.paramsMap.put(tile_id,temp);
-					}
-					temp.put(zoom, p);
-				}
-			}
-		} catch (IOException e) {
-			System.out.println("error occured while reading params file");
-			e.printStackTrace();
-		}
-
-	}
-	
 	public static void main(String[] args) {
 		Params p = new Params();
 		p.xmin = 0;
@@ -196,10 +144,10 @@ public class ScidbTileInterface {
 		List<Integer> tile_id = UtilityFunctions.parseTileIdInteger(idstr);
 		TileKey id = new TileKey(tile_id,zoom);
 		Tile result = sti.getTile(id);
-		//double[] histogram = result.getHistogramSignature();
+		double[] histogram = result.getHistogramSignature();
 		//double[] norm = result.getNormalSignature();
 		//double[] fhistogram = result.getFilteredHistogramSignature();
-		System.out.println("enum down: " + Direction.DOWN);
+		//System.out.println("enum down: " + Direction.DOWN);
 	}
 
 }

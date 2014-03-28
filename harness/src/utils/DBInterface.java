@@ -34,7 +34,7 @@ public class DBInterface {
 	public static final String dim2  = "dims.ythesis2";
 	public static final String query  = "select * from thesis2";
 	public static final String hashed_query  = "85794fe89a8b0c23ce726cca7655c8bc";
-	public static final String threshold  = "250000";
+	public static final String threshold  = "90000";
 	
 	public static final String warmup_query  = "select * from cali100";
 	public static final String warmup_hashed_query  = "39df90e13a84cad54463717b24ef833a";

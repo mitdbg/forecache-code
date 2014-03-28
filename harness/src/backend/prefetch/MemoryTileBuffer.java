@@ -82,9 +82,8 @@ public class MemoryTileBuffer implements TileBuffer {
 	}
 	
 	@Override
-	public synchronized void touchTile(Tile tile) {
-		TileKey id = tile.getTileKey();
-		if(this.storage.containsKey(id)) {
+	public synchronized void touchTile(TileKey id) {
+		if(peek(id)) {
 			// update metadata
 			this.update_time_pair(id);
 		}
@@ -138,7 +137,7 @@ public class MemoryTileBuffer implements TileBuffer {
 		TimePair tp = lruQueue.peek();
 		if(tp != null) {
 			TileKey toremove = tp.getTileKey();
-			System.out.println("removing tile: " + toremove);
+			System.out.println("removing tile from in-memory cache: " + toremove);
 			// remove tile from storage
 			this.remove_tile(toremove);
 		}

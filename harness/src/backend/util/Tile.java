@@ -95,5 +95,10 @@ public class Tile {
 		distance = Signatures.getHistogramDistance(this.fhistogram, ofhist);
 		return distance;
 	}
+	
+	@Override
+	public String toString() {
+		return this.id.toString();
+	}
 
 }

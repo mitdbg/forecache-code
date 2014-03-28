@@ -24,6 +24,7 @@ public class TrainModels {
 			List<UserRequest> trace = DBInterface.getHashedTraces(user_id, taskname);
 			model.train(trace);
 		}
+		model.learnProbabilities();
 	}
 	
 	public static void TrainMarkovDirectionalModel(int[] user_ids, MarkovDirectionalModel model) {

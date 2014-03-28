@@ -126,8 +126,7 @@ public class DiskTileBuffer implements TileBuffer {
 	}
 	
 	@Override
-	public synchronized void touchTile(Tile tile) {
-		TileKey id = tile.getTileKey();
+	public synchronized void touchTile(TileKey id) {
 		if(peek(id)) {
 			// update metadata
 			this.update_time_pair(id);
@@ -177,7 +176,7 @@ public class DiskTileBuffer implements TileBuffer {
 					insert_time_pair(key, tilesize); // add to lru metadata
 					currsize += tilesize;
 					//System.out.println("using " + currsize + " bytes out of " + storagemax);
-					System.out.println("inserting tile: '"+tileidstring+"',"+zoom);
+					System.out.println("inserting tile in disk based cache: '"+tileidstring+"',"+zoom);
 				}
 			} catch (IOException e) {
 				System.out.println("error occured while retrieving data from disk for cache init");
@@ -247,7 +246,7 @@ public class DiskTileBuffer implements TileBuffer {
 		if(tp != null) {
 			TileKey toremove = tp.getTileKey();
 			int tilesize = tp.getTileSize();
-			System.out.println("removing tile: " + toremove);
+			System.out.println("removing tile from disk based cache: " + toremove);
 			// remove tile from storage
 			this.remove_tile(toremove, tilesize);
 		}

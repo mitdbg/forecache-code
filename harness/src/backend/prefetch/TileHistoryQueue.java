@@ -80,6 +80,20 @@ public class TileHistoryQueue {
 		}
 		return myresult;
 	}
+	
+	@Override
+	public synchronized String toString() {
+		StringBuilder myresult = new StringBuilder();
+		myresult.append("{").append("\n");
+		for(int i = 0; i < history.size(); i++) {
+			TileRecord record = history.get(i);
+			myresult.append("\t");
+			myresult.append(record);
+			myresult.append("\n");
+		}
+		myresult.append("}");
+		return myresult.toString();
+	}
 
 	private class TileRecord {
 		public long timestamp;
@@ -88,6 +102,17 @@ public class TileHistoryQueue {
 		public TileRecord(Tile Next) {
 			this.timestamp = System.currentTimeMillis() / 1000;
 			this.MyTile = Next;
+		}
+		
+		@Override
+		public String toString() {
+			StringBuilder myresult = new StringBuilder();
+			myresult.append("{");
+			myresult.append(this.timestamp);
+			myresult.append(":");
+			myresult.append(this.MyTile);
+			myresult.append("}");
+			return myresult.toString();
 		}
 	}
 }

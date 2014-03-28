@@ -21,5 +21,5 @@ public interface TileBuffer {
 	public void removeTile(TileKey id);
 	
 	// tell buffer to update lru information for tile
-	public void touchTile(Tile tile);
+	public void touchTile(TileKey id);
 }

@@ -51,7 +51,7 @@ public class Client {
 		if(trace.size() > 1) {
 			MarkovDirectionalModel md = new MarkovDirectionalModel(3);
 			md.train(trace);
-			md.predict();
+			md.predictTiles(9);
 		}
 	}
 	
