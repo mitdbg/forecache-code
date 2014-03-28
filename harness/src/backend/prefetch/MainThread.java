@@ -22,6 +22,7 @@ import backend.prefetch.similarity.MarkovDirectionalModel;
 import backend.prefetch.similarity.RandomDirectionalModel;
 import backend.prefetch.similarity.TrainModels;
 import backend.util.Model;
+import backend.util.ParamsMap;
 import backend.util.Tile;
 import backend.util.TileKey;
 import utils.DBInterface;
@@ -158,7 +159,7 @@ public class MainThread {
 		// initialize cache managers
 		membuf = new MemoryTileBuffer();
 		diskbuf = new DiskTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
-		scidbapi = new ScidbTileInterface(ScidbTileInterface.defaultparamsfile,ScidbTileInterface.defualtdelim);
+		scidbapi = new ScidbTileInterface(ParamsMap.defaultparamsfile,ParamsMap.defualtdelim);
 		hist = new TileHistoryQueue(histmax);
 		
 		//start the server

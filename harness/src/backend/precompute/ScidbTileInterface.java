@@ -30,10 +30,12 @@ import backend.util.TileKey;
  */
 public class ScidbTileInterface {
 	private ParamsMap paramsMap;
-	public static String defaultparamsfile = "/home/leibatt/projects/user_study/scalar_backend/thesis2_params.tsv";
-	public static String defualtdelim = "\t";
 	private String paramsfile;
 	private String delim;
+	
+	public ScidbTileInterface() {
+		this.paramsMap = new ParamsMap(ParamsMap.defaultparamsfile,ParamsMap.defualtdelim);
+	}
 	
 	public ScidbTileInterface(String paramsfile, String delim) {
 		this.paramsfile = paramsfile;
@@ -138,7 +140,7 @@ public class ScidbTileInterface {
 		p.xmax = 3600;
 		p.ymax = 1800;//1697;
 		p.width = 9;
-		ScidbTileInterface sti = new ScidbTileInterface(ScidbTileInterface.defaultparamsfile,ScidbTileInterface.defualtdelim);
+		ScidbTileInterface sti = new ScidbTileInterface(ParamsMap.defaultparamsfile,ParamsMap.defualtdelim);
 		String idstr = "[0, 0]";
 		int zoom = 0;
 		List<Integer> tile_id = UtilityFunctions.parseTileIdInteger(idstr);
