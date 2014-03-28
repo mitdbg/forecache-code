@@ -12,7 +12,7 @@ import java.util.List;
 public class DBInterface {
 	/*
 	public static String defaultparamsfile = "/home/leilani/csv/ndsi_agg_7_18_2013_params.tsv";
-	public static final String cache_root_dir = "/home/leilani/_scalar_cache_dir2";
+	public static final String cache_root_dir = "/home/leilani/test_cache";
 	public static final String sig_root_dir = "/home/leilani/_scalar_sig_dir2";
 	public static final String csv_root_dir = "/home/leilani/_scalar_csv_dir2";
 	public static final String dbname  = "scalar";
