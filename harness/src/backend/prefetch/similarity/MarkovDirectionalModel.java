@@ -13,6 +13,7 @@ import backend.util.Params;
 import backend.util.ParamsMap;
 import backend.util.TileKey;
 
+import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
 
@@ -29,7 +30,7 @@ public class MarkovDirectionalModel {
 		this.len = len;
 		//frequencies = new HashMap<String,Integer>();
 		condprobs = new HashMap<String,MDMNode>();
-		this.paramsMap = new ParamsMap(ParamsMap.defaultparamsfile,ParamsMap.defualtdelim);
+		this.paramsMap = new ParamsMap(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 	}
 	
 	public MarkovDirectionalModel(int len, TileHistoryQueue ref) {
@@ -37,7 +38,7 @@ public class MarkovDirectionalModel {
 		//frequencies = new HashMap<String,Integer>();
 		condprobs = new HashMap<String,MDMNode>();
 		this.history = ref; // reference to (syncrhonized) global history object
-		this.paramsMap = new ParamsMap(ParamsMap.defaultparamsfile,ParamsMap.defualtdelim);
+		this.paramsMap = new ParamsMap(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 	}
 	
 	public int getMaxLen() {

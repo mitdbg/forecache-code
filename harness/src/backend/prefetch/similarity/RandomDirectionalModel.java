@@ -25,7 +25,7 @@ public class RandomDirectionalModel {
 
 	public RandomDirectionalModel(TileHistoryQueue ref) {
 		this.history = ref; // reference to (syncrhonized) global history object
-		this.paramsMap = new ParamsMap(ParamsMap.defaultparamsfile,ParamsMap.defualtdelim);
+		this.paramsMap = new ParamsMap(ParamsMap.defaultparamsfile,ParamsMap.defaultdelim);
 		this.generator = new Random(seed); // use seed for consistency
 	}
 	

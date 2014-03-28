@@ -9,8 +9,6 @@ import java.util.Map;
 
 public class ParamsMap {
 	public Map<String,Map<Integer,Params>> paramsMap;
-	public static String defaultparamsfile = "/home/leibatt/projects/user_study/scalar_backend/thesis2_params.tsv";
-	public static String defualtdelim = "\t";
 	private String paramsfile;
 	private String delim;
 	

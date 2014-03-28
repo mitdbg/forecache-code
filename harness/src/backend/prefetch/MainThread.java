@@ -159,7 +159,7 @@ public class MainThread {
 		// initialize cache managers
 		membuf = new MemoryTileBuffer();
 		diskbuf = new DiskTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
-		scidbapi = new ScidbTileInterface(ParamsMap.defaultparamsfile,ParamsMap.defualtdelim);
+		scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		hist = new TileHistoryQueue(histmax);
 		
 		//start the server
