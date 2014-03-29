@@ -1,4 +1,4 @@
-package backend.precompute;
+package backend.disk;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +29,7 @@ public class DiskTileBuffer implements TileBuffer {
 	private PriorityQueue<TimePair> lruQueue; // for identifying lru tiles in storage
 	private final long storagemax;
 	private long size;
-	private final long DEFAULTMAX = 304315430; // default buffer size
+	private final long DEFAULTMAX = 30304315430L; // default buffer size
 	private final int initqueuesize = 50;
 	
 	public DiskTileBuffer(String cache_root_dir, String hashed_query, String threshold) throws Exception {
@@ -95,6 +95,11 @@ public class DiskTileBuffer implements TileBuffer {
 	@Override
 	public synchronized Set<TileKey> getAllTileKeys() {
 		return timeMap.keySet();
+	}
+	
+	@Override
+	public synchronized int tileCount() {
+		return this.timeMap.size();
 	}
 
 	@Override
@@ -176,7 +181,7 @@ public class DiskTileBuffer implements TileBuffer {
 					insert_time_pair(key, tilesize); // add to lru metadata
 					currsize += tilesize;
 					//System.out.println("using " + currsize + " bytes out of " + storagemax);
-					System.out.println("inserting tile in disk based cache: '"+tileidstring+"',"+zoom);
+					//System.out.println("inserting tile in disk based cache: '"+tileidstring+"',"+zoom);
 				}
 			} catch (IOException e) {
 				System.out.println("error occured while retrieving data from disk for cache init");

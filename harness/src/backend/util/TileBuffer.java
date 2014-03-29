@@ -22,4 +22,7 @@ public interface TileBuffer {
 	
 	// tell buffer to update lru information for tile
 	public void touchTile(TileKey id);
+	
+	// get count of tiles currently in buffer
+	public int tileCount();
 }

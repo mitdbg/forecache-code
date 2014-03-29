@@ -1,5 +1,10 @@
 package backend.util;
 
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+
 
 /**
  * @author leibatt
@@ -94,6 +99,16 @@ public class Tile {
 		}
 		distance = Signatures.getHistogramDistance(this.fhistogram, ofhist);
 		return distance;
+	}
+	
+	public String encodeData() {
+		try {
+			return new String(this.data,"UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			System.out.println("error occured when encoding tile data");
+			e.printStackTrace();
+		}
+		return "";
 	}
 	
 	@Override

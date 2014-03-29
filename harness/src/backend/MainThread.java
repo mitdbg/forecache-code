@@ -1,4 +1,4 @@
-package backend.prefetch;
+package backend;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,13 +16,16 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
-import backend.precompute.DiskTileBuffer;
-import backend.precompute.ScidbTileInterface;
-import backend.prefetch.similarity.MarkovDirectionalModel;
-import backend.prefetch.similarity.RandomDirectionalModel;
-import backend.prefetch.similarity.TrainModels;
+import backend.disk.DiskTileBuffer;
+import backend.disk.ScidbTileInterface;
+import backend.memory.MemoryTileBuffer;
+import backend.prediction.TileHistoryQueue;
+import backend.prediction.TrainModels;
+import backend.prediction.directional.HotspotDirectionalModel;
+import backend.prediction.directional.MarkovDirectionalModel;
+import backend.prediction.directional.MomentumDirectionalModel;
+import backend.prediction.directional.RandomDirectionalModel;
 import backend.util.Model;
-import backend.util.ParamsMap;
 import backend.util.Tile;
 import backend.util.TileKey;
 import utils.DBInterface;
@@ -40,14 +43,16 @@ public class MainThread {
 	public static int cache_hits = 0;
 	
 	// General Model variables
-	public static final Model[] modellabels = {Model.MARKOV, Model.RANDOM};
-	public static final String taskname = "task1";
-	public static final int[] user_ids = {27,28};
-	public static final int defaultpredictions = 9;
+	public static Model[] modellabels = {Model.MARKOV};
+	public static String taskname = "task1";
+	public static int[] user_ids = {27,28};
+	public static int defaultpredictions = 9;
 	
 	// global model objects
 	public static MarkovDirectionalModel mdm;
 	public static RandomDirectionalModel rdm;
+	public static HotspotDirectionalModel hdm;
+	public static MomentumDirectionalModel momdm;
 	
 	public static void setupModels() {
 		for(int i = 0; i < modellabels.length; i++) {
@@ -56,6 +61,10 @@ public class MainThread {
 				case MARKOV: mdm = new MarkovDirectionalModel(MarkovDirectionalModel.defaultlen,hist);
 				break;
 				case RANDOM: rdm = new RandomDirectionalModel(hist);
+				break;
+				case HOTSPOT: hdm = new HotspotDirectionalModel(hist,HotspotDirectionalModel.defaulthotspotlen);
+				break;
+				case MOMENTUM: momdm = new MomentumDirectionalModel(hist);
 				break;
 				default://do nothing
 			}
@@ -68,6 +77,7 @@ public class MainThread {
 			switch(label) {
 				case MARKOV: TrainModels.TrainMarkovDirectionalModel(user_ids, taskname, mdm);
 				break;
+				case HOTSPOT: TrainModels.TrainHotspotDirectionalModel(user_ids, taskname, hdm);
 				default://do nothing
 			}
 		}
@@ -84,12 +94,16 @@ public class MainThread {
 				break;
 				case RANDOM: toadd = rdm.predictTiles(defaultpredictions);
 				break;
+				case HOTSPOT: toadd = hdm.predictTiles(defaultpredictions);
+				break;
+				case MOMENTUM: toadd = momdm.predictTiles(defaultpredictions);
+				break;
 				default: toadd = null;
 			}
 			// count votes per prediction scheme
 			if((toadd != null) && (toadd.size() > 0)) {
 				// weight votes by ordering
-				Double currvote = basevote*toadd.size();
+				Double currvote = basevote;
 				for(int kid = 0; kid < toadd.size(); kid++) {
 					TileKey key = toadd.get(kid);
 					System.out.println("key: "+key+",vote: "+currvote);
@@ -100,7 +114,7 @@ public class MainThread {
 						//System.out.println("key: "+key+",vote: "+currvote);
 						predictions.put(key,count+currvote);
 					}
-					currvote -= basevote;
+					currvote /= 2;
 				}
 			}
 		}
@@ -156,6 +170,47 @@ public class MainThread {
 	}
 
 	public static void main(String[] args) throws Exception {
+		// get models to use
+		if(args.length > 0) {
+			String[] modelstrs = args[0].split(",");
+			Model[] argmodels = new Model[modelstrs.length];
+			for(int i = 0; i < modelstrs.length; i++) {
+				System.out.println("modelstrs["+i+"] = '"+modelstrs[i]+"'");
+				if(modelstrs[i].equals("markov")) {
+					argmodels[i] = Model.MARKOV;
+				} else if(modelstrs[i].equals("random")) {
+					argmodels[i] = Model.RANDOM;
+				} else if(modelstrs[i].equals("hotspot")) {
+					argmodels[i] = Model.HOTSPOT;
+				} else if(modelstrs[i].equals("momentum")) {
+					argmodels[i] = Model.MOMENTUM;
+				}
+			}
+			modellabels = argmodels;
+		}
+		// get user ids to train on
+		if(args.length > 1) {
+			String[] userstrs = args[1].split(",");
+			int[] argusers = new int[userstrs.length];
+			for(int i = 0; i < userstrs.length; i++) {
+				System.out.println("userstrs["+i+"] = '"+userstrs[i]+"'");
+				argusers[i] = Integer.parseInt(userstrs[i]);
+			}
+			user_ids = argusers;
+		}
+		
+		// get taskname
+		if(args.length > 2) {
+			taskname = args[2];
+			System.out.println("taskname: "+taskname);
+		}
+		
+		// get num predictions
+		if(args.length > 3) {
+			defaultpredictions = Integer.parseInt(args[3]);
+			System.out.println("predictions: "+defaultpredictions);
+		}
+		
 		// initialize cache managers
 		membuf = new MemoryTileBuffer();
 		diskbuf = new DiskTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
@@ -219,7 +274,7 @@ public class MainThread {
 			if(t == null) {
 				response.getWriter().println(greeting);
 			} else {
-				response.getWriter().println(t);
+				response.getWriter().println(t.encodeData());
 			}
 		}
 		
@@ -231,6 +286,7 @@ public class MainThread {
 			TileKey key = new TileKey(id,z);
 			List<TileKey> predictions = null;
 			
+			boolean found = false;
 			long start = System.currentTimeMillis();
 			Tile t = membuf.getTile(key);
 			if(t == null) { // not cached
@@ -255,6 +311,7 @@ public class MainThread {
 				System.out.println("data size: " + t.getDataSize());
 				// update timestamp
 				membuf.touchTile(key);
+				found = true;
 			}
 			total_requests++;
 			hist.addRecord(t);
@@ -268,7 +325,9 @@ public class MainThread {
 			long end2 = System.currentTimeMillis();
 			System.out.println("time to retrieve requested tile: " + ((end - start)/1000)+"s");
 			System.out.println("time to insert predictions: " + ((end2 - end)/1000)+"s");
+			System.out.println("cache miss for tile "+key+"?: "+(!found));
 			System.out.println("current accuracy: "+ (1.0 * cache_hits / total_requests));
+			System.out.println("cache size: "+membuf.tileCount()+" tiles");
 			return t;
 		}
 

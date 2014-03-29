@@ -1,4 +1,4 @@
-package backend.prefetch;
+package backend.prediction;
 
 public class TileRecommendation {
 

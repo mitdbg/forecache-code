@@ -1,4 +1,4 @@
-package backend.prefetch.similarity;
+package backend.prediction.directional;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import backend.prefetch.DirectionPrediction;
-import backend.prefetch.TileHistoryQueue;
+import backend.prediction.DirectionPrediction;
+import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
 import backend.util.Params;
 import backend.util.ParamsMap;
@@ -19,23 +19,26 @@ import utils.UtilityFunctions;
 
 public class MarkovDirectionalModel {
 	public static final int defaultlen = 4;
-	private  int len;
-	//private Map<String,Integer> frequencies;
-	private Map<String,MDMNode> condprobs;
-	private TileHistoryQueue history = null;
-	private ParamsMap paramsMap; // for checking if predictions are actual tiles
+	protected  int len;
+	protected Map<String,MDMNode> condprobs;
+	protected TileHistoryQueue history = null;
+	protected ParamsMap paramsMap; // for checking if predictions are actual tiles
 	public static final double defaultprob = .00000000001;
+	
+	public MarkovDirectionalModel() {
+		this.len = defaultlen;
+		condprobs = new HashMap<String,MDMNode>();
+		this.paramsMap = new ParamsMap(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+	}
 
 	public MarkovDirectionalModel(int len) {
 		this.len = len;
-		//frequencies = new HashMap<String,Integer>();
 		condprobs = new HashMap<String,MDMNode>();
 		this.paramsMap = new ParamsMap(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 	}
 	
 	public MarkovDirectionalModel(int len, TileHistoryQueue ref) {
 		this.len = len;
-		//frequencies = new HashMap<String,Integer>();
 		condprobs = new HashMap<String,MDMNode>();
 		this.history = ref; // reference to (syncrhonized) global history object
 		this.paramsMap = new ParamsMap(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
@@ -63,7 +66,7 @@ public class MarkovDirectionalModel {
 		}
 		UserRequest last = htrace.get(end);
 		for(DirectionPrediction dp : order) {
-			TileKey val = this.DirectionToTile(last, dp.d);
+			TileKey val = this.directionToTile(last, dp.d);
 			if(val != null) {
 				myresult.add(val);
 			}
@@ -121,7 +124,7 @@ public class MarkovDirectionalModel {
 		// trace is at least 2 here
 		int last = trace.size() - 1;
 		int nextlast = last - 1;
-		String prefix = this.buildDirectionString(trace);
+		String prefix = buildDirectionString(trace);
 		double prior = 1.0;
 		MDMNode node = condprobs.get(prefix);
 		if(node != null) {
@@ -171,7 +174,7 @@ public class MarkovDirectionalModel {
 				if(end >= htrace.size()) {
 					end = htrace.size() - 1;
 				}
-				prediction = DirectionToTile(htrace.get(end),d);
+				prediction = directionToTile(htrace.get(end),d);
 				if(prediction != null) {
 					break;
 				}
@@ -181,7 +184,7 @@ public class MarkovDirectionalModel {
 		System.out.println("time to predict: "+(end-start)+"ms");
 	}
 	
-	public TileKey DirectionToTile(UserRequest prev, Direction d) {
+	public TileKey directionToTile(UserRequest prev, Direction d) {
 		List<Integer> tile_id = UtilityFunctions.parseTileIdInteger(prev.tile_id);
 		int x = tile_id.get(0);
 		int y = tile_id.get(1);
@@ -250,19 +253,10 @@ public class MarkovDirectionalModel {
 		String dirstring = "";
 		int i = 1;
 		UserRequest n = trace.get(0);
-		//System.out.println("n:"+n.tile_id+","+n.zoom);
-		List<Integer> n_id = UtilityFunctions.parseTileIdInteger(n.tile_id);
-		List<Integer> p_id;
-		int pzoom;
-		int nzoom = n.zoom;
 		while(i < trace.size()) {
-			p_id = n_id;
-			pzoom = nzoom;
+			UserRequest p = n;
 			n = trace.get(i);
-			//System.out.println("n:"+n.tile_id+","+n.zoom);
-			n_id = UtilityFunctions.parseTileIdInteger(n.tile_id);
-			nzoom = n.zoom;
-			Direction d = getDirection(p_id,n_id,pzoom,nzoom);
+			Direction d = getDirection(p,n);
 			if(d != null) {
 				dirstring += d;
 			}
@@ -271,7 +265,7 @@ public class MarkovDirectionalModel {
 		return dirstring;
 	}
 	
-	private void updateCondProbs(String prefix, Direction d) {
+	protected void updateCondProbs(String prefix, Direction d) {
 		MDMNode node = condprobs.get(prefix);
 		if(node == null) {
 			node = new MDMNode();
@@ -330,6 +324,11 @@ public class MarkovDirectionalModel {
 	}
 	
 	// call this last, after all train calls have happened
+	public void finishTraining() {
+		learnProbabilities();
+	}
+	
+	// call this last, after all train calls have happened
 	public void learnProbabilities() {
 		//make the actual probabilities
 		for(String key : condprobs.keySet()) {
@@ -382,7 +381,12 @@ public class MarkovDirectionalModel {
 		return null;
 	}
 	
-	private class MDMNode {
+	public static TileKey getKeyFromRequest(UserRequest request) {
+		List<Integer> id = UtilityFunctions.parseTileIdInteger(request.tile_id);
+		return new TileKey(id,request.zoom);
+	}
+	
+	protected class MDMNode {
 		public int count = 0;
 		public Map<Direction,Double> probability;
 		

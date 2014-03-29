@@ -1,4 +1,4 @@
-package backend.prefetch;
+package backend.memory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,6 +56,11 @@ public class MemoryTileBuffer implements TileBuffer {
 	@Override
 	public synchronized Set<TileKey> getAllTileKeys() {
 		return this.storage.keySet();
+	}
+	
+	@Override
+	public synchronized int tileCount() {
+		return this.storage.size();
 	}
 
 	

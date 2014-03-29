@@ -1,9 +1,7 @@
-package backend.prefetch.similarity;
+package backend.prediction;
 
-import backend.precompute.DiskTileBuffer;
-import backend.prefetch.MemoryTileBuffer;
-import backend.prefetch.TileHistoryQueue;
-import backend.prefetch.TileRecommendation;
+import backend.disk.DiskTileBuffer;
+import backend.memory.MemoryTileBuffer;
 
 /**
  * @author leibatt

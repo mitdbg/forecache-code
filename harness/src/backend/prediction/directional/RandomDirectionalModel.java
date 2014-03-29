@@ -1,4 +1,4 @@
-package backend.prefetch.similarity;
+package backend.prediction.directional;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import backend.prefetch.DirectionPrediction;
-import backend.prefetch.TileHistoryQueue;
+import backend.prediction.DirectionPrediction;
+import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
 import backend.util.Params;
 import backend.util.ParamsMap;

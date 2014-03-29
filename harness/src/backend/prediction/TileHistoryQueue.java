@@ -1,4 +1,4 @@
-package backend.prefetch;
+package backend.prediction;
 
 import java.util.ArrayList;
 import java.util.List;

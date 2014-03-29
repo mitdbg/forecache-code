@@ -1,5 +1,5 @@
 package backend.util;
 
 public enum Model {
-	MARKOV, RANDOM;
+	MARKOV, RANDOM, HOTSPOT, MOMENTUM;
 }

@@ -4,7 +4,7 @@ import java.net.*;
 import java.io.*;
 import java.util.List;
 
-import backend.prefetch.similarity.MarkovDirectionalModel;
+import backend.prediction.directional.MarkovDirectionalModel;
 
 import utils.DBInterface;
 import utils.UserRequest;
@@ -16,7 +16,7 @@ public class Client {
 	public static String backend_root = "gettile";
 	public static String [] tasknames = {"warmup", "task1", "task2", "task3"};
 	
-	public static void getTracesForUsers() {
+	public static void getTracesForAllUsers() {
 		List<Integer> users = DBInterface.getUsers();
 		for(int u = 0; u < users.size(); u++) {
 			int user_id = users.get(u);
@@ -26,32 +26,50 @@ public class Client {
 					System.out.println("user '" + user_id + "' completed task '" + taskname + "'");
 					List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
 					System.out.println("found trace of size " + trace.size() + " for task '" + taskname + "' and user '" + user_id + "'");
-					/*
 					for(int r = 0; r < trace.size(); r++) {
 						UserRequest ur = trace.get(r);
 						String tile_id = ur.tile_id;
 						String tile_hash = ur.tile_hash;
 						int zoom = ur.zoom;
-						System.out.println("tile id: '" +tile_id+ "'");
-						
+						//System.out.println("tile id: '" +tile_id+ "'");
+						sendRequest(tile_id,zoom,tile_hash);
 						// do stuff here to analyze trace
 						
 						
 					}
-					*/
 				}
 			}
 		}
 	}
 	
-	public static void test1trace() {
-		int user_id = 27;
-		String taskname = "task1";
-		List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
-		if(trace.size() > 1) {
-			MarkovDirectionalModel md = new MarkovDirectionalModel(3);
-			md.train(trace);
-			md.predictTiles(9);
+	public static void getTracesForSpecificUsers(int[] user_ids, String[] tasks) {
+		for(int u = 0; u < user_ids.length; u++) {
+			int user_id = user_ids[u];
+			for(int t = 0; t < tasks.length; t++) {
+				String taskname = tasks[t];
+				System.out.println("checking task '"+taskname+"' for user "+user_id);
+				//if(DBInterface.checkTask(user_id,taskname)) {
+					System.out.println("user '" + user_id + "' completed task '" + taskname + "'");
+					List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
+					System.out.println("found trace of size " + trace.size() + " for task '" + taskname + "' and user '" + user_id + "'");
+					long average = 0;
+					for(int r = 0; r < trace.size(); r++) {
+						UserRequest ur = trace.get(r);
+						String tile_id = ur.tile_id;
+						String tile_hash = ur.tile_hash;
+						int zoom = ur.zoom;
+						//System.out.println("tile id: '" +tile_id+ "'");
+						long start = System.currentTimeMillis();
+						sendRequest(tile_id,zoom,tile_hash);
+						long end = System.currentTimeMillis();
+						System.out.println("time to recieve result: "+(end-start)+"ms");
+						average += end - start;
+					}
+					if(trace.size() > 0) {
+						System.out.println("average time to recieve result: " + (average/trace.size())+"ms");
+					}
+				//}
+			}
 		}
 	}
 	
@@ -64,7 +82,6 @@ public class Client {
 		StringBuffer sbuffer = new StringBuffer();
 		String line;
 		String result = null;
-		
 		try {
 			geturl = new URL(urlstring);
 		} catch (MalformedURLException e) {
@@ -92,7 +109,7 @@ public class Client {
 			}
 			reader.close();
 			result = sbuffer.toString();
-			System.out.println("result: " + result);
+			System.out.println("tile ("+tile_id+", "+zoom+") result length: " + result.length());
 		} catch (IOException e) {
 			System.out.println("Error retrieving response from url: '"+urlstring+"'");
 			e.printStackTrace();
@@ -111,18 +128,6 @@ public class Client {
 		return params;
 	}
 	
-	public static void test() {
-		//System.out.println("params:" +buildUrlParams("123","[1, 25]", 0));
-		for(int z = 0; z < 5; z++) {
-			for(int i = 0; i <= z; i++) {
-				for(int j = 0; j <= z; j++) {
-					//sendRequest("[0, 0]", 0, "123");
-					sendRequest("["+i+", "+j+"]", z, "123");
-				}
-			}
-		}
-	}
-	
 	public static void testsequence() {
 		sendRequest("[0, 0]", 0, "123");
 		sendRequest("[0, 0]", 1, "123");
@@ -131,9 +136,43 @@ public class Client {
 	}
 	
 	public static void main(String[] args) {
-		//getTracesForUsers();
-		//test();
-		//test1trace();
-		testsequence();
+		int[] user_ids = null;
+		String[] tasknames = null;
+		boolean test = true;
+		boolean all = false;
+		if(args.length > 0) {
+			if(args.length == 2) {
+				String[] useridstrs = args[0].split(",");
+				user_ids = new int[useridstrs.length];
+				for(int i = 0; i < useridstrs.length; i++) {
+					user_ids[i] = Integer.parseInt(useridstrs[i]);
+					System.out.println("adding user: "+user_ids[i]);
+				}
+				
+				String[] taskstrs = args[1].split(",");
+				tasknames = new String[taskstrs.length];
+				for(int i = 0; i < taskstrs.length; i++) {
+					tasknames[i] = taskstrs[i];
+					System.out.println("adding task: "+tasknames[i]);
+				}
+				test = false;
+			} else if(args.length == 1) {
+				if(args[0].equals("all")) {
+					all = true;
+					test = false;
+				}
+			}
+		}
+
+		if (test) {
+			System.out.println("running simple sequence test");
+			testsequence();
+		} else if((user_ids != null) && (tasknames != null)) {
+			System.out.println("running specific trace tests");
+			getTracesForSpecificUsers(user_ids,tasknames);
+		} else if(all) {
+			System.out.println("testing all traces for all tasks");
+			getTracesForAllUsers();
+		}
 	}
 }
