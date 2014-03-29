@@ -264,18 +264,6 @@ public class MainThread {
 			
 			// get fetch parameters
 			//String hashed_query = request.getParameter("hashed_query");
-			String end = request.getParameter("end");
-			if((end != null)) { // stop server
-				System.out.println("end: "+end);
-				try {
-					server.stop();
-					return;
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					System.out.println("could not stop server");
-					e.printStackTrace();
-				}
-			}
 			String zoom = request.getParameter("zoom");
 			String tile_id = request.getParameter("tile_id");
 			String threshold = request.getParameter("threshold");
