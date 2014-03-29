@@ -115,12 +115,24 @@ public class Client {
 			e.printStackTrace();
 		}
 		
+		if(connection != null) {
+			connection.disconnect();
+		}
+		if(reader != null) {
+			try {
+				reader.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
 	}
 	
 	public static String buildUrlParams(String hashed_query, String tile_id, int zoom) {
 		String params = "";
 		//params += "hashed_query="+hashed_query;
-		params += "&threshold=" + DBInterface.threshold;
+		params += "threshold=" + DBInterface.threshold;
 		params += "&zoom=" + zoom;
 		//List<Integer> tile_ints = DBInterface.parseTileIdInteger(tile_id);
 		String stripped = tile_id.substring(1, tile_id.length() - 1);

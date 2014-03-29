@@ -38,15 +38,18 @@ public class MainThread {
 	public static int histmax = 10;
 	public static TileHistoryQueue hist;
 	
+	//server
+	public static Server server;
+	
 	//accuracy
 	public static int total_requests = 0;
 	public static int cache_hits = 0;
 	
 	// General Model variables
-	public static Model[] modellabels = {Model.MARKOV};
+	public static Model[] modellabels = {Model.MOMENTUM};
 	public static String taskname = "task1";
-	public static int[] user_ids = {27,28};
-	public static int defaultpredictions = 9;
+	public static int[] user_ids = {28};
+	public static int defaultpredictions = 3;
 	
 	// global model objects
 	public static MarkovDirectionalModel mdm;
@@ -161,7 +164,7 @@ public class MainThread {
 	}
 	
 	public static void setupServer() throws Exception {
-		Server server = new Server(8080);
+		server = new Server(8080);
 		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 		context.setContextPath("/gettile");
 		server.setHandler(context);
@@ -217,12 +220,12 @@ public class MainThread {
 		scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		hist = new TileHistoryQueue(histmax);
 		
-		//start the server
-		setupServer();
-		
 		//setup models for prediction
 		setupModels();
 		trainModels();
+		
+		//start the server
+		setupServer();
 	}
 	
 	private static class TileVote implements Comparable<TileVote>{
@@ -261,6 +264,18 @@ public class MainThread {
 			
 			// get fetch parameters
 			//String hashed_query = request.getParameter("hashed_query");
+			String end = request.getParameter("end");
+			if((end != null)) { // stop server
+				System.out.println("end: "+end);
+				try {
+					server.stop();
+					return;
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					System.out.println("could not stop server");
+					e.printStackTrace();
+				}
+			}
 			String zoom = request.getParameter("zoom");
 			String tile_id = request.getParameter("tile_id");
 			String threshold = request.getParameter("threshold");
