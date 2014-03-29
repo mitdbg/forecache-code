@@ -74,7 +74,7 @@ public class TileKey {
 	}
 	
 	private double updatedEuclideanDistance(TileKey other) {
-		System.out.println("comparing "+this+" and "+other);
+		//System.out.println("comparing "+this+" and "+other);
 		ImmutableList<Integer> oid = other.getID();
 		List<Integer> newid = new ArrayList<Integer>();
 		int zoomdiff = this.zoom - other.getZoom();
@@ -88,7 +88,7 @@ public class TileKey {
 			return euclideanDistance(newid,oid,this.zoom,other.getZoom());
 		} else if (zoomdiff < 0) { // other is at lowewr zoom level
 			zoomdiff *= -1;
-			System.out.println("zoomdiff: "+zoomdiff);
+			//System.out.println("zoomdiff: "+zoomdiff);
 			for(int i = 0; i < this.id.size(); i++) {
 				newid.add(oid.get(i) / ((int)Math.pow(2,zoomdiff)));
 				//System.out.println(newid.get(i));
