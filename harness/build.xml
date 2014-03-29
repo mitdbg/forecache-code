@@ -22,7 +22,6 @@
         <mkdir dir="bin"/>
         <copy includeemptydirs="false" todir="bin">
             <fileset dir="src">
-                <exclude name="**/*.launch"/>
                 <exclude name="**/*.java"/>
             </fileset>
         </copy>
@@ -42,7 +41,7 @@
     </target>
     <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
     <target name="ScidbTileInterface">
-        <java classname="backend.precompute.ScidbTileInterface" failonerror="true" fork="yes">
+        <java classname="backend.disk.ScidbTileInterface" failonerror="true" fork="yes">
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>
@@ -52,8 +51,9 @@
         </java>
     </target>
     <target name="MainThread">
-        <java classname="backend.prefetch.MainThread" failonerror="true" fork="yes">
+        <java classname="backend.MainThread" failonerror="true" fork="yes">
             <jvmarg line="-Djava.net.preferIPv4Stack=true"/>
+            <arg line="markov 28 task1 3"/>
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>
