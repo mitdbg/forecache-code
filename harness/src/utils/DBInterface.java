@@ -63,21 +63,21 @@ public class DBInterface {
 			"SELECT a.tile_id,b.tile_hash,a.zoom_level " +
 					"FROM user_traces as a, tile_hash as b " +
 					"WHERE a.tile_id = b.tile_id and " +
-					"a.user_id=? and a.taskname=? and a.query='"+query+"'" +
+					"a.user_id=? and a.taskname=? and a.threshold="+threshold+" and a.query='"+query+"' " +
 					"ORDER BY id";
 
 	// query for retrieving client-requested tiles for a specific user and task
 	public static final String get_user_traces = 
 			"SELECT tile_id,zoom_level " +
 					"FROM user_traces " +
-					"WHERE user_id=? and taskname=? and query='"+query+"'" +
+					"WHERE user_id=? and taskname='?' and threshold="+threshold+" and query='"+query+"' " +
 					"ORDER BY id";
 
 	// query for seeing if user completed a specific task
 	public static final String check_task =
 			"SELECT count(*) " +
 					"FROM user_tile_selections " +
-					"WHERE user_id=? and taskname=? and query='"+query+"'";
+					"WHERE user_id=? and taskname=? and threshold="+threshold+" and query='"+query+"'";
 
 	// query for retrieving all users
 	public static final String get_users =

@@ -22,7 +22,7 @@ public class RandomDirectionalModel {
 	private TileHistoryQueue history = null;
 	private ParamsMap paramsMap; // for checking if predictions are actual tiles
 	private Random generator;
-	public static final int seed = 4;
+	public static final int seed = 7;
 
 	public RandomDirectionalModel(TileHistoryQueue ref) {
 		this.history = ref; // reference to (syncrhonized) global history object

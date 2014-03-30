@@ -22,7 +22,7 @@ public class Client {
 		List<Integer> finalusers = new ArrayList<Integer>();
 		
 		for(int u = 0; u < users.size(); u++) {
-			if(DBInterface.checkTask(u,taskname)) {
+			if(DBInterface.checkTask(users.get(u),taskname)) {
 				finalusers.add(users.get(u));
 			}
 		}
