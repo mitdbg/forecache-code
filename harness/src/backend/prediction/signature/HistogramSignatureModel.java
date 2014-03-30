@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import utils.DBInterface;
 import utils.UserRequest;
@@ -21,7 +20,7 @@ import backend.util.ParamsMap;
 import backend.util.Tile;
 import backend.util.TileKey;
 
-public class NormalSignatureModel {
+public class HistogramSignatureModel {
 	private TileHistoryQueue history = null;
 	private ParamsMap paramsMap; // for checking if predictions are actual tiles
 	private MemoryTileBuffer membuf;
@@ -29,7 +28,7 @@ public class NormalSignatureModel {
 	private ScidbTileInterface scidbapi;
 	public static final double defaultprob = .00000000001;
 
-	public NormalSignatureModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api) {
+	public HistogramSignatureModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api) {
 		this.history = ref; // reference to (syncrhonized) global history object
 		this.membuf = membuf;
 		this.diskbuf = diskbuf;
@@ -87,7 +86,8 @@ public class NormalSignatureModel {
 			dp.d = d;
 			dp.confidence = 0.0;
 			if(candidate != null) {
-				dp.confidence = orig.getNormalDistance(candidate);
+				dp.confidence = orig.getHistogramDistance(candidate);
+				//System.out.println(ckey+" with confidence: "+dp.confidence);
 			}
 			if(dp.confidence < defaultprob) {
 				dp.confidence = defaultprob;

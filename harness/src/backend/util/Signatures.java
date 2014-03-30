@@ -24,10 +24,14 @@ public class Signatures {
 		double min = globalmin[index];
 		double max = globalmax[index];
 		double range = max - min;
-		double [] histogram = new double[2];
+		double [] histogram = {0.0,0.0};
 		double sum = 0;
 
-		System.out.println("val: "+x[index]);
+		if(x.length > 0) {
+			//System.out.println("val: "+x[index]);
+		} else {
+			return histogram;
+		}
 		for(int i = 0; i < rows; i++) {
 			sum += x[i*valcount+index];
 		}
@@ -48,9 +52,9 @@ public class Signatures {
 			if(histogram[i] < default_min) {
 				histogram[i] = default_min;
 			}
-			System.out.print(histogram[i]+",");
+			//System.out.print(histogram[i]+",");
 		}
-		System.out.println();
+		//System.out.println();
 		long end = System.currentTimeMillis();
 		System.out.println("Time to build normal dist: "+(end-start)+"ms");
 		return histogram;
@@ -77,6 +81,14 @@ public class Signatures {
 		double max = globalmax[index];
 		double [] histogram = new double[bins];
 		double binwidth = (max - min) / bins;
+		for(int i = 0; i < bins; i++) {
+			histogram[i] = 0.0;
+		}
+		if(x.length > 0) {
+			//System.out.println("val: "+x[index]);
+		} else {
+			return histogram;
+		}
 		for(int i = 0; i < rows; i++) {
 			double val = x[i*valcount+index];
 			histogram[(int)((val - min) / binwidth)]++;
@@ -86,9 +98,9 @@ public class Signatures {
 			if(histogram[i] < default_min) {
 				histogram[i] = default_min;
 			}
-			System.out.print(histogram[i]+",");
+			//System.out.print(histogram[i]+",");
 		}
-		System.out.println();
+		//System.out.println();
 		long end = System.currentTimeMillis();
 		System.out.println("Time to build histogram: "+(end-start)+"ms");
 		return histogram;
@@ -120,9 +132,9 @@ public class Signatures {
 			if(histogram[i] < default_min) {
 				histogram[i] = default_min;
 			}
-			System.out.print(histogram[i]+",");
+			//System.out.print(histogram[i]+",");
 		}
-		System.out.println();
+		//System.out.println();
 		long end = System.currentTimeMillis();
 		System.out.println("Time to build filtered histogram: "+(end-start)+"ms");
 		return histogram;

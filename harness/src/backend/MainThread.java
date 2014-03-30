@@ -25,6 +25,8 @@ import backend.prediction.directional.HotspotDirectionalModel;
 import backend.prediction.directional.MarkovDirectionalModel;
 import backend.prediction.directional.MomentumDirectionalModel;
 import backend.prediction.directional.RandomDirectionalModel;
+import backend.prediction.signature.FilteredHistogramSignatureModel;
+import backend.prediction.signature.HistogramSignatureModel;
 import backend.prediction.signature.NormalSignatureModel;
 import backend.util.Model;
 import backend.util.Tile;
@@ -58,6 +60,8 @@ public class MainThread {
 	public static HotspotDirectionalModel hdm;
 	public static MomentumDirectionalModel momdm;
 	public static NormalSignatureModel nsm;
+	public static HistogramSignatureModel hsm;
+	public static FilteredHistogramSignatureModel fsm;
 	
 	public static void setupModels() {
 		for(int i = 0; i < modellabels.length; i++) {
@@ -72,6 +76,11 @@ public class MainThread {
 				case MOMENTUM: momdm = new MomentumDirectionalModel(hist);
 				break;
 				case NORMAL: nsm = new NormalSignatureModel(hist,membuf,diskbuf,scidbapi);
+				break;
+				case HISTOGRAM: hsm = new HistogramSignatureModel(hist,membuf,diskbuf,scidbapi);
+				break;
+				case FHISTOGRAM: fsm = new FilteredHistogramSignatureModel(hist,membuf,diskbuf,scidbapi);
+				break;
 				default://do nothing
 			}
 		}
@@ -84,6 +93,7 @@ public class MainThread {
 				case MARKOV: TrainModels.TrainMarkovDirectionalModel(user_ids, taskname, mdm);
 				break;
 				case HOTSPOT: TrainModels.TrainHotspotDirectionalModel(user_ids, taskname, hdm);
+				break;
 				default://do nothing
 			}
 		}
@@ -105,6 +115,10 @@ public class MainThread {
 				case MOMENTUM: toadd = momdm.predictTiles(defaultpredictions);
 				break;
 				case NORMAL: toadd = nsm.predictTiles(defaultpredictions);
+				break;
+				case HISTOGRAM: toadd = hsm.predictTiles(defaultpredictions);
+				break;
+				case FHISTOGRAM: toadd = fsm.predictTiles(defaultpredictions);
 				break;
 				default: toadd = null;
 			}
@@ -139,7 +153,7 @@ public class MainThread {
 		List<TileKey> output = new ArrayList<TileKey>();
 		for(TileVote finalvote : votes) {
 			output.add(finalvote.key);
-			System.out.println("predicted: '"+finalvote.key+"' with votes: '"+finalvote.vote+"'");
+			//System.out.println("predicted: '"+finalvote.key+"' with votes: '"+finalvote.vote+"'");
 		}
 		return output;
 	}
@@ -260,6 +274,10 @@ public class MainThread {
 				argmodels[i] = Model.MOMENTUM;
 			} else if(modelstrs[i].equals("normal")) {
 				argmodels[i] = Model.NORMAL;
+			} else if(modelstrs[i].equals("histogram")) {
+				argmodels[i] = Model.HISTOGRAM;
+			} else if(modelstrs[i].equals("fhistogram")) {
+				argmodels[i] = Model.FHISTOGRAM;
 			}
 		}
 		modellabels = argmodels;
@@ -366,7 +384,7 @@ public class MainThread {
 			
 			//System.out.println("history length: " + hist.getHistoryLength());
 			//System.out.println("history:");
-			System.out.println(hist);
+			//System.out.println(hist);
 
 			// get predictions for next request
 			long pstart = System.currentTimeMillis();
