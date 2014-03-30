@@ -276,13 +276,17 @@ public class MainThread {
 		defaultpredictions = Integer.parseInt(predictions);
 		System.out.println("predictions: "+defaultpredictions);
 		
+		//reset accuracy
+		cache_hits = 0;
+		total_requests = 0;
+		
+		// reinitialize caches and user history
 		membuf = new MemoryTileBuffer(defaultpredictions);
 		diskbuf = new DiskTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
 		hist = new TileHistoryQueue(histmax);
 		
 		setupModels();
 		trainModels();
-		
 	}
 	
 	/**
@@ -311,7 +315,7 @@ public class MainThread {
 					reset(useridstr.split("_"),modelstr.split("_"), predictions);
 					response.getWriter().println(done);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
+					System.out.println("error resetting");
 					e.printStackTrace();
 				}
 				//response.getWriter().println();
