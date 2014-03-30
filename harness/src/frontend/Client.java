@@ -115,18 +115,22 @@ public class Client {
 	}
 
 	public static void getTracesForSpecificUsers(int[] user_ids, String[] tasks, String[] models, int predictions) {
-		int[] train ={};
+		int[] train = new int[user_ids.length - 1];
 		for(int u = 0; u < user_ids.length; u++) {
 			int user_id = user_ids[u];
+			int count = 0;
+			for(int i = 0; i < user_ids.length; i++) {
+				if(user_id != user_ids[i]) {
+				train[count] = user_ids[i];
+				count++;
+				}
+			}
 			for(int t = 0; t < tasks.length; t++) {
 				String taskname = tasks[t];
-				System.out.println("checking task '"+taskname+"' for user "+user_id);
-				//if(DBInterface.checkTask(user_id,taskname)) {
-				System.out.println("user '" + user_id + "' completed task '" + taskname + "'");
 				List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
 				System.out.println("found trace of size " + trace.size() + " for task '" + taskname + "' and user '" + user_id + "'");
 				long average = 0;
-				sendReset(train,models,predictions);
+				sendReset(user_ids,models,predictions);
 				for(int r = 0; r < trace.size(); r++) {
 					UserRequest ur = trace.get(r);
 					String tile_id = ur.tile_id;
