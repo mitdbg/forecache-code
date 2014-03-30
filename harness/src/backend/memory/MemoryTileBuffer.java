@@ -22,7 +22,8 @@ public class MemoryTileBuffer implements TileBuffer {
 	private PriorityQueue<TimePair> lruQueue; // for identifying lru tiles in storage
 	private final int storagemax;
 	private int size;
-	private final int DEFAULTMAX = 34000000; // default buffer size
+	private final int DEFAULTMAX = 1; // default buffer size
+	//private final int DEFAULTMAX = 34000000; // default buffer size
 	private final int initqueuesize = 50;
 	
 	public MemoryTileBuffer() {
@@ -70,7 +71,8 @@ public class MemoryTileBuffer implements TileBuffer {
 		if(!this.storage.containsKey(id)) {
 			int tilesize = tile.getDataSize();
 			// make room for new tile in storage
-			while((this.size + tilesize) > this.storagemax) {
+			//while((this.size + tilesize) > this.storagemax) {
+			while((this.storage.size() + 1) > this.storagemax) {
 				this.remove_lru_tile();
 			}
 			// insert new tile into storage
@@ -132,7 +134,7 @@ public class MemoryTileBuffer implements TileBuffer {
 		this.storage.put(id, tile);
 		// add metadata for eviction purposes
 		this.insert_time_pair(id);
-		this.size += tilesize;
+		//this.size += tilesize;
 	}
 	
 	// checks priority queue and removes lru tile
@@ -155,7 +157,7 @@ public class MemoryTileBuffer implements TileBuffer {
 			this.storage.remove(id);
 			// remove metadata
 			this.remove_time_pair(id);
-			this.size -= tilesize;
+			//this.size -= tilesize;
 		}
 	}
 

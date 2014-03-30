@@ -22,7 +22,7 @@ public class RandomDirectionalModel {
 	private TileHistoryQueue history = null;
 	private ParamsMap paramsMap; // for checking if predictions are actual tiles
 	private Random generator;
-	public static final int seed = 1;
+	public static final int seed = 4;
 
 	public RandomDirectionalModel(TileHistoryQueue ref) {
 		this.history = ref; // reference to (syncrhonized) global history object
@@ -67,7 +67,8 @@ public class RandomDirectionalModel {
 			dp.confidence = generator.nextDouble();
 			order.add(dp);
 		}
-		Collections.sort(order,Collections.reverseOrder());
+		//Collections.sort(order,Collections.reverseOrder());
+		Collections.shuffle(order,generator);
 		long end = System.currentTimeMillis();
 		/*
 		for(DirectionPrediction dp : order) {

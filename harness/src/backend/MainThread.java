@@ -250,6 +250,41 @@ public class MainThread {
 		}
 	}
 	
+	public static void reset(String[] userstrs, String[] modelstrs, String predictions) throws Exception {
+		int[] argusers = new int[userstrs.length];
+		for(int i = 0; i < userstrs.length; i++) {
+			System.out.println("userstrs["+i+"] = '"+userstrs[i]+"'");
+			argusers[i] = Integer.parseInt(userstrs[i]);
+		}
+		user_ids = argusers;
+		
+		Model[] argmodels = new Model[modelstrs.length];
+		for(int i = 0; i < modelstrs.length; i++) {
+			System.out.println("modelstrs["+i+"] = '"+modelstrs[i]+"'");
+			if(modelstrs[i].equals("markov")) {
+				argmodels[i] = Model.MARKOV;
+			} else if(modelstrs[i].equals("random")) {
+				argmodels[i] = Model.RANDOM;
+			} else if(modelstrs[i].equals("hotspot")) {
+				argmodels[i] = Model.HOTSPOT;
+			} else if(modelstrs[i].equals("momentum")) {
+				argmodels[i] = Model.MOMENTUM;
+			}
+		}
+		modellabels = argmodels;
+		
+		defaultpredictions = Integer.parseInt(predictions);
+		System.out.println("predictions: "+defaultpredictions);
+		
+		membuf = new MemoryTileBuffer();
+		diskbuf = new DiskTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
+		hist = new TileHistoryQueue(histmax);
+		
+		setupModels();
+		trainModels();
+		
+	}
+	
 	/**
 	 * Java requires a serial version ID for the class.
 	 * Has something to do with it being serializable?
@@ -258,12 +293,38 @@ public class MainThread {
 
 		private static final long serialVersionUID = 6537664694070363096L;
 		private static final String greeting = "Hello World";
+		private static final String done = "done";
 
 		protected void doGet(HttpServletRequest request,
 				HttpServletResponse response) throws ServletException, IOException {
 			
 			// get fetch parameters
 			//String hashed_query = request.getParameter("hashed_query");
+			String reset = request.getParameter("reset");
+			if(reset != null) {
+				System.out.println("reset");
+				//reset models for prediction
+				String useridstr = request.getParameter("user_ids");
+				String modelstr = request.getParameter("models");
+				String predictions = request.getParameter("predictions");
+				try {
+					reset(useridstr.split("_"),modelstr.split("_"), predictions);
+					response.getWriter().println(done);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				//response.getWriter().println();
+				return;
+			}
+			
+			String getaccuracy = request.getParameter("accuracy");
+			if(getaccuracy != null) {
+				double accuracy = getAccuracy();
+				response.getWriter().println(accuracy);
+				return;
+			}
+			
 			String zoom = request.getParameter("zoom");
 			String tile_id = request.getParameter("tile_id");
 			String threshold = request.getParameter("threshold");
@@ -279,6 +340,10 @@ public class MainThread {
 			} else {
 				response.getWriter().println(t.encodeData());
 			}
+		}
+		
+		protected double getAccuracy() {
+			return (1.0 * cache_hits / total_requests);
 		}
 		
 		// fetches tiles from
@@ -328,7 +393,11 @@ public class MainThread {
 			long end2 = System.currentTimeMillis();
 			System.out.println("time to retrieve requested tile: " + ((end - start)/1000)+"s");
 			System.out.println("time to insert predictions: " + ((end2 - end)/1000)+"s");
-			System.out.println("cache miss for tile "+key+"?: "+(!found));
+			if(found) {
+				System.out.println("hit in cache for tile "+key);
+			} else {
+				System.out.println("miss in cache for tile "+key);
+			}
 			System.out.println("current accuracy: "+ (1.0 * cache_hits / total_requests));
 			System.out.println("cache size: "+membuf.tileCount()+" tiles");
 			return t;
