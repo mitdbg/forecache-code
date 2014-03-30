@@ -71,7 +71,7 @@ public class MainThread {
 				break;
 				case MOMENTUM: momdm = new MomentumDirectionalModel(hist);
 				break;
-				case NORMAL: nsm = new NormalSignatureModel(hist,membuf,diskbuf);
+				case NORMAL: nsm = new NormalSignatureModel(hist,membuf,diskbuf,scidbapi);
 				default://do nothing
 			}
 		}

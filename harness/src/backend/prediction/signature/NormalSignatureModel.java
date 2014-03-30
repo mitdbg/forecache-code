@@ -10,6 +10,7 @@ import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
 import backend.disk.DiskTileBuffer;
+import backend.disk.ScidbTileInterface;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
@@ -25,13 +26,15 @@ public class NormalSignatureModel {
 	private ParamsMap paramsMap; // for checking if predictions are actual tiles
 	private MemoryTileBuffer membuf;
 	private DiskTileBuffer diskbuf;
+	private ScidbTileInterface scidbapi;
 	public static final double defaultprob = .00000000001;
 
-	public NormalSignatureModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf) {
+	public NormalSignatureModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api) {
 		this.history = ref; // reference to (syncrhonized) global history object
 		this.membuf = membuf;
 		this.diskbuf = diskbuf;
 		this.paramsMap = new ParamsMap(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+		this.scidbapi = api;
 	}
 	
 	// gets ordering of directions by confidence and returns topk viable options
@@ -76,7 +79,10 @@ public class NormalSignatureModel {
 		for(Direction d : Direction.values()) {
 			DirectionPrediction dp = new DirectionPrediction();
 			TileKey ckey = this.DirectionToTile(prev, d);
-			Tile candidate = getTile(ckey);
+			Tile candidate = null;
+			if(ckey != null) {
+				candidate = getTile(ckey);
+			}
 			
 			dp.d = d;
 			dp.confidence = 0.0;
@@ -102,6 +108,9 @@ public class NormalSignatureModel {
 		Tile t = membuf.getTile(key);
 		if(t == null) {
 			t = diskbuf.getTile(key);
+			if(t == null) {
+				t = this.scidbapi.getTile(key);
+			}
 		}
 		return t;
 	}
