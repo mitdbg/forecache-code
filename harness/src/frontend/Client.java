@@ -59,11 +59,11 @@ public class Client {
 			for(int u2 = 0; u2 < finalusers.size(); u2++) {
 				if(u2 != u1) {
 					trainlist[index] = finalusers.get(u2);
-					System.out.print(trainlist[index]+" ");
+					//System.out.print(trainlist[index]+" ");
 					index++;
 				}
 			}
-			System.out.println();
+			//System.out.println();
 			// setup test case on backend
 			sendReset(trainlist,models,predictions);
 			
