@@ -43,12 +43,21 @@ public class RandomDirectionalModel {
 		}
 		List<DirectionPrediction> order = predictOrder();
 		UserRequest last = htrace.get(0);
+		for(int i = 0; i < order.size(); i++) {
+			DirectionPrediction dp = order.get(i);
+			TileKey val = this.DirectionToTile(last, dp.d);
+			if(val != null) {
+				myresult.add(val);
+				System.out.println(val);
+			}
+		}/*
 		for(DirectionPrediction dp : order) {
 			TileKey val = this.DirectionToTile(last, dp.d);
 			if(val != null) {
 				myresult.add(val);
 			}
-		}
+		}*/
+		System.out.println("viable options: "+myresult.size());
 		if(topk >= myresult.size()) { // truncate if list is too long
 			topk = myresult.size() - 1;
 		}

@@ -115,6 +115,9 @@ public class Client {
 	}
 
 	public static void getTracesForSpecificUsers(int[] user_ids, String[] tasks) {
+		int[] train ={};
+		String[] models = {"random"};
+		int predictions = 1;
 		for(int u = 0; u < user_ids.length; u++) {
 			int user_id = user_ids[u];
 			for(int t = 0; t < tasks.length; t++) {
@@ -125,6 +128,7 @@ public class Client {
 				List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
 				System.out.println("found trace of size " + trace.size() + " for task '" + taskname + "' and user '" + user_id + "'");
 				long average = 0;
+				sendReset(train,models,predictions);
 				for(int r = 0; r < trace.size(); r++) {
 					UserRequest ur = trace.get(r);
 					String tile_id = ur.tile_id;
@@ -388,6 +392,9 @@ public class Client {
 			int predictions = 1;
 			System.out.println("reset?: "+sendReset(users,models,predictions));
 			testsequence();
+			//int[] testusers = {27};
+			//String[] tasks = {"task1"};
+			//getTracesForSpecificUsers(testusers,tasks);
 		} else if((user_ids != null) && (tasknames != null)) {
 			System.out.println("running specific trace tests");
 			getTracesForSpecificUsers(user_ids,tasknames);

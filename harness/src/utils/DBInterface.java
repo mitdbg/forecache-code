@@ -23,6 +23,7 @@ public class DBInterface {
 	public static final String query  = "select * from ndsi_agg_7_18_2013";
 	public static final String hashed_query  = "2a0cf5267692de290efac7e3b6d5a593";
 	public static final String threshold  = "90000";
+	public static final int minuser = 121;
 	 */
 
 	public static String defaultparamsfile = "/home/leibatt/projects/user_study/scalar_backend/thesis2_params.tsv";
@@ -37,6 +38,7 @@ public class DBInterface {
 	public static final String query  = "select * from thesis2";
 	public static final String hashed_query  = "85794fe89a8b0c23ce726cca7655c8bc";
 	public static final String threshold  = "90000";
+	public static final int minuser = 28;
 	
 	public static String defaultdelim = "\t";
 	public static final String warmup_query  = "select * from cali100";
@@ -81,7 +83,7 @@ public class DBInterface {
 
 	// query for retrieving all users
 	public static final String get_users =
-			"SELECT id FROM users";
+			"SELECT id FROM users where id>="+minuser;
 
 	public static final String get_tile_id = 
 			"SELECT tile_id " +

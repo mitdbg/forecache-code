@@ -134,7 +134,7 @@ public class MainThread {
 		List<TileKey> output = new ArrayList<TileKey>();
 		for(TileVote finalvote : votes) {
 			output.add(finalvote.key);
-			//System.out.println("predicted: '"+finalvote.key+"' with votes: '"+finalvote.vote+"'");
+			System.out.println("predicted: '"+finalvote.key+"' with votes: '"+finalvote.vote+"'");
 		}
 		return output;
 	}
@@ -358,6 +358,17 @@ public class MainThread {
 			TileKey key = new TileKey(id,z);
 			List<TileKey> predictions = null;
 			
+			//System.out.println("history length: " + hist.getHistoryLength());
+			//System.out.println("history:");
+			System.out.println(hist);
+
+			// get predictions for next request
+			long pstart = System.currentTimeMillis();
+			predictions = getPredictions();
+			insertPredictions(predictions);
+			long pend = System.currentTimeMillis();
+			//System.out.println("time to insert predictions: " + ((pend - pstart)/1000)+"s");
+			
 			boolean found = false;
 			long start = System.currentTimeMillis();
 			Tile t = membuf.getTile(key);
@@ -387,16 +398,8 @@ public class MainThread {
 			}
 			total_requests++;
 			hist.addRecord(t);
-			//System.out.println("history length: " + hist.getHistoryLength());
-			//System.out.println("history:");
-			//System.out.println(hist);
 			long end = System.currentTimeMillis();
-			// get predictions for next request
-			predictions = getPredictions();
-			insertPredictions(predictions);
-			long end2 = System.currentTimeMillis();
 			//System.out.println("time to retrieve requested tile: " + ((end - start)/1000)+"s");
-			//System.out.println("time to insert predictions: " + ((end2 - end)/1000)+"s");
 			if(found) {
 				System.out.println("hit in cache for tile "+key);
 			} else {
