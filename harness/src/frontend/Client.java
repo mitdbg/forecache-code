@@ -15,7 +15,21 @@ public class Client {
 	public static String backend_host = "localhost";
 	public static int backend_port = 8080;
 	public static String backend_root = "gettile";
-	public static String [] tasknames = {"warmup", "task1", "task2", "task3"};
+	//public static String [] tasknames = {"warmup", "task1", "task2", "task3"};
+	public static String [] tasknames = {"task1", "task2", "task3"};
+	
+	public static void crossValidation1Model() {
+		String[][] models = {{"random"},{"momentum"},{"hotspot"}};
+		int[] predictions = {1,3,5};
+		for(String taskname : tasknames) {
+			for(int i = 0; i < models.length; i++) {
+				for(int predict = 0; predict < predictions.length; predict++) {
+					System.out.println("task: "+taskname+", model: "+models[i][0]+", predictions: "+predictions[predict]);
+					crossValidation(taskname,models[i],predictions[predict]);
+				}
+			}
+		}
+	}
 	
 	public static void crossValidation(String taskname, String[] models, int predictions) {
 		List<Integer> users = DBInterface.getUsers();
@@ -40,7 +54,7 @@ public class Client {
 		for(int u1 = 0; u1 < finalusers.size(); u1++) {
 			// get training list
 			int[] trainlist = new int[finalusers.size() - 1];
-			System.out.print("train list: ");
+			//System.out.print("train list: ");
 			int index = 0;
 			for(int u2 = 0; u2 < finalusers.size(); u2++) {
 				if(u2 != u1) {
@@ -380,10 +394,7 @@ public class Client {
 		} else if(all) {
 			System.out.println("testing all traces for all tasks");
 			//getTracesForAllUsers();
-			String taskname = "task1";
-			String[] models = {"random"};
-			int predictions = 1;
-			crossValidation(taskname,models,predictions);
+			crossValidation1Model();
 		}
 	}
 }
