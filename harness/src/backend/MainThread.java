@@ -282,7 +282,8 @@ public class MainThread {
 		
 		// reinitialize caches and user history
 		membuf = new MemoryTileBuffer(defaultpredictions);
-		diskbuf = new DiskTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
+		//don't reset this, it takes forever
+		//diskbuf = new DiskTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
 		hist = new TileHistoryQueue(histmax);
 		
 		setupModels();
