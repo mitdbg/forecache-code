@@ -318,14 +318,14 @@ public class Client {
 			params += user_ids[0];
 		}
 		for(int i = 1; i < user_ids.length; i++) {
-			params += "_" + user_ids;
+			params += "_" + user_ids[i];
 		}
 		params += "&models=";
 		if(models.length > 0) {
 			params += models[0];
 		}
 		for(int i = 1; i < models.length; i++) {
-			params += "_" + models;
+			params += "_" + models[i];
 		}
 		params+= "&predictions="+predictions;
 		return params;
