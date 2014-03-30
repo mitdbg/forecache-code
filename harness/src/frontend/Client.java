@@ -18,7 +18,7 @@ public class Client {
 	//public static String [] tasknames = {"warmup", "task1", "task2", "task3"};
 	public static String [] tasknames = {"task1", "task2", "task3"};
 	
-	public static void crossValidation1Model() {
+	public static void crossValidation1Model() throws Exception {
 		String[][] models = {{"random"},{"momentum"},{"hotspot"},{"markov"}};
 		int[] predictions = {1,3,5};
 		for(String taskname : tasknames) {
@@ -31,7 +31,7 @@ public class Client {
 		}
 	}
 	
-	public static void crossValidation(String taskname, String[] models, int predictions) {
+	public static void crossValidation(String taskname, String[] models, int predictions) throws Exception {
 		List<Integer> users = DBInterface.getUsers();
 		List<Integer> finalusers = new ArrayList<Integer>();
 		
@@ -88,7 +88,7 @@ public class Client {
 		System.out.println("overall\t"+overall_accuracy);
 	}
 
-	public static void getTracesForAllUsers() {
+	public static void getTracesForAllUsers() throws Exception {
 		List<Integer> users = DBInterface.getUsers();
 		for(int u = 0; u < users.size(); u++) {
 			int user_id = users.get(u);
@@ -114,7 +114,7 @@ public class Client {
 		}
 	}
 
-	public static void getTracesForSpecificUsers(int[] user_ids, String[] tasks, String[] models, int predictions) {
+	public static void getTracesForSpecificUsers(int[] user_ids, String[] tasks, String[] models, int predictions) throws Exception {
 		int[] train = new int[user_ids.length - 1];
 		for(int u = 0; u < user_ids.length; u++) {
 			int user_id = user_ids[u];
@@ -266,7 +266,7 @@ public class Client {
 		return false;
 	}
 
-	public static void sendRequest(String tile_id, int zoom, String hashed_query) {
+	public static void sendRequest(String tile_id, int zoom, String hashed_query) throws Exception {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
 				+ "?" + buildUrlParams(hashed_query, tile_id, zoom);
 		URL geturl = null;
@@ -303,6 +303,9 @@ public class Client {
 			reader.close();
 			result = sbuffer.toString();
 			//System.out.println("tile ("+tile_id+", "+zoom+") result length: " + result.length());
+			if(result.equals("error")) {
+				throw new Exception("serious error occurred on backend while retrieving tile");
+			}
 		} catch (IOException e) {
 			System.out.println("Error retrieving response from url: '"+urlstring+"'");
 			e.printStackTrace();
@@ -352,14 +355,15 @@ public class Client {
 		return params;
 	}
 
-	public static void testsequence() {
+	public static void testsequence() throws Exception {
 		sendRequest("[0, 0]", 0, "123");
-		sendRequest("[0, 0]", 1, "123");
-		sendRequest("[0, 1]", 2, "123");
-		sendRequest("[0, 2]", 3, "123");
+		sendRequest("[0, 0]", 0, "123");
+		//sendRequest("[0, 0]", 1, "123");
+		//sendRequest("[0, 1]", 2, "123");
+		//sendRequest("[0, 2]", 3, "123");
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		int[] user_ids = null;
 		String[] tasknames = null;
 		String[] models = null;
@@ -406,7 +410,7 @@ public class Client {
 			System.out.println("running simple sequence test");
 			int[] users = {28};
 			models = new String[1];
-			models[0] ="random";
+			models[0] ="normal";
 			predictions = 1;
 			System.out.println("reset?: "+sendReset(users,models,predictions));
 			testsequence();

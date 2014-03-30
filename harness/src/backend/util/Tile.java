@@ -44,8 +44,9 @@ public class Tile {
 		return this.id.getDistance(other.getTileKey());
 	}
 	
-	public double[] getNormalSignature() {
+	public double[] getNormalSignature() throws Exception {
 		if(this.norm == null) {
+			System.out.println("computing normal signature for"+this.id);
 			this.norm = Signatures.getNormalSignature(this.data);
 		}
 		double[] returnval = new double[this.norm.length];
@@ -53,7 +54,7 @@ public class Tile {
 		return returnval;
 	}
 	
-	public double getNormalDistance(Tile other) {
+	public double getNormalDistance(Tile other) throws Exception {
 		double distance = 0;
 		double [] onorm = other.getNormalSignature();
 		if(this.norm == null) {

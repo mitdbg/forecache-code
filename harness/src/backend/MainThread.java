@@ -25,6 +25,7 @@ import backend.prediction.directional.HotspotDirectionalModel;
 import backend.prediction.directional.MarkovDirectionalModel;
 import backend.prediction.directional.MomentumDirectionalModel;
 import backend.prediction.directional.RandomDirectionalModel;
+import backend.prediction.signature.NormalSignatureModel;
 import backend.util.Model;
 import backend.util.Tile;
 import backend.util.TileKey;
@@ -56,6 +57,7 @@ public class MainThread {
 	public static RandomDirectionalModel rdm;
 	public static HotspotDirectionalModel hdm;
 	public static MomentumDirectionalModel momdm;
+	public static NormalSignatureModel nsm;
 	
 	public static void setupModels() {
 		for(int i = 0; i < modellabels.length; i++) {
@@ -69,6 +71,7 @@ public class MainThread {
 				break;
 				case MOMENTUM: momdm = new MomentumDirectionalModel(hist);
 				break;
+				case NORMAL: nsm = new NormalSignatureModel(hist,membuf,diskbuf);
 				default://do nothing
 			}
 		}
@@ -86,7 +89,7 @@ public class MainThread {
 		}
 	}
 	
-	public static List<TileKey> getPredictions() {
+	public static List<TileKey> getPredictions() throws Exception {
 		Map<TileKey,Double> predictions = new HashMap<TileKey,Double>();
 		for(int i = 0; i < modellabels.length; i++) {
 			Model label = modellabels[i];
@@ -100,6 +103,8 @@ public class MainThread {
 				case HOTSPOT: toadd = hdm.predictTiles(defaultpredictions);
 				break;
 				case MOMENTUM: toadd = momdm.predictTiles(defaultpredictions);
+				break;
+				case NORMAL: toadd = nsm.predictTiles(defaultpredictions);
 				break;
 				default: toadd = null;
 			}
@@ -176,30 +181,12 @@ public class MainThread {
 		// get models to use
 		if(args.length > 0) {
 			String[] modelstrs = args[0].split(",");
-			Model[] argmodels = new Model[modelstrs.length];
-			for(int i = 0; i < modelstrs.length; i++) {
-				System.out.println("modelstrs["+i+"] = '"+modelstrs[i]+"'");
-				if(modelstrs[i].equals("markov")) {
-					argmodels[i] = Model.MARKOV;
-				} else if(modelstrs[i].equals("random")) {
-					argmodels[i] = Model.RANDOM;
-				} else if(modelstrs[i].equals("hotspot")) {
-					argmodels[i] = Model.HOTSPOT;
-				} else if(modelstrs[i].equals("momentum")) {
-					argmodels[i] = Model.MOMENTUM;
-				}
-			}
-			modellabels = argmodels;
+			update_model_labels(modelstrs);
 		}
 		// get user ids to train on
 		if(args.length > 1) {
 			String[] userstrs = args[1].split(",");
-			int[] argusers = new int[userstrs.length];
-			for(int i = 0; i < userstrs.length; i++) {
-				System.out.println("userstrs["+i+"] = '"+userstrs[i]+"'");
-				argusers[i] = Integer.parseInt(userstrs[i]);
-			}
-			user_ids = argusers;
+			update_users(userstrs);
 		}
 		
 		// get taskname
@@ -250,14 +237,16 @@ public class MainThread {
 		}
 	}
 	
-	public static void reset(String[] userstrs, String[] modelstrs, String predictions) throws Exception {
+	public static void update_users(String[] userstrs) {
 		int[] argusers = new int[userstrs.length];
 		for(int i = 0; i < userstrs.length; i++) {
 			System.out.println("userstrs["+i+"] = '"+userstrs[i]+"'");
 			argusers[i] = Integer.parseInt(userstrs[i]);
 		}
 		user_ids = argusers;
-		
+	}
+	
+	public static void update_model_labels(String[] modelstrs) {
 		Model[] argmodels = new Model[modelstrs.length];
 		for(int i = 0; i < modelstrs.length; i++) {
 			System.out.println("modelstrs["+i+"] = '"+modelstrs[i]+"'");
@@ -269,10 +258,16 @@ public class MainThread {
 				argmodels[i] = Model.HOTSPOT;
 			} else if(modelstrs[i].equals("momentum")) {
 				argmodels[i] = Model.MOMENTUM;
+			} else if(modelstrs[i].equals("normal")) {
+				argmodels[i] = Model.NORMAL;
 			}
 		}
 		modellabels = argmodels;
-		
+	}
+	
+	public static void reset(String[] userstrs, String[] modelstrs, String predictions) throws Exception {
+		update_users(userstrs);
+		update_model_labels(modelstrs);
 		defaultpredictions = Integer.parseInt(predictions);
 		System.out.println("predictions: "+defaultpredictions);
 		
@@ -299,10 +294,13 @@ public class MainThread {
 		private static final long serialVersionUID = 6537664694070363096L;
 		private static final String greeting = "Hello World";
 		private static final String done = "done";
+		private static final String error = "error";
 
 		protected void doGet(HttpServletRequest request,
 				HttpServletResponse response) throws ServletException, IOException {
 			
+			response.setContentType("text/html");
+			response.setStatus(HttpServletResponse.SC_OK);
 			// get fetch parameters
 			//String hashed_query = request.getParameter("hashed_query");
 			String reset = request.getParameter("reset");
@@ -337,9 +335,16 @@ public class MainThread {
 			System.out.println("zoom: " + zoom);
 			System.out.println("tile id: " + tile_id);
 			System.out.println("threshold: " + threshold);
-			Tile t = fetchTile(tile_id,zoom,threshold);
-			response.setContentType("text/html");
-			response.setStatus(HttpServletResponse.SC_OK);
+			Tile t = null;
+			try {
+				t = fetchTile(tile_id,zoom,threshold);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				System.out.println("error occured while fetching tile");
+				response.getWriter().println(error);
+				e.printStackTrace();
+				return;
+			}
 			if(t == null) {
 				response.getWriter().println(greeting);
 			} else {
@@ -352,7 +357,7 @@ public class MainThread {
 		}
 		
 		// fetches tiles from
-		protected Tile fetchTile(String tile_id, String zoom, String threshold) {
+		protected Tile fetchTile(String tile_id, String zoom, String threshold) throws Exception {
 			String reverse = UtilityFunctions.unurlify(tile_id); // undo urlify
 			List<Integer> id = UtilityFunctions.parseTileIdInteger(reverse);
 			int z = Integer.parseInt(zoom);

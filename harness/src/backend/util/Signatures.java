@@ -13,11 +13,11 @@ public class Signatures {
 	public static int defaultbins = 400;
 
 	/**************** Mean/Stddev ****************/
-	public static double[] getNormalSignature(byte[] input) {
+	public static double[] getNormalSignature(byte[] input) throws Exception {
 		return getNormalSignature(input,defaultindex);
 	}
 	
-	public static double[] getNormalSignature(byte[]input, int index) {
+	public static double[] getNormalSignature(byte[]input, int index) throws Exception {
 		long start = System.currentTimeMillis();
 		double [] x = getData(input);
 		int rows = x.length / valcount; // total rows
@@ -26,6 +26,8 @@ public class Signatures {
 		double range = max - min;
 		double [] histogram = new double[2];
 		double sum = 0;
+
+		System.out.println("val: "+x[index]);
 		for(int i = 0; i < rows; i++) {
 			sum += x[i*valcount+index];
 		}
@@ -38,6 +40,10 @@ public class Signatures {
 		histogram[1] = Math.sqrt(histogram[1]/rows);
 		histogram[0] -= min;
 		for(int i = 0; i < histogram.length; i++) {
+			if(histogram[i] > 2.0) {
+				System.out.println("invalid values!" + histogram[i]);
+				throw new Exception();
+			}
 			histogram[i] /= range; // normalize by range
 			if(histogram[i] < default_min) {
 				histogram[i] = default_min;
