@@ -143,6 +143,7 @@ public class Client {
 					System.out.println("time to recieve result: "+(end-start)+"ms");
 					average += end - start;
 				}
+				System.out.println("accuracy: "+getAccuracy());
 				if(trace.size() > 0) {
 					System.out.println("average time to recieve result: " + (average/trace.size())+"ms");
 				}
