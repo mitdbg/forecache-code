@@ -114,10 +114,8 @@ public class Client {
 		}
 	}
 
-	public static void getTracesForSpecificUsers(int[] user_ids, String[] tasks) {
+	public static void getTracesForSpecificUsers(int[] user_ids, String[] tasks, String[] models, int predictions) {
 		int[] train ={};
-		String[] models = {"random"};
-		int predictions = 1;
 		for(int u = 0; u < user_ids.length; u++) {
 			int user_id = user_ids[u];
 			for(int t = 0; t < tasks.length; t++) {
@@ -359,10 +357,12 @@ public class Client {
 	public static void main(String[] args) {
 		int[] user_ids = null;
 		String[] tasknames = null;
+		String[] models = null;
+		int predictions = 1;
 		boolean test = true;
 		boolean all = false;
 		if(args.length > 0) {
-			if(args.length == 2) {
+			if((args.length == 3) || (args.length == 4)) {
 				String[] useridstrs = args[0].split(",");
 				user_ids = new int[useridstrs.length];
 				for(int i = 0; i < useridstrs.length; i++) {
@@ -376,6 +376,18 @@ public class Client {
 					tasknames[i] = taskstrs[i];
 					System.out.println("adding task: "+tasknames[i]);
 				}
+				
+				String[] modelstrs = args[2].split(",");
+				models = new String[modelstrs.length];
+				for(int i = 0; i < modelstrs.length; i++) {
+					models[i] = modelstrs[i];
+					System.out.println("adding task: "+models[i]);
+				}
+				
+				if(args.length == 4) {
+					predictions = Integer.parseInt(args[3]);
+				}
+				
 				test = false;
 			} else if(args.length == 1) {
 				if(args[0].equals("all")) {
@@ -388,16 +400,17 @@ public class Client {
 		if (test) {
 			System.out.println("running simple sequence test");
 			int[] users = {28};
-			String[] models = {"random"};
-			int predictions = 1;
+			models = new String[1];
+			models[0] ="random";
+			predictions = 1;
 			System.out.println("reset?: "+sendReset(users,models,predictions));
 			testsequence();
 			//int[] testusers = {27};
 			//String[] tasks = {"task1"};
 			//getTracesForSpecificUsers(testusers,tasks);
-		} else if((user_ids != null) && (tasknames != null)) {
+		} else if((user_ids != null) && (tasknames != null) && (models!=null)) {
 			System.out.println("running specific trace tests");
-			getTracesForSpecificUsers(user_ids,tasknames);
+			getTracesForSpecificUsers(user_ids,tasknames,models,predictions);
 		} else if(all) {
 			System.out.println("testing all traces for all tasks");
 			//getTracesForAllUsers();
