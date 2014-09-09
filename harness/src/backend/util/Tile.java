@@ -1,9 +1,6 @@
 package backend.util;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
 
 
 /**
@@ -46,7 +43,7 @@ public class Tile {
 	
 	public double[] getNormalSignature() throws Exception {
 		if(this.norm == null) {
-			System.out.println("computing normal signature for"+this.id);
+			//System.out.println("computing normal signature for"+this.id);
 			this.norm = Signatures.getNormalSignature(this.data);
 		}
 		double[] returnval = new double[this.norm.length];

@@ -2,7 +2,6 @@ package backend.disk;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.Connection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +11,6 @@ import java.util.Set;
 import utils.DBInterface;
 import utils.UtilityFunctions;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.io.Files;
 
 import backend.util.Tile;
@@ -251,7 +249,7 @@ public class DiskTileBuffer implements TileBuffer {
 		if(tp != null) {
 			TileKey toremove = tp.getTileKey();
 			int tilesize = tp.getTileSize();
-			System.out.println("removing tile from disk based cache: " + toremove);
+			//System.out.println("removing tile from disk based cache: " + toremove);
 			// remove tile from storage
 			this.remove_tile(toremove, tilesize);
 		}

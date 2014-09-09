@@ -47,6 +47,7 @@ public class MainThread {
 	//accuracy
 	public static int total_requests = 0;
 	public static int cache_hits = 0;
+	public static List<String> hitslist = new ArrayList<String>();
 	
 	// General Model variables
 	public static Model[] modellabels = {Model.MOMENTUM};
@@ -292,6 +293,11 @@ public class MainThread {
 		//reset accuracy
 		cache_hits = 0;
 		total_requests = 0;
+		for(int i = 0; i < hitslist.size(); i++) {
+			System.out.print(hitslist.get(i)+" ");
+		}
+		System.out.println();
+		hitslist = new ArrayList<String>();
 		
 		// reinitialize caches and user history
 		membuf = new MemoryTileBuffer(defaultpredictions);
@@ -339,6 +345,20 @@ public class MainThread {
 				return;
 			}
 			
+			String getfullaccuracy = request.getParameter("fullaccuracy");
+			if(getfullaccuracy !=null) {
+				if(hitslist.size() == 0) {
+					response.getWriter().println("[]");
+					return;
+				}
+				String res = hitslist.get(0);
+				for(int i = 1; i < hitslist.size(); i++) {
+					res = res + ","+hitslist.get(i);
+				}
+				response.getWriter().println(res);
+				return;
+			}
+			
 			String getaccuracy = request.getParameter("accuracy");
 			if(getaccuracy != null) {
 				double accuracy = getAccuracy();
@@ -350,14 +370,13 @@ public class MainThread {
 			String tile_id = request.getParameter("tile_id");
 			String threshold = request.getParameter("threshold");
 			//System.out.println("hashed query: " + hashed_query);
-			System.out.println("zoom: " + zoom);
-			System.out.println("tile id: " + tile_id);
-			System.out.println("threshold: " + threshold);
+			//System.out.println("zoom: " + zoom);
+			//System.out.println("tile id: " + tile_id);
+			//System.out.println("threshold: " + threshold);
 			Tile t = null;
 			try {
 				t = fetchTile(tile_id,zoom,threshold);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				System.out.println("error occured while fetching tile");
 				response.getWriter().println(error);
 				e.printStackTrace();
@@ -387,14 +406,14 @@ public class MainThread {
 			//System.out.println(hist);
 
 			// get predictions for next request
-			long pstart = System.currentTimeMillis();
+			//long pstart = System.currentTimeMillis();
 			predictions = getPredictions();
 			insertPredictions(predictions);
-			long pend = System.currentTimeMillis();
+			//long pend = System.currentTimeMillis();
 			//System.out.println("time to insert predictions: " + ((pend - pstart)/1000)+"s");
 			
 			boolean found = false;
-			long start = System.currentTimeMillis();
+			//long start = System.currentTimeMillis();
 			Tile t = membuf.getTile(key);
 			if(t == null) { // not cached
 				System.out.println("tile is not in mem-based cache");
@@ -405,8 +424,8 @@ public class MainThread {
 					t = scidbapi.getTile(key);
 					diskbuf.insertTile(t);
 				} else { // found on disk
-					System.out.println("found tile in disk-based cache");
-					System.out.println("data size: " + t.getDataSize());
+					//System.out.println("found tile in disk-based cache");
+					//System.out.println("data size: " + t.getDataSize());
 					// update timestamp
 					diskbuf.touchTile(key);
 				}
@@ -414,23 +433,25 @@ public class MainThread {
 				membuf.insertTile(t);
 			} else { // found in memory
 				cache_hits++;
-				System.out.println("found tile in mem-based cache");
-				System.out.println("data size: " + t.getDataSize());
+				//System.out.println("found tile in mem-based cache");
+				//System.out.println("data size: " + t.getDataSize());
 				// update timestamp
 				membuf.touchTile(key);
 				found = true;
 			}
 			total_requests++;
 			hist.addRecord(t);
-			long end = System.currentTimeMillis();
+			//long end = System.currentTimeMillis();
 			//System.out.println("time to retrieve requested tile: " + ((end - start)/1000)+"s");
 			if(found) {
-				System.out.println("hit in cache for tile "+key);
+				//System.out.println("hit in cache for tile "+key);
+				hitslist.add("hit");
 			} else {
-				System.out.println("miss in cache for tile "+key);
+				//System.out.println("miss in cache for tile "+key);
+				hitslist.add("miss");
 			}
-			System.out.println("current accuracy: "+ (1.0 * cache_hits / total_requests));
-			System.out.println("cache size: "+membuf.tileCount()+" tiles");
+			//System.out.println("current accuracy: "+ (1.0 * cache_hits / total_requests));
+			//System.out.println("cache size: "+membuf.tileCount()+" tiles");
 			return t;
 		}
 

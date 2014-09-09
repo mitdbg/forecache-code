@@ -10,7 +10,7 @@ import java.util.List;
 
 
 public class DBInterface {
-	
+	/*
 	public static String defaultparamsfile = "/home/leilani/csv/ndsi_agg_7_18_2013_params.tsv";
 	public static final String cache_root_dir = "/home/leilani/test_cache";
 	public static final String sig_root_dir = "/home/leilani/_scalar_sig_dir2";
@@ -24,8 +24,8 @@ public class DBInterface {
 	public static final String hashed_query  = "2a0cf5267692de290efac7e3b6d5a593";
 	public static final String threshold  = "90000";
 	public static final int minuser = 121;
-	
-/*
+	*/
+
 	public static String defaultparamsfile = "/home/leibatt/projects/user_study/scalar_backend/thesis2_params.tsv";
 	public static final String cache_root_dir = "/home/leibatt/projects/user_study/scalar_backend/test_cache";
 	public static final String sig_root_dir = "/home/leibatt/projects/user_study/scalar_backend/_scalar_sig_dir2";
@@ -39,7 +39,7 @@ public class DBInterface {
 	public static final String hashed_query  = "85794fe89a8b0c23ce726cca7655c8bc";
 	public static final String threshold  = "90000";
 	public static final int minuser = 28;
-	*/
+	
 	public static String defaultdelim = "\t";
 	public static final String warmup_query  = "select * from cali100";
 	public static final String warmup_hashed_query  = "39df90e13a84cad54463717b24ef833a";

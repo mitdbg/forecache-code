@@ -1,27 +1,18 @@
 package backend.disk;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import utils.DBInterface;
 import utils.UtilityFunctions;
 
-import backend.util.Direction;
 import backend.util.Params;
 import backend.util.ParamsMap;
-import backend.util.Signatures;
 import backend.util.Tile;
 import backend.util.TileKey;
 
@@ -34,13 +25,13 @@ public class ScidbTileInterface {
 	private String delim;
 	
 	public ScidbTileInterface() {
-		this.paramsMap = new ParamsMap(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+		this(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 	}
 	
 	public ScidbTileInterface(String paramsfile, String delim) {
 		this.paramsfile = paramsfile;
 		this.delim = delim;
-		this.paramsMap = new ParamsMap(paramsfile,delim);
+		this.paramsMap = new ParamsMap(this.paramsfile,this.delim);
 	}
 	
 	// inserts parameters into aggregation query
@@ -91,7 +82,7 @@ public class ScidbTileInterface {
 				}
 		}
 		long end = System.currentTimeMillis();
-		System.out.println("time to build: "+(end - start) +"ms");
+		//System.out.println("time to build: "+(end - start) +"ms");
 		return myresult;
 	}
 	
@@ -129,7 +120,7 @@ public class ScidbTileInterface {
 			buffer.putDouble(i*8, data.get(i));
 		}
 		long end = System.currentTimeMillis();
-		System.out.println("Time to convert to bytes: "+(end-start)+"ms");
+		//System.out.println("Time to convert to bytes: "+(end-start)+"ms");
 		return result;
 	}
 	
@@ -147,9 +138,11 @@ public class ScidbTileInterface {
 		TileKey id = new TileKey(tile_id,zoom);
 		Tile result = sti.getTile(id);
 		double[] histogram = result.getHistogramSignature();
+		if(histogram != null && (histogram.length > 0)) {
+			System.out.println("successfully build histogram");
+		}
 		//double[] norm = result.getNormalSignature();
 		//double[] fhistogram = result.getFilteredHistogramSignature();
-		//System.out.println("enum down: " + Direction.DOWN);
 	}
 
 }

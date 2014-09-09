@@ -81,6 +81,9 @@ public class Client {
 			
 			//get accuracy for this user
 			double accuracy = getAccuracy();
+			String[] fullAccuracy = getFullAccuracy();
+			System.out.print(user_id+"\t");
+			UtilityFunctions.printStringArray(fullAccuracy);
 			overall_accuracy += accuracy;
 			System.out.println(user_id+"\t"+accuracy);
 		}
@@ -182,6 +185,63 @@ public class Client {
 			}
 		}
 	}
+	
+	// tell server what user ids and models to train on
+		public static String[] getFullAccuracy() {
+			String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
+					+ "?fullaccuracy";
+			URL geturl = null;
+			HttpURLConnection connection = null;
+			BufferedReader reader = null;
+			StringBuffer sbuffer = new StringBuffer();
+			String line;
+			String result = null;
+			try {
+				geturl = new URL(urlstring);
+			} catch (MalformedURLException e) {
+				System.out.println("error occurred while retrieving url object for: '"+urlstring+"'");
+				e.printStackTrace();
+			}
+			if(geturl == null) {
+				return new String[0];
+			}
+
+			try {
+				connection = (HttpURLConnection) geturl.openConnection();
+			} catch (IOException e) {
+				System.out.println("error occured while opening connection to url: '"+urlstring+"'");
+				e.printStackTrace();
+			}
+			if(connection == null) {
+				return new String[0];
+			}
+
+			try {
+				reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+				while((line = reader.readLine()) != null) {
+					sbuffer.append(line);
+				}
+				reader.close();
+				result = sbuffer.toString();
+				return result.split(",");
+			} catch (IOException e) {
+				System.out.println("Error retrieving response from url: '"+urlstring+"'");
+				e.printStackTrace();
+			}
+
+			if(connection != null) {
+				connection.disconnect();
+			}
+			if(reader != null) {
+				try {
+					reader.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			return new String[0];
+		}
 	
 	// tell server what user ids and models to train on
 	public static double getAccuracy() {

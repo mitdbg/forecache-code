@@ -2,7 +2,6 @@ package backend.prediction.directional;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -23,6 +22,7 @@ public class RandomDirectionalModel {
 	private ParamsMap paramsMap; // for checking if predictions are actual tiles
 	private Random generator;
 	public static final int seed = 7;
+	//public static final int seed = 425752111;
 
 	public RandomDirectionalModel(TileHistoryQueue ref) {
 		this.history = ref; // reference to (syncrhonized) global history object

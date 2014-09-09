@@ -1,8 +1,8 @@
 package backend.memory;
 
-import java.util.ArrayList;
+//import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+//import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
@@ -21,7 +21,7 @@ public class MemoryTileBuffer implements TileBuffer {
 	private Map<TileKey,TimePair> timeMap; // for finding things in the queue
 	private PriorityQueue<TimePair> lruQueue; // for identifying lru tiles in storage
 	private final int storagemax;
-	private int size;
+	//private int size;
 	private final int DEFAULTMAX = 1; // default buffer size
 	//private final int DEFAULTMAX = 34000000; // default buffer size
 	private final int initqueuesize = 50;
@@ -31,7 +31,7 @@ public class MemoryTileBuffer implements TileBuffer {
 		this.storage = new HashMap<TileKey,Tile>();
 		this.lruQueue = new PriorityQueue<TimePair>(this.initqueuesize,new TimePair.TPSort());
 		timeMap = new HashMap<TileKey,TimePair>();
-		this.size = 0;
+		//this.size = 0;
 		this.storagemax = this.DEFAULTMAX;
 	}
 	
@@ -40,7 +40,7 @@ public class MemoryTileBuffer implements TileBuffer {
 		this.storage = new HashMap<TileKey,Tile>();
 		this.lruQueue = new PriorityQueue<TimePair>(this.initqueuesize,new TimePair.TPSort());
 		timeMap = new HashMap<TileKey,TimePair>();
-		this.size = 0;
+		//this.size = 0;
 		this.storagemax = storagemax;
 	}
 
@@ -69,7 +69,7 @@ public class MemoryTileBuffer implements TileBuffer {
 	public synchronized void insertTile(Tile tile) {
 		TileKey id = tile.getTileKey();
 		if(!this.storage.containsKey(id)) {
-			int tilesize = tile.getDataSize();
+			//int tilesize = tile.getDataSize();
 			// make room for new tile in storage
 			//while((this.size + tilesize) > this.storagemax) {
 			while((this.storage.size() + 1) > this.storagemax) {
@@ -129,7 +129,7 @@ public class MemoryTileBuffer implements TileBuffer {
 	
 	// inserts a specific tile into buffer
 	protected synchronized void insert_tile(Tile tile) {
-		int tilesize = tile.getDataSize();
+		//int tilesize = tile.getDataSize();
 		TileKey id = tile.getTileKey();
 		this.storage.put(id, tile);
 		// add metadata for eviction purposes
@@ -144,7 +144,7 @@ public class MemoryTileBuffer implements TileBuffer {
 		TimePair tp = lruQueue.peek();
 		if(tp != null) {
 			TileKey toremove = tp.getTileKey();
-			System.out.println("removing tile from in-memory cache: " + toremove);
+			//System.out.println("removing tile from in-memory cache: " + toremove);
 			// remove tile from storage
 			this.remove_tile(toremove);
 		}
@@ -153,7 +153,7 @@ public class MemoryTileBuffer implements TileBuffer {
 	// removes a specific tile from buffer
 	protected synchronized void remove_tile(TileKey id) {
 		if(this.storage.containsKey(id)) {
-			int tilesize = storage.get(id).getDataSize();
+			//int tilesize = storage.get(id).getDataSize();
 			this.storage.remove(id);
 			// remove metadata
 			this.remove_time_pair(id);

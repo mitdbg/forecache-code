@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import utils.DBInterface;
 import utils.UserRequest;
@@ -100,7 +99,7 @@ public class NormalSignatureModel {
 		for(DirectionPrediction dp : order) {
 			System.out.println(dp);
 		}*/
-		System.out.println("time to predict order: "+(end-start)+"ms");
+		//System.out.println("time to predict order: "+(end-start)+"ms");
 		return order;
 	}
 	

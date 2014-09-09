@@ -8,15 +8,10 @@ import java.util.Map;
 
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
-import backend.prediction.directional.MarkovDirectionalModel.MDMNode;
 import backend.util.Direction;
-import backend.util.Params;
-import backend.util.ParamsMap;
 import backend.util.TileKey;
 
-import utils.DBInterface;
 import utils.UserRequest;
-import utils.UtilityFunctions;
 
 public class HotspotDirectionalModel extends MomentumDirectionalModel {
 	protected Map<TileKey,Integer> hotspots;

@@ -119,7 +119,7 @@ public class MomentumDirectionalModel {
 			System.out.println(dp);
 		}
 		*/
-		System.out.println("time to predict order: "+(end-start)+"ms");
+		//System.out.println("time to predict order: "+(end-start)+"ms");
 		return order;
 	}
 	

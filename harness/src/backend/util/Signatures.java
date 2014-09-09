@@ -56,7 +56,7 @@ public class Signatures {
 		}
 		//System.out.println();
 		long end = System.currentTimeMillis();
-		System.out.println("Time to build normal dist: "+(end-start)+"ms");
+		//System.out.println("Time to build normal dist: "+(end-start)+"ms");
 		return histogram;
 	}
 	
@@ -102,7 +102,7 @@ public class Signatures {
 		}
 		//System.out.println();
 		long end = System.currentTimeMillis();
-		System.out.println("Time to build histogram: "+(end-start)+"ms");
+		//System.out.println("Time to build histogram: "+(end-start)+"ms");
 		return histogram;
 	}
 	
@@ -136,7 +136,7 @@ public class Signatures {
 		}
 		//System.out.println();
 		long end = System.currentTimeMillis();
-		System.out.println("Time to build filtered histogram: "+(end-start)+"ms");
+		//System.out.println("Time to build filtered histogram: "+(end-start)+"ms");
 		return histogram;
 	}
 	
@@ -150,7 +150,7 @@ public class Signatures {
 			result[i] = buffer.getDouble(i*8);
 		}
 		long end = System.currentTimeMillis();
-		System.out.println("Time to convert from bytes to doubles: "+(end-start)+"ms");
+		//System.out.println("Time to convert from bytes to doubles: "+(end-start)+"ms");
 		return result;
 	}
 }
