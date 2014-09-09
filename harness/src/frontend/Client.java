@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import backend.prediction.directional.MarkovDirectionalModel;
-
+import backend.util.Direction;
 import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
@@ -108,6 +108,37 @@ public class Client {
 						// do stuff here to analyze trace
 
 
+					}
+				}
+			}
+		}
+	}
+	
+	public static void printTracesForSpecificUsers() {
+		List<Integer> user_ids = DBInterface.getUsersFromTraces();
+		List<String> tasks = DBInterface.getTasksFromTraces();
+		for(int u = 0; u < user_ids.size(); u++) {
+			int user_id = user_ids.get(u);
+			for(int t = 0; t < tasks.size(); t++) {
+				String taskname = tasks.get(t);
+				List<UserRequest> trace = DBInterface.getUserTraces(user_id,taskname);
+				if(trace.size() > 0) {
+					int path_id = 0;
+					UserRequest prev = trace.get(0);
+					int steps = 1;
+					for(int r = 1; r < trace.size(); r++, steps++) {
+						UserRequest next = trace.get(r);
+						//System.out.println(prev);
+						//System.out.println(next);
+						Direction dir = UtilityFunctions.getDirection(prev, next);
+						if(dir != null) {
+							if(prev.zoom == 0 && prev.tile_id.equals("[0, 0]")) {
+								path_id++;
+								steps = 1;
+							}
+							System.out.println(user_id+","+taskname+","+path_id+","+steps+","+dir);
+						}
+						prev = next;
 					}
 				}
 			}
@@ -370,6 +401,7 @@ public class Client {
 		int predictions = 1;
 		boolean test = true;
 		boolean all = false;
+		boolean print = false;
 		if(args.length > 0) {
 			if((args.length == 3) || (args.length == 4)) {
 				String[] useridstrs = args[0].split(",");
@@ -402,11 +434,17 @@ public class Client {
 				if(args[0].equals("all")) {
 					all = true;
 					test = false;
+				} else if (args[0].equals("print")) {
+					test = false;
+					print = true;
 				}
 			}
 		}
 
-		if (test) {
+		if(print) {
+			System.out.println("printing trace output");
+			printTracesForSpecificUsers();
+		}else if (test) {
 			System.out.println("running simple sequence test");
 			int[] users = {28};
 			models = new String[1];

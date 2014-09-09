@@ -57,7 +57,7 @@ public class MomentumDirectionalModel {
 		while(i < trace.size()) {
 			UserRequest p = n;
 			n = trace.get(i);
-			Direction d = MarkovDirectionalModel.getDirection(p,n);
+			Direction d = UtilityFunctions.getDirection(p,n);
 			if(d != null) {
 				dirlist.add(d);
 			}

@@ -20,4 +20,9 @@ public class UserRequest {
 		this.tile_hash = tile_hash;
 		
 	}
+	
+	@Override
+	public String toString() {
+		return "UserRequest("+this.zoom+","+this.tile_id+")";
+	}
 }
