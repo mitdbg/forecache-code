@@ -24,7 +24,14 @@ public class Client {
 		for(String taskname : tasknames) {
 			for(int i = 0; i < models.length; i++) {
 				for(int predict = 0; predict < predictions.length; predict++) {
-					System.out.println("task: "+taskname+", model: "+models[i][0]+", predictions: "+predictions[predict]);
+						System.out.print("task: "+taskname+", models: ");
+						if(models[i].length > 0) {
+							System.out.print(models[i][0]);
+						}
+						for(int m = 1; m < models[i].length; m++) {
+							System.out.print(" "+models[i][m]);
+						}
+						System.out.println(", predictions: "+predictions[predict]);
 					crossValidation(taskname,models[i],predictions[predict]);
 				}
 			}
@@ -178,6 +185,8 @@ public class Client {
 					average += end - start;
 				}
 				System.out.println("accuracy: "+getAccuracy());
+				System.out.print("full accuracy:");
+				UtilityFunctions.printStringArray(getFullAccuracy());
 				if(trace.size() > 0) {
 					System.out.println("average time to recieve result: " + (average/trace.size())+"ms");
 				}

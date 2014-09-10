@@ -293,10 +293,6 @@ public class MainThread {
 		//reset accuracy
 		cache_hits = 0;
 		total_requests = 0;
-		for(int i = 0; i < hitslist.size(); i++) {
-			System.out.print(hitslist.get(i)+" ");
-		}
-		System.out.println();
 		hitslist = new ArrayList<String>();
 		
 		// reinitialize caches and user history
