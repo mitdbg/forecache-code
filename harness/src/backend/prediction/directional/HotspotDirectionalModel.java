@@ -108,7 +108,7 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 			dp.d = d;
 			dp.confidence = 0;
 			if(d == hotdirection) {
-				System.out.println("diverging in favor of hotspot: "+d);
+				//System.out.println("diverging in favor of hotspot: "+d);
 				max = dp;
 			}
 			Double score = this.votes.get(d);

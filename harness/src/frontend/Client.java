@@ -24,14 +24,6 @@ public class Client {
 		for(String taskname : tasknames) {
 			for(int i = 0; i < models.length; i++) {
 				for(int predict = 0; predict < predictions.length; predict++) {
-						System.out.print("task: "+taskname+", models: ");
-						if(models[i].length > 0) {
-							System.out.print(models[i][0]);
-						}
-						for(int m = 1; m < models[i].length; m++) {
-							System.out.print(" "+models[i][m]);
-						}
-						System.out.println(", predictions: "+predictions[predict]);
 					crossValidation(taskname,models[i],predictions[predict]);
 				}
 			}
@@ -89,13 +81,19 @@ public class Client {
 			//get accuracy for this user
 			double accuracy = getAccuracy();
 			String[] fullAccuracy = getFullAccuracy();
+			
 			System.out.print(user_id+"\t");
+			System.out.print(taskname+"\t");
+			UtilityFunctions.printStringArray(models);
+			System.out.print("\t");
+			System.out.print(predictions+"\t");
 			UtilityFunctions.printStringArray(fullAccuracy);
 			overall_accuracy += accuracy;
-			System.out.println(user_id+"\t"+accuracy);
+			System.out.print("\t");
+			System.out.println(accuracy);
 		}
 		overall_accuracy /= finalusers.size();
-		System.out.println("overall\t"+overall_accuracy);
+		//System.out.println("overall\t"+overall_accuracy);
 	}
 
 	public static void getTracesForAllUsers() throws Exception {
