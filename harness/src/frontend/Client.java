@@ -20,7 +20,8 @@ public class Client {
 	
 	public static void crossValidation1Model() throws Exception {
 		String[][] models = {{"random"},{"markov"},{"momentum"},{"hotspot"},{"normal"},{"histogram"},{"fhistogram"}};
-		int[] predictions = {1,3,5};
+		//int[] predictions = {1,3,5};
+		int[] predictions = {1};
 		for(String taskname : tasknames) {
 			for(int i = 0; i < models.length; i++) {
 				for(int predict = 0; predict < predictions.length; predict++) {
