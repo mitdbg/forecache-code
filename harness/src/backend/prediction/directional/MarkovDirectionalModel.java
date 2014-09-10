@@ -99,7 +99,7 @@ public class MarkovDirectionalModel {
 			System.out.println(dp);
 		}
 		*/
-		System.out.println("time to predict order: "+(end-start)+"ms");
+		//System.out.println("time to predict order: "+(end-start)+"ms");
 		return order;
 	}
 	
@@ -332,12 +332,12 @@ public class MarkovDirectionalModel {
 	public void learnProbabilities() {
 		//make the actual probabilities
 		for(String key : condprobs.keySet()) {
-			System.out.println("prefix: "+key);
+			//System.out.println("prefix: "+key);
 			MDMNode node = condprobs.get(key);
 			for(Direction dkey : node.probability.keySet()) {
 				Double prob = node.probability.get(dkey);
 				node.probability.put(dkey, prob/node.count);
-				System.out.println("conditional probability for "+dkey+": "+(prob/node.count));
+				//System.out.println("conditional probability for "+dkey+": "+(prob/node.count));
 			}
 		}
 	}

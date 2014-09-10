@@ -412,11 +412,11 @@ public class MainThread {
 			//long start = System.currentTimeMillis();
 			Tile t = membuf.getTile(key);
 			if(t == null) { // not cached
-				System.out.println("tile is not in mem-based cache");
+				//System.out.println("tile is not in mem-based cache");
 				// go find the tile on disk
 				t = diskbuf.getTile(key);
 				if(t == null) { // not in memory
-					System.out.println("tile is not in disk-based cache. computing...");
+					//System.out.println("tile is not in disk-based cache. computing...");
 					t = scidbapi.getTile(key);
 					diskbuf.insertTile(t);
 				} else { // found on disk

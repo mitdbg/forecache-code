@@ -48,10 +48,10 @@ public class RandomDirectionalModel {
 			TileKey val = this.DirectionToTile(last, dp.d);
 			if(val != null) {
 				myresult.add(val);
-				System.out.println(val);
+				//System.out.println(val);
 			}
 		}
-		System.out.println("viable options: "+myresult.size());
+		//System.out.println("viable options: "+myresult.size());
 		if(topk >= myresult.size()) { // truncate if list is too long
 			topk = myresult.size() - 1;
 		}
@@ -77,7 +77,7 @@ public class RandomDirectionalModel {
 		for(DirectionPrediction dp : order) {
 			System.out.println(dp);
 		}*/
-		System.out.println("time to predict order: "+(end-start)+"ms");
+		//System.out.println("time to predict order: "+(end-start)+"ms");
 		return order;
 	}
 	
