@@ -19,7 +19,8 @@ public class Client {
 	public static String [] tasknames = {"task1", "task2", "task3"};
 	
 	public static void crossValidation1Model() throws Exception {
-		String[][] models = {{"random"},{"markov"},{"momentum"},{"hotspot"},{"normal"},{"histogram"},{"fhistogram"}};
+		//String[][] models = {{"random"},{"markov"},{"momentum"},{"hotspot"},{"normal"},{"histogram"},{"fhistogram"}};
+		String[][] models = {{"normal"}};
 		//int[] predictions = {1,3,5};
 		int[] predictions = {1};
 		for(String taskname : tasknames) {
@@ -31,7 +32,30 @@ public class Client {
 		}
 	}
 	
+	public static void crossValidationModelSpecific(int[] users, String[] tasknames, String[][] models, int[] predictions) throws Exception {
+		List<Integer> testusers = new ArrayList<Integer>();
+		for(int i = 0; i < users.length; i++) {
+			testusers.add(users[i]);
+		}
+		
+		for(String taskname : tasknames) {
+			for(int i = 0; i < models.length; i++) {
+				for(int predict = 0; predict < predictions.length; predict++) {
+					crossValidation(taskname,models[i],testusers,predictions[predict]);
+				}
+			}
+		}
+	}
+	
+	// test all users
 	public static void crossValidation(String taskname, String[] models, int predictions) throws Exception {
+		List<Integer> testusers = DBInterface.getUsers();
+		crossValidation(taskname,models,testusers,predictions);
+
+	}
+	
+	// only test specific users, but train on all users
+	public static void crossValidation(String taskname, String[] models, List<Integer> testusers, int predictions) throws Exception {
 		List<Integer> users = DBInterface.getUsers();
 		List<Integer> finalusers = new ArrayList<Integer>();
 		
@@ -41,34 +65,28 @@ public class Client {
 			}
 		}
 		
-		if(finalusers.size() == 0) {
-			System.out.println("nothing to test! exiting...");
-			return;
-		} else if (finalusers.size() == 1) {
-			System.out.println("only 1 user! exiting...");
-			return;
-		}
-		
 		double overall_accuracy = 0;
 		// u1 = position of user we are testing
-		for(int u1 = 0; u1 < finalusers.size(); u1++) {
+		for(int u1 = 0; u1 < testusers.size(); u1++) {
 			// get training list
 			int[] trainlist = new int[finalusers.size() - 1];
 			//System.out.print("train list: ");
 			int index = 0;
 			for(int u2 = 0; u2 < finalusers.size(); u2++) {
-				if(u2 != u1) {
+				if(finalusers.get(u2) != testusers.get(u1)) {
 					trainlist[index] = finalusers.get(u2);
 					//System.out.print(trainlist[index]+" ");
 					index++;
 				}
 			}
 			//System.out.println();
+			System.out.print("train list: ");
+			UtilityFunctions.printIntArray(trainlist);
 			// setup test case on backend
 			sendReset(trainlist,models,predictions);
 			
 			//send requests
-			int user_id = finalusers.get(u1);
+			int user_id = testusers.get(u1);
 			List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
 			for(int r = 0; r < trace.size(); r++) {
 				UserRequest ur = trace.get(r);
@@ -93,7 +111,7 @@ public class Client {
 			System.out.print("\t");
 			System.out.println(accuracy);
 		}
-		overall_accuracy /= finalusers.size();
+		overall_accuracy /= testusers.size();
 		//System.out.println("overall\t"+overall_accuracy);
 	}
 
@@ -490,7 +508,7 @@ public class Client {
 				models = new String[modelstrs.length];
 				for(int i = 0; i < modelstrs.length; i++) {
 					models[i] = modelstrs[i];
-					System.out.println("adding task: "+models[i]);
+					System.out.println("adding model: "+models[i]);
 				}
 				
 				if(args.length == 4) {
@@ -525,7 +543,10 @@ public class Client {
 			//getTracesForSpecificUsers(testusers,tasks);
 		} else if((user_ids != null) && (tasknames != null) && (models!=null)) {
 			System.out.println("running specific trace tests");
-			getTracesForSpecificUsers(user_ids,tasknames,models,predictions);
+			//getTracesForSpecificUsers(user_ids,tasknames,models,predictions);
+			String[][] tm = {models};
+			int[] tp = {predictions};
+			crossValidationModelSpecific(user_ids,tasknames,tm,tp);
 		} else if(all) {
 			System.out.println("testing all traces for all tasks");
 			//getTracesForAllUsers();

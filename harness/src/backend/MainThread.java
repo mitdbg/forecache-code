@@ -123,6 +123,12 @@ public class MainThread {
 				break;
 				default: toadd = null;
 			}
+			if(toadd != null){
+				System.out.println("predictions for model "+label);
+				for(TileKey k : toadd) {
+					System.out.println(k);
+				}
+			}
 			// count votes per prediction scheme
 			if((toadd != null) && (toadd.size() > 0)) {
 				// weight votes by ordering
