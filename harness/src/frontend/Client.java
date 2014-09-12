@@ -73,7 +73,7 @@ public class Client {
 			//System.out.print("train list: ");
 			int index = 0;
 			for(int u2 = 0; u2 < finalusers.size(); u2++) {
-				if(finalusers.get(u2) != testusers.get(u1)) {
+				if(!finalusers.get(u2).equals(testusers.get(u1))) {
 					trainlist[index] = finalusers.get(u2);
 					//System.out.print(trainlist[index]+" ");
 					index++;
