@@ -10,6 +10,7 @@ import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
 import backend.util.DirectionClass;
 import backend.util.History;
+import backend.util.ModelAccuracy;
 import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
@@ -29,7 +30,7 @@ public class Client {
 		for(String taskname : tasknames) {
 			for(int i = 0; i < models.length; i++) {
 				for(int predict = 0; predict < predictions.length; predict++) {
-					crossValidation(taskname,models[i],predictions[predict]);
+					crossValidation(taskname,models[i],predictions[predict], null);
 				}
 			}
 		}
@@ -42,23 +43,33 @@ public class Client {
 		}
 		
 		for(String taskname : tasknames) {
-			for(int i = 0; i < models.length; i++) {
-				for(int predict = 0; predict < predictions.length; predict++) {
-					crossValidation(taskname,models[i],testusers,predictions[predict]);
+			for(int predict = 0; predict < predictions.length; predict++) {
+				ModelAccuracy[] ma = new ModelAccuracy[testusers.size()];
+				for(int mai = 0; mai < ma.length; mai++) {
+					ma[mai] = new ModelAccuracy();
+				}
+				for(int i = 0; i < models.length; i++) {
+					crossValidation(taskname,models[i],testusers,predictions[predict], ma);
+				}
+				for(int mai = 0; mai < ma.length; mai++) {
+					ma[mai].learnSimpleModelLabels();
+					ma[mai].learnModelLabels();
+					ma[mai].buildTrackRecords(4);
 				}
 			}
 		}
 	}
 	
 	// test all users
-	public static void crossValidation(String taskname, String[] models, int predictions) throws Exception {
+	public static void crossValidation(String taskname, String[] models, int predictions, ModelAccuracy[] ma) throws Exception {
 		List<Integer> testusers = DBInterface.getUsers();
-		crossValidation(taskname,models,testusers,predictions);
+		crossValidation(taskname,models,testusers,predictions, ma);
 
 	}
 	
 	// only test specific users, but train on all users
-	public static void crossValidation(String taskname, String[] models, List<Integer> testusers, int predictions) throws Exception {
+	public static void crossValidation(String taskname, String[] models, List<Integer> testusers, int predictions,
+			ModelAccuracy[] ma) throws Exception {
 		List<Integer> users = DBInterface.getUsers();
 		List<Integer> finalusers = new ArrayList<Integer>();
 		
@@ -103,6 +114,10 @@ public class Client {
 			//get accuracy for this user
 			double accuracy = getAccuracy();
 			String[] fullAccuracy = getFullAccuracy();
+			if(ma != null) {
+				// assumes this is only for individual models, and not combinations
+				ma[u1].addModel(UtilityFunctions.getModelFromString(models[0]), fullAccuracy);
+			}
 			
 			System.out.print(user_id+"\t");
 			System.out.print(taskname+"\t");
@@ -559,7 +574,12 @@ public class Client {
 		} else if((user_ids != null) && (tasknames != null) && (models!=null)) {
 			System.out.println("running specific trace tests");
 			//getTracesForSpecificUsers(user_ids,tasknames,models,predictions);
-			String[][] tm = {models};
+			String[][] tm = new String[models.length][];
+			for(int i = 0; i < models.length; i++) {
+				tm[i] = new String[1];
+				tm[i][0] = models[i];
+			}
+			
 			int[] tp = {predictions};
 			crossValidationModelSpecific(user_ids,tasknames,tm,tp);
 		} else if(all) {

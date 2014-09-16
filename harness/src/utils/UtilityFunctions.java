@@ -5,8 +5,26 @@ import java.util.List;
 
 import backend.util.Direction;
 import backend.util.DirectionClass;
+import backend.util.Model;
 
 public class UtilityFunctions {
+	public static Model getModelFromString(String modelName) {
+		if(modelName.equals("markov")) {
+			return Model.MARKOV;
+		} else if (modelName.equals("random")) {
+			return Model.RANDOM;
+		} else if (modelName.equals("hotspot")) {
+			return Model.HOTSPOT;
+		} else if (modelName.equals("momentum")) {
+			return Model.MOMENTUM;
+		} else if (modelName.equals("normal")) {
+			return Model.NORMAL;
+		} else if (modelName.equals("histogram")) {
+			return Model.HISTOGRAM;
+		} else {
+			return Model.FHISTOGRAM;
+		}
+	}
 	
 	public static void printStringArray(String[] array) {
 		if(array.length > 0) {
