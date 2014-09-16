@@ -4,9 +4,12 @@ import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
+import backend.util.DirectionClass;
+import backend.util.History;
 import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
@@ -149,6 +152,7 @@ public class Client {
 			for(int t = 0; t < tasks.size(); t++) {
 				String taskname = tasks.get(t);
 				List<UserRequest> trace = DBInterface.getUserTraces(user_id,taskname);
+				History history = new History(4);
 				if(trace.size() > 0) {
 					int path_id = 0;
 					UserRequest prev = trace.get(0);
@@ -163,7 +167,18 @@ public class Client {
 								path_id++;
 								steps = 1;
 							}
-							System.out.println(user_id+","+taskname+","+path_id+","+steps+","+dir);
+							Map<DirectionClass,Integer> dist = history.getClassDistribution();
+							
+							int incount = dist.containsKey(DirectionClass.IN) ? dist.get(DirectionClass.IN) : 0;
+							int outcount = dist.containsKey(DirectionClass.OUT) ? dist.get(DirectionClass.OUT) : 0;
+							int pancount = dist.containsKey(DirectionClass.PAN) ? dist.get(DirectionClass.PAN) : 0;
+							System.out.print(user_id+"\t"+taskname+"\t"+path_id+"\t"+steps+"\t"+dir);
+							// print the counts of zooms and pans for the last X steps
+							System.out.print("\t"+incount);
+							System.out.print("\t"+outcount);
+							System.out.print("\t"+pancount);
+							System.out.println();
+							history.add(dir);
 						}
 						prev = next;
 					}

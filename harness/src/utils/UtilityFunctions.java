@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import backend.util.Direction;
+import backend.util.DirectionClass;
 
 public class UtilityFunctions {
 	
@@ -79,6 +80,20 @@ public class UtilityFunctions {
 		List<Integer> n_id = parseTileIdInteger(n.tile_id);
 		List<Integer> p_id = parseTileIdInteger(p.tile_id);
 		return getDirection(p_id,n_id,p.zoom,n.zoom);
+	}
+	
+	public static DirectionClass getDirectionClass(Direction dir) {
+		if(dir == Direction.IN0 || dir == Direction.IN1 || dir == Direction.IN2 || dir == Direction.IN3) {
+			return DirectionClass.IN;
+		} else if (dir == Direction.OUT) {
+			return DirectionClass.OUT;
+		} else {
+			return DirectionClass.PAN;
+		}
+	}
+	
+	public static DirectionClass getDirectionClass(List<Integer> p_id, List<Integer> n_id, int pzoom, int nzoom) {
+		return getDirectionClass(getDirection(p_id,n_id,pzoom,nzoom));
 	}
 	
 	public static Direction getDirection(List<Integer> p_id, List<Integer> n_id, int pzoom, int nzoom) {
