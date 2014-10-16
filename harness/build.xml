@@ -11,6 +11,7 @@
     <property name="source" value="1.6"/>
     <path id="ScalarPrefetch.classpath">
         <pathelement location="bin"/>
+        <pathelement location="lib/berkeleylm.jar"/>
         <pathelement location="lib/commons-lang3-3.3.jar"/>
         <pathelement location="lib/commons-lang3-3.3-javadoc.jar"/>
         <pathelement location="lib/guava-16.0.1.jar"/>
