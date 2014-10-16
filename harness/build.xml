@@ -48,7 +48,9 @@
     </target>
     <target name="Client">
         <java classname="frontend.Client" failonerror="true" fork="yes">
-            <arg line="all"/>
+            <arg line="130,144 task1 normal 1"/>
+            <!--<arg line="135,135 task1 momentum,normal 3"/>-->
+            <!--<arg line="all"/>-->
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>
