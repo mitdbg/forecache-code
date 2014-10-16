@@ -47,13 +47,20 @@
     </target>
     <target name="Client">
         <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="all"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="Test">
+        <java classname="Test" failonerror="true" fork="yes">
+            <arg line="hi,there these,are,the,args"/>
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>
     <target name="MainThread">
         <java classname="backend.MainThread" failonerror="true" fork="yes">
             <jvmarg line="-Djava.net.preferIPv4Stack=true"/>
-            <arg line="markov 28 task1 3"/>
+            <arg line="markov 28 task1 1"/>
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>

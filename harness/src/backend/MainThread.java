@@ -22,6 +22,7 @@ import backend.memory.MemoryTileBuffer;
 import backend.prediction.TileHistoryQueue;
 import backend.prediction.TrainModels;
 import backend.prediction.directional.HotspotDirectionalModel;
+import backend.prediction.directional.MarkovChainDirectionalModel;
 import backend.prediction.directional.MarkovDirectionalModel;
 import backend.prediction.directional.MomentumDirectionalModel;
 import backend.prediction.directional.RandomDirectionalModel;
@@ -57,6 +58,7 @@ public class MainThread {
 	
 	// global model objects
 	public static MarkovDirectionalModel mdm;
+	public static MarkovChainDirectionalModel[] mcdm;
 	public static RandomDirectionalModel rdm;
 	public static HotspotDirectionalModel hdm;
 	public static MomentumDirectionalModel momdm;
@@ -67,8 +69,17 @@ public class MainThread {
 	public static void setupModels() {
 		for(int i = 0; i < modellabels.length; i++) {
 			Model label = modellabels[i];
+			mcdm = new MarkovChainDirectionalModel[4];
 			switch(label) {
-				case MARKOV: mdm = new MarkovDirectionalModel(MarkovDirectionalModel.defaultlen,hist);
+				case MARKOV: mdm = new MarkovDirectionalModel(6,hist);
+				break;
+				case MARKOV1: mcdm[0] = new MarkovChainDirectionalModel(1,hist);
+				break;
+				case MARKOV2: mcdm[1] = new MarkovChainDirectionalModel(2,hist);
+				break;
+				case MARKOV3: mcdm[2] = new MarkovChainDirectionalModel(3,hist);
+				break;
+				case MARKOV4: mcdm[3] = new MarkovChainDirectionalModel(6,hist);
 				break;
 				case RANDOM: rdm = new RandomDirectionalModel(hist);
 				break;
@@ -93,6 +104,14 @@ public class MainThread {
 			switch(label) {
 				case MARKOV: TrainModels.TrainMarkovDirectionalModel(user_ids, taskname, mdm);
 				break;
+				case MARKOV1: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, mcdm[0]);
+				break;
+				case MARKOV2: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, mcdm[1]);
+				break;
+				case MARKOV3: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, mcdm[2]);
+				break;
+				case MARKOV4: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, mcdm[3]);
+				break;
 				case HOTSPOT: TrainModels.TrainHotspotDirectionalModel(user_ids, taskname, hdm);
 				break;
 				default://do nothing
@@ -109,18 +128,31 @@ public class MainThread {
 			switch(label) {
 				case MARKOV: toadd = mdm.predictTiles(defaultpredictions);
 				break;
+				
+				case MARKOV1: toadd = mcdm[0].predictTiles(defaultpredictions);
+				break;
+				case MARKOV2: toadd = mcdm[1].predictTiles(defaultpredictions);
+				break;
+				case MARKOV3: toadd = mcdm[2].predictTiles(defaultpredictions);
+				break;
+				case MARKOV4: toadd = mcdm[3].predictTiles(defaultpredictions);
+				break;
+				
 				case RANDOM: toadd = rdm.predictTiles(defaultpredictions);
 				break;
+				
 				case HOTSPOT: toadd = hdm.predictTiles(defaultpredictions);
 				break;
 				case MOMENTUM: toadd = momdm.predictTiles(defaultpredictions);
 				break;
+				
 				case NORMAL: toadd = nsm.predictTiles(defaultpredictions);
 				break;
 				case HISTOGRAM: toadd = hsm.predictTiles(defaultpredictions);
 				break;
 				case FHISTOGRAM: toadd = fsm.predictTiles(defaultpredictions);
 				break;
+				
 				default: toadd = null;
 			}
 			if(toadd != null){
@@ -273,6 +305,19 @@ public class MainThread {
 			System.out.println("modelstrs["+i+"] = '"+modelstrs[i]+"'");
 			if(modelstrs[i].equals("markov")) {
 				argmodels[i] = Model.MARKOV;
+			} else if(modelstrs[i].contains("markov")) {
+				String len = modelstrs[i].substring(6);
+				if(len.equals("1")) {
+					argmodels[i] = Model.MARKOV1;
+				} else if (len.equals("2")) {
+					argmodels[i] = Model.MARKOV2;
+				} else if (len.equals("3")) {
+					argmodels[i] = Model.MARKOV3;
+				} else if (len.equals("4")) {
+					argmodels[i] = Model.MARKOV4;
+				} else {
+					argmodels[i] = Model.MARKOV1;
+				}
 			} else if(modelstrs[i].equals("random")) {
 				argmodels[i] = Model.RANDOM;
 			} else if(modelstrs[i].equals("hotspot")) {
