@@ -26,7 +26,7 @@ public class LmReadersExtension extends LmReaders {
 			File tmpFile = File.createTempFile("__fc_lm_out", ".arpa");
 			ConfigOptions opts = new ConfigOptions();
 			boolean compress = false;
-			
+			System.out.println("order: "+lmOrder);
 			createKneserNeyLmFromStrings(sentences,wordIndexer,lmOrder,tmpFile,opts);
 			returnval = readArrayEncodedLmFromArpa(tmpFile.getPath(), compress, wordIndexer, opts, lmOrder);
 			tmpFile.delete(); // get rid of the file after. THIS IS NECESSARY

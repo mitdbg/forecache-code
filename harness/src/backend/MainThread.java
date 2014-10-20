@@ -25,6 +25,7 @@ import backend.prediction.directional.HotspotDirectionalModel;
 import backend.prediction.directional.MarkovChainDirectionalModel;
 import backend.prediction.directional.MarkovDirectionalModel;
 import backend.prediction.directional.MomentumDirectionalModel;
+import backend.prediction.directional.NGramDirectionalModel;
 import backend.prediction.directional.RandomDirectionalModel;
 import backend.prediction.signature.FilteredHistogramSignatureModel;
 import backend.prediction.signature.HistogramSignatureModel;
@@ -58,6 +59,7 @@ public class MainThread {
 	
 	// global model objects
 	public static MarkovDirectionalModel mdm;
+	public static NGramDirectionalModel ndm;
 	public static MarkovChainDirectionalModel[] mcdm;
 	public static RandomDirectionalModel rdm;
 	public static HotspotDirectionalModel hdm;
@@ -71,7 +73,7 @@ public class MainThread {
 			Model label = modellabels[i];
 			mcdm = new MarkovChainDirectionalModel[4];
 			switch(label) {
-				case MARKOV: mdm = new MarkovDirectionalModel(6,hist);
+				case MARKOV: mdm = new MarkovDirectionalModel(4,hist);
 				break;
 				case MARKOV1: mcdm[0] = new MarkovChainDirectionalModel(1,hist);
 				break;
@@ -79,7 +81,9 @@ public class MainThread {
 				break;
 				case MARKOV3: mcdm[2] = new MarkovChainDirectionalModel(3,hist);
 				break;
-				case MARKOV4: mcdm[3] = new MarkovChainDirectionalModel(6,hist);
+				case MARKOV4: mcdm[3] = new MarkovChainDirectionalModel(4,hist);
+				break;
+				case NGRAM: ndm = new NGramDirectionalModel(4,hist);
 				break;
 				case RANDOM: rdm = new RandomDirectionalModel(hist);
 				break;
@@ -112,6 +116,8 @@ public class MainThread {
 				break;
 				case MARKOV4: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, mcdm[3]);
 				break;
+				case NGRAM: TrainModels.TrainNGramDirectionalModel(user_ids, taskname, ndm);
+				break;
 				case HOTSPOT: TrainModels.TrainHotspotDirectionalModel(user_ids, taskname, hdm);
 				break;
 				default://do nothing
@@ -136,6 +142,9 @@ public class MainThread {
 				case MARKOV3: toadd = mcdm[2].predictTiles(defaultpredictions);
 				break;
 				case MARKOV4: toadd = mcdm[3].predictTiles(defaultpredictions);
+				break;
+				
+				case NGRAM: toadd = ndm.predictTiles(defaultpredictions);
 				break;
 				
 				case RANDOM: toadd = rdm.predictTiles(defaultpredictions);
@@ -318,6 +327,8 @@ public class MainThread {
 				} else {
 					argmodels[i] = Model.MARKOV1;
 				}
+			} else if(modelstrs[i].equals("ngram")) {
+				argmodels[i] = Model.NGRAM;
 			} else if(modelstrs[i].equals("random")) {
 				argmodels[i] = Model.RANDOM;
 			} else if(modelstrs[i].equals("hotspot")) {

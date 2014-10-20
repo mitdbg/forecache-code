@@ -100,6 +100,12 @@ public class UtilityFunctions {
 		return getDirection(p_id,n_id,p.zoom,n.zoom);
 	}
 	
+	public static String getDirectionWord(UserRequest p, UserRequest n) {
+		List<Integer> n_id = parseTileIdInteger(n.tile_id);
+		List<Integer> p_id = parseTileIdInteger(p.tile_id);
+		return getDirectionWord(p_id,n_id,p.zoom,n.zoom);
+	}
+	
 	public static DirectionClass getDirectionClass(Direction dir) {
 		if(dir == Direction.IN0 || dir == Direction.IN1 || dir == Direction.IN2 || dir == Direction.IN3) {
 			return DirectionClass.IN;
@@ -112,6 +118,43 @@ public class UtilityFunctions {
 	
 	public static DirectionClass getDirectionClass(List<Integer> p_id, List<Integer> n_id, int pzoom, int nzoom) {
 		return getDirectionClass(getDirection(p_id,n_id,pzoom,nzoom));
+	}
+	
+	public static String getDirectionWord(List<Integer> p_id, List<Integer> n_id, int pzoom, int nzoom) {
+		int zoomdiff = nzoom - pzoom;
+		int xdiff = n_id.get(0) - p_id.get(0);
+		int ydiff = n_id.get(1) - p_id.get(1);
+		Direction d = null;
+		//System.out.println("zoomdiff: "+zoomdiff+", xdiff: "+xdiff+", ydiff: "+ydiff);
+		if(zoomdiff < -1) { // user reset back to top level tile
+			d = null;
+		} else if(zoomdiff < 0) { // zoom out
+			d = Direction.OUT;
+		} else if(zoomdiff > 0) { // zoom in
+			xdiff = n_id.get(0) - 2 * p_id.get(0);
+			ydiff = n_id.get(1) - 2 * p_id.get(1);
+			if((xdiff > 0) && (ydiff > 0)) {
+				d = Direction.IN2;
+			} else if(xdiff > 0) {
+				d = Direction.IN3;
+			} else if(ydiff > 0) {
+				d = Direction.IN1;
+			} else {
+				d = Direction.IN0;
+			}
+		} else if(xdiff > 0) {
+			d = Direction.RIGHT;
+		} else if(xdiff < 0) {
+			d = Direction.LEFT;
+		} else if(ydiff > 0) {
+			d = Direction.UP;
+		} else if(ydiff < 0 ){
+			d = Direction.DOWN;
+		}
+		if(d!= null) {
+			return d.getWord();
+		}
+		return null;
 	}
 	
 	public static Direction getDirection(List<Integer> p_id, List<Integer> n_id, int pzoom, int nzoom) {
