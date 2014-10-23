@@ -1,6 +1,15 @@
 package backend.util;
 
+import java.io.File;
 import java.nio.ByteBuffer;
+
+import org.opencv.core.Mat;
+import org.opencv.features2d.DescriptorExtractor;
+import org.opencv.core.MatOfKeyPoint;
+import org.opencv.features2d.FeatureDetector;
+import org.opencv.highgui.Highgui;
+
+import backend.MainThread;
 
 public class Signatures {
 	public static double[] globalmin = {0,0,-1,-1,-1,0};
@@ -58,6 +67,26 @@ public class Signatures {
 		long end = System.currentTimeMillis();
 		//System.out.println("Time to build normal dist: "+(end-start)+"ms");
 		return histogram;
+	}
+	
+	
+	/**************** Sift ****************/
+	public static double[] getSiftSignature(TileKey id) {
+		NiceTile tile = MainThread.scidbapi.getNiceTile(id);
+		MatOfKeyPoint keypoints = new MatOfKeyPoint();
+		Mat descriptors = new Mat();
+		
+		File t = new File(DrawHeatmap.buildFilename(tile));
+		if(!(t.exists() && t.isFile())) {
+			DrawHeatmap.buildImage(tile);
+		}
+		Mat image = Highgui.imread(t.getPath(),Highgui.CV_LOAD_IMAGE_GRAYSCALE);
+
+		FeatureDetector detector = FeatureDetector.create(FeatureDetector.SIFT);
+		DescriptorExtractor extractor = DescriptorExtractor.create(DescriptorExtractor.SIFT);
+		detector.detect(image, keypoints);
+		extractor.compute(image, keypoints, descriptors);
+		return null;
 	}
 	
 	/**************** Histograms ****************/

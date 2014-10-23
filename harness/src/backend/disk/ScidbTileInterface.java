@@ -11,6 +11,7 @@ import java.util.Map;
 import utils.DBInterface;
 import utils.UtilityFunctions;
 
+import backend.util.NiceTile;
 import backend.util.Params;
 import backend.util.ParamsMap;
 import backend.util.Tile;
@@ -46,7 +47,10 @@ public class ScidbTileInterface {
 		String[] myresult = new String[3];
 		myresult[0] = "bash";
 		myresult[1] = "-c";
-		myresult[2] = "source ~/.bashrc; iquery -o csv+ -aq \"" + buildQuery(arrayname,p) + "\"";
+		myresult[2] = "export SCIDB_VER=12.10 ; " +
+				"export PATH=/opt/scidb/$SCIDB_VER/bin:/opt/scidb/$SCIDB_VER/share/scidb:$PATH ; " +
+				"export LD_LIBRARY_PATH=/opt/scidb/$SCIDB_VER/lib:$LD_LIBRARY_PATH ; " +
+				"source ~/.bashrc ; iquery -o csv+ -aq \"" + buildQuery(arrayname,p) + "\"";
 		return myresult;
 	}
 	
@@ -62,24 +66,111 @@ public class ScidbTileInterface {
 		return myresult;
 	}
 	
-	public List<Double> executeQuery(String arrayname, Params p) throws IOException {
-		List<Double> myresult = new ArrayList<Double>();
+	public NiceTile getNiceTile(TileKey id) {
+		NiceTile tile = new NiceTile(id);
+		String tile_id = id.buildTileString();
+		if(tile_id == null) {
+			System.out.println("could not build tile_id");
+			return null;
+		}
+		Map<Integer,Params> map1 = this.paramsMap.get(id.buildTileString());
+		if(map1 == null) {
+			System.out.println("map1 is null");
+			return null;
+		}
+		Params p = map1.get(id.getZoom());
+		if(p == null) {
+			System.out.println("params is null");
+			return null;
+		}
+		try {
+			executeQuery(DBInterface.arrayname,p,tile);
+		} catch(IOException e) {
+			System.out.println("Error occured while retrieving tile from database");
+			e.printStackTrace();
+		}
+		
+		return tile;
+	}
+	
+	public void executeQuery(String arrayname, Params p, NiceTile tile) throws IOException {
 		String[] cmd = buildCmd(arrayname, p);
+		
+		// print command
+		//UtilityFunctions.printStringArray(cmd);
+		//System.out.println();
+		
 		Process proc = Runtime.getRuntime().exec(cmd);
-		//proc.getErrorStream();
+		/*
+		// only uncomment this if things aren't working
+		BufferedReader ebr = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+		for (String line; (line = ebr.readLine()) != null;) {
+			System.out.println(line);
+		}
+		*/
 		long start = System.currentTimeMillis();
         BufferedReader br = new BufferedReader(new InputStreamReader(proc.getInputStream()));
         boolean first = true;
 		for (String line; (line = br.readLine()) != null;) {
-				if(!first) { // ignore first line
-					//System.out.println(line);
-					String[] tokens = line.split(",");
-					for(int i = 0; i < tokens.length; i++) {
-						myresult.add(Double.parseDouble(tokens[i]));
+			//System.out.println(line);
+			String[] tokens = line.split(",");
+			if(!first) { // ignore first line
+				for(int i = 0; i < tokens.length; i++) {
+					Double next = null;
+					try {
+						next = Double.parseDouble(tokens[i]);
+					} catch (NumberFormatException e) {
+						System.out.println("could not parse SciDB result, skipping...");
+						e.printStackTrace();
 					}
-				} else {
-					first = false;
+					tile.insert(next,i); // just add null if we can't parse it
 				}
+			} else {
+				first = false;
+				for(int i = 0; i < tokens.length; i++) {
+					tile.addAttribute(tokens[i]);
+				}
+			}
+		}
+		/*
+		for(int i = 0; i < tile.attributes.size(); i++) {
+			System.out.print(tile.attributes.get(i)+"\t");
+			System.out.println(tile.data.get(i).size());
+		}
+		*/
+		long end = System.currentTimeMillis();
+		//System.out.println("time to build: "+(end - start) +"ms");
+	}
+	
+	public List<Double> executeQuery(String arrayname, Params p) throws IOException {
+		List<Double> myresult = new ArrayList<Double>();
+		String[] cmd = buildCmd(arrayname, p);
+		
+		// print command
+		//UtilityFunctions.printStringArray(cmd);
+		//System.out.println();
+		
+		Process proc = Runtime.getRuntime().exec(cmd);
+		/*
+		// only uncomment this if things aren't working
+		BufferedReader ebr = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+		for (String line; (line = ebr.readLine()) != null;) {
+			System.out.println(line);
+		}
+		*/
+		long start = System.currentTimeMillis();
+        BufferedReader br = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+        boolean first = true;
+		for (String line; (line = br.readLine()) != null;) {
+			//System.out.println(line);
+			if(!first) { // ignore first line
+				String[] tokens = line.split(",");
+				for(int i = 0; i < tokens.length; i++) {
+					myresult.add(Double.parseDouble(tokens[i]));
+				}
+			} else {
+				first = false;
+			}
 		}
 		long end = System.currentTimeMillis();
 		//System.out.println("time to build: "+(end - start) +"ms");
@@ -96,6 +187,7 @@ public class ScidbTileInterface {
 		List<Double> myresult = new ArrayList<Double>();
 		String tile_id = id.buildTileString();
 		if(tile_id == null) {
+			System.out.println("could not build tile_id");
 			return myresult;
 		}
 		Map<Integer,Params> map1 = this.paramsMap.get(id.buildTileString());
@@ -125,6 +217,8 @@ public class ScidbTileInterface {
 	}
 	
 	public static void main(String[] args) {
+		boolean nicetest = true;
+		boolean tiletest = true;
 		Params p = new Params();
 		p.xmin = 0;
 		p.ymin = 0;
@@ -136,13 +230,26 @@ public class ScidbTileInterface {
 		int zoom = 0;
 		List<Integer> tile_id = UtilityFunctions.parseTileIdInteger(idstr);
 		TileKey id = new TileKey(tile_id,zoom);
-		Tile result = sti.getTile(id);
-		double[] histogram = result.getHistogramSignature();
-		if(histogram != null && (histogram.length > 0)) {
-			System.out.println("successfully build histogram");
+		
+		if(tiletest) {
+			Tile result = sti.getTile(id);
+			
+			System.out.println(result.getDataSize());
+			double[] histogram = result.getHistogramSignature();
+			if(histogram != null && (histogram.length > 0)) {
+				System.out.println("successfully built histogram");
+			}
+			//double[] norm = result.getNormalSignature();
+			//double[] fhistogram = result.getFilteredHistogramSignature();
 		}
-		//double[] norm = result.getNormalSignature();
-		//double[] fhistogram = result.getFilteredHistogramSignature();
+		
+		if(nicetest) {
+			NiceTile testtile = sti.getNiceTile(id);
+			System.out.println("total points: "+testtile.data.get(0).size());
+			System.out.println(testtile.attributes.get(0)+","+testtile.data.get(0).get(100));
+			System.out.println(testtile.attributes.get(1)+","+testtile.data.get(1).get(100));
+			System.out.println(testtile.attributes.get(2)+","+testtile.data.get(2).get(100));
+		}
 	}
 
 }

@@ -144,6 +144,18 @@ public class TileKey {
 		return tile_id.toString();
 	}
 	
+	public String buildTileStringForFile() {
+		StringBuilder tile_id = new StringBuilder();
+		if(this.id == null) {
+			return null;
+		}
+		tile_id.append(this.zoom);
+		for(int i = 0; i < this.id.size(); i++) {
+			tile_id.append("_").append(this.id.get(i));
+		}
+		return tile_id.toString();
+	}
+	
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();

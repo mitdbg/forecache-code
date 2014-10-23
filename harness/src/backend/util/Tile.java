@@ -9,12 +9,18 @@ import java.io.UnsupportedEncodingException;
  * Class fields are immutable.
  */
 public class Tile {
-	private final TileKey id;
-	private final byte[] data;
-	private final int size;
-	private double[] histogram = null;
-	private double[] fhistogram = null;
-	private double[] norm = null;
+	protected final TileKey id;
+	protected final byte[] data;
+	protected int size;
+	protected double[] histogram = null;
+	protected double[] fhistogram = null;
+	protected double[] norm = null;
+	
+	public Tile() {
+		this.id = null;
+		this.data = null;
+		this.size = 0;
+	}
 	
 	public Tile(TileKey id, byte[] data) {
 		this.id = id;
