@@ -30,8 +30,8 @@ public class DBInterface {
 */	
 
 	public static String defaultparamsfile = "/home/leibatt/projects/user_study/scalar_backend/thesis2_params.tsv";
-	//public static final String cache_root_dir = "/home/leibatt/projects/user_study/scalar_backend/test_cache";
-	public static final String cache_root_dir = "/home/leibatt/projects/user_study/scalar_backend/test_cache2";
+	public static final String cache_root_dir = "/home/leibatt/projects/user_study/scalar_backend/test_cache";
+	//public static final String cache_root_dir = "/home/leibatt/projects/user_study/scalar_backend/test_cache2";
 	public static final String sig_root_dir = "/home/leibatt/projects/user_study/scalar_backend/_scalar_sig_dir2";
 	public static final String csv_root_dir = "/home/leibatt/projects/user_study/scalar_backend/_scalar_csv_dir2";
 	public static final String dbname  = "test";

@@ -5,6 +5,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.Rect;
+
+import edu.wlu.cs.levy.CG.KDTree;
+import edu.wlu.cs.levy.CG.KeyDuplicateException;
+import edu.wlu.cs.levy.CG.KeySizeException;
+
 import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
@@ -17,6 +26,7 @@ import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
 import backend.util.Params;
 import backend.util.ParamsMap;
+import backend.util.Signatures;
 import backend.util.Tile;
 import backend.util.TileKey;
 
@@ -27,6 +37,10 @@ public class SiftSignatureModel {
 	private DiskTileBuffer diskbuf;
 	private ScidbTileInterface scidbapi;
 	public static final double defaultprob = .00000000001;
+	
+	public static int defaultVocabSize = 5;
+	protected List<double[]> roiHistograms = null;
+	KDTree<Integer> vocab = null;
 
 	public SiftSignatureModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api) {
 		this.history = ref; // reference to (syncrhonized) global history object
@@ -42,10 +56,13 @@ public class SiftSignatureModel {
 		if(this.history == null) {
 			return myresult;
 		}
-		// get prefix of max length
+		// do we have access to the last request?
 		List<UserRequest> htrace = history.getHistoryTrace(1);
 		if(htrace.size() == 0) {
 			return myresult;
+		}
+		if(history.newRoi() || roiHistograms == null) { // if there is a new ROI, update!
+			updateRoi(history.getLastRoi(),scidbapi);
 		}
 		List<DirectionPrediction> order = predictOrder(htrace);
 		UserRequest last = htrace.get(0);
@@ -86,8 +103,10 @@ public class SiftSignatureModel {
 			dp.d = d;
 			dp.confidence = 0.0;
 			if(candidate != null) {
-				dp.confidence = orig.getHistogramDistance(candidate);
-				//System.out.println(ckey+" with confidence: "+dp.confidence);
+				double[] vocabhist = buildSignature(candidate.getTileKey());
+				for(double[] roihist : roiHistograms) {
+					dp.confidence += Signatures.chiSquaredDistance(vocabhist, roihist);
+				}
 			}
 			if(dp.confidence < defaultprob) {
 				dp.confidence = defaultprob;
@@ -175,5 +194,75 @@ public class SiftSignatureModel {
 		}
 		//System.out.println("recommendation: "+key);
 		return key;
+	}
+	
+	public void updateRoi(List<TileKey> roi, ScidbTileInterface scidbapi) {
+		List<Mat> all_descriptors = new ArrayList<Mat>();
+		int rows = 0;
+		int cols = 0;
+		for(TileKey id : roi) { // for each tile in the ROI
+			Mat d = Signatures.getSiftDescriptorsForImage(id, scidbapi);
+			rows += d.rows();
+			all_descriptors.add(d); // better have the same number of cols!
+		}
+		// merge into a single matrix
+		if(all_descriptors.size() > 0) {
+			cols = all_descriptors.get(0).cols();
+			Mat finalMatrix = Mat.zeros(rows,cols, all_descriptors.get(0).type());
+			int curr = 0;
+			for(int i = 0; i < all_descriptors.size(); i++) {
+				Mat d = all_descriptors.get(i);
+				int r = d.rows();
+				d.copyTo(finalMatrix.submat(new Rect(0,curr,cols-1,curr+r - 1)));
+				d.release(); // remove reference and deallocate
+				curr += r;
+			}
+			System.out.println(finalMatrix.get(0, 0)[0]);
+			System.out.println("got here");
+			// these clusters are our visual words
+			// each center represents the center of a word
+			Mat centers = Signatures.getKmeansCenters(finalMatrix, defaultVocabSize);
+			vocab = Signatures.buildKDTree(centers); // used to find nearest neighbor fast
+			System.out.println("got here 2");
+			// now go back through and build histograms for each ROI
+			roiHistograms = new ArrayList<double[]>();
+			for(Mat d : all_descriptors) {
+				roiHistograms.add(buildSignature(d));
+			}
+		}
+		System.out.println("got here 3");
+	}
+	
+	//TODO: override these to implement a new image signature!
+	public double[] buildSignature(Mat d) {
+		return Signatures.buildSiftSignature(d, vocab, defaultVocabSize);
+	}
+	
+	public double[] buildSignature(TileKey id) {
+		return Signatures.buildSiftSignature(id, vocab, defaultVocabSize);
+	}
+	
+	public static void main(String[] args) {
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+		String idstr = "[0, 0]";
+		int zoom = 1;
+		List<Integer> tile_id = UtilityFunctions.parseTileIdInteger(idstr);
+		TileKey id = new TileKey(tile_id,zoom);
+		int vocabSize = defaultVocabSize;
+		ScidbTileInterface scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+		Mat descriptors = Signatures.getSiftDescriptorsForImage(id, scidbapi);
+		Mat centers = Signatures.getKmeansCenters(descriptors, vocabSize);
+		System.out.println("centers dimensions: "+centers.dims()+", ("+centers.rows()+","+centers.cols()+")");
+		//for(int i = 0; i < centers.cols(); i++) {
+		//	System.out.print(centers.get(0, i)[0]+" ");
+		//	System.out.println();
+		//}
+		
+		KDTree<Integer> vocab = Signatures.buildKDTree(centers);
+		double[] hist = Signatures.buildSiftSignature(descriptors, vocab, defaultVocabSize);
+		for(int i = 0; i < hist.length; i++) {
+			System.out.print(" "+hist[i]);
+		}
+		System.out.println();
 	}
 }

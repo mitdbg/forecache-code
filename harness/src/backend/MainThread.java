@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.opencv.core.Core;
 
 import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
@@ -30,6 +31,7 @@ import backend.prediction.directional.RandomDirectionalModel;
 import backend.prediction.signature.FilteredHistogramSignatureModel;
 import backend.prediction.signature.HistogramSignatureModel;
 import backend.prediction.signature.NormalSignatureModel;
+import backend.prediction.signature.SiftSignatureModel;
 import backend.util.Model;
 import backend.util.Tile;
 import backend.util.TileKey;
@@ -42,6 +44,7 @@ public class MainThread {
 	public static ScidbTileInterface scidbapi;
 	public static int histmax = 10;
 	public static TileHistoryQueue hist;
+	public static boolean load_opencv = false;
 	
 	//server
 	public static Server server;
@@ -67,6 +70,7 @@ public class MainThread {
 	public static NormalSignatureModel nsm;
 	public static HistogramSignatureModel hsm;
 	public static FilteredHistogramSignatureModel fsm;
+	public static SiftSignatureModel ssm;
 	
 	public static void setupModels() {
 		for(int i = 0; i < modellabels.length; i++) {
@@ -96,6 +100,8 @@ public class MainThread {
 				case HISTOGRAM: hsm = new HistogramSignatureModel(hist,membuf,diskbuf,scidbapi);
 				break;
 				case FHISTOGRAM: fsm = new FilteredHistogramSignatureModel(hist,membuf,diskbuf,scidbapi);
+				break;
+				case SIFT: ssm = new SiftSignatureModel(hist,membuf,diskbuf,scidbapi);
 				break;
 				default://do nothing
 			}
@@ -160,6 +166,8 @@ public class MainThread {
 				case HISTOGRAM: toadd = hsm.predictTiles(defaultpredictions);
 				break;
 				case FHISTOGRAM: toadd = fsm.predictTiles(defaultpredictions);
+				break;
+				case SIFT: toadd = ssm.predictTiles(defaultpredictions);
 				break;
 				
 				default: toadd = null;
@@ -341,7 +349,13 @@ public class MainThread {
 				argmodels[i] = Model.HISTOGRAM;
 			} else if(modelstrs[i].equals("fhistogram")) {
 				argmodels[i] = Model.FHISTOGRAM;
+			} else if(modelstrs[i].equals("sift")) {
+				load_opencv = true;
+				argmodels[i] = Model.SIFT;
 			}
+		}
+		if(load_opencv) {
+			System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		}
 		modellabels = argmodels;
 	}

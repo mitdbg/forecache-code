@@ -2,14 +2,22 @@ package backend.util;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.List;
 
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.TermCriteria;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.highgui.Highgui;
 
+import edu.wlu.cs.levy.CG.KDTree;
+import edu.wlu.cs.levy.CG.KeyDuplicateException;
+import edu.wlu.cs.levy.CG.KeySizeException;
+
 import backend.MainThread;
+import backend.disk.ScidbTileInterface;
 
 public class Signatures {
 	public static double[] globalmin = {0,0,-1,-1,-1,0};
@@ -71,8 +79,53 @@ public class Signatures {
 	
 	
 	/**************** Sift ****************/
-	public static double[] getSiftSignature(TileKey id) {
-		NiceTile tile = MainThread.scidbapi.getNiceTile(id);
+	public static double[] buildSiftSignature(TileKey id, KDTree<Integer> vocabulary, int vocabsize) {
+		Mat tile = getSiftDescriptorsForImage(id);
+		return buildSiftSignature(tile,vocabulary,vocabsize);
+	}
+	
+	public static double[] buildSiftSignature(Mat tile, KDTree<Integer> vocabulary, int vocabsize) {
+		double[] histogram = new double[vocabsize];
+		int totaldescriptors = tile.rows();
+		for(int i = 0; i < totaldescriptors; i++) { // each row is a descriptor
+			// build key
+			int width = tile.cols();
+			double[] key = new double[width];
+			for(int k = 0; k < width; k++) {
+				key[k] = tile.get(i,k)[0];
+			}
+
+			// find nearest cluster center to this key
+			Integer word = null;
+			try {
+				word = vocabulary.nearest(key);
+			} catch (KeySizeException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			// increment count for this word
+			if(word != null) {
+				histogram[word]++;
+			}
+		}
+		
+		// normalize histogram
+		for(int i = 0; i < vocabsize; i++) {
+			histogram[i] /= totaldescriptors;
+		}
+		
+		return histogram;
+	}
+	
+	// for use with main thread
+	public static Mat getSiftDescriptorsForImage(TileKey id) {
+		return getSiftDescriptorsForImage(id,MainThread.scidbapi);
+	}
+	
+	// for general use
+	public static Mat getSiftDescriptorsForImage(TileKey id, ScidbTileInterface scidbapi) {
+		NiceTile tile = scidbapi.getNiceTile(id);
 		MatOfKeyPoint keypoints = new MatOfKeyPoint();
 		Mat descriptors = new Mat();
 		
@@ -86,7 +139,13 @@ public class Signatures {
 		DescriptorExtractor extractor = DescriptorExtractor.create(DescriptorExtractor.SIFT);
 		detector.detect(image, keypoints);
 		extractor.compute(image, keypoints, descriptors);
-		return null;
+		
+		System.out.println("file: "+t);
+		System.out.println("keypoints cols: "+keypoints.cols()+", rows: "+keypoints.rows());
+		System.out.println("descriptors dimensions: "+descriptors.dims());
+		System.out.println("keypoints cols: "+descriptors.cols()+", rows: "+descriptors.rows());
+		System.out.println("descriptor val at [0,0]: " + descriptors.get(0, 127)[0]);
+		return descriptors;
 	}
 	
 	/**************** Histograms ****************/
@@ -96,6 +155,14 @@ public class Signatures {
 			distance += Math.pow(b[i] - a[i], 2);
 		}
 		return Math.sqrt(distance);
+	}
+	
+	public static double chiSquaredDistance(double[] a, double[] b) {
+		double distance = 0;
+		for(int i = 0; i < a.length; i++) {
+			distance += Math.pow(a[i] - b[i], 2) / (a[i] + b[i]);
+		}
+		return distance / 2;
 	}
 	
 	public static double[] getHistogramSignature(byte[] input) {
@@ -170,6 +237,30 @@ public class Signatures {
 	}
 	
 	/******************general ********************/
+	// use kd-tree to make nearest neighbor fast
+	public static KDTree<Integer> buildKDTree(Mat keys) {
+		int rows = keys.rows();
+		int cols = keys.cols();
+		KDTree<Integer> tree = new KDTree<Integer>(cols);
+		for(int i = 0; i < rows; i++) {
+			double[] key = new double[cols];
+			for(int j = 0; j < cols; j++) {
+				key[j] = keys.get(i, j)[0];
+			}
+			try {
+				tree.insert(key, i); // which row was this?
+			} catch (KeySizeException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (KeyDuplicateException e) {
+				// TODO Auto-generated catch block
+				System.out.println("found duplicate key!");
+				e.printStackTrace();
+			}
+		}
+		return tree;
+	}
+	
 	public static double[] getData(byte[] input) {
 		long start = System.currentTimeMillis();
 		ByteBuffer buffer = ByteBuffer.wrap(input);
@@ -181,5 +272,14 @@ public class Signatures {
 		long end = System.currentTimeMillis();
 		//System.out.println("Time to convert from bytes to doubles: "+(end-start)+"ms");
 		return result;
+	}
+	
+	public static Mat getKmeansCenters(Mat observations, int totalClusters) {
+		Mat labels = new Mat();
+		TermCriteria criteria = new TermCriteria(TermCriteria.COUNT,100,1);
+		Mat centers = new Mat();
+		int attempts = 1;
+		Core.kmeans(observations,totalClusters,labels,criteria,attempts, Core.KMEANS_RANDOM_CENTERS, centers);
+		return centers;
 	}
 }

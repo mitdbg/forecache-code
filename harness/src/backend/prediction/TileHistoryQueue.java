@@ -14,10 +14,16 @@ import backend.util.TileKey;
  */
 public class TileHistoryQueue {
 	private ArrayList<TileRecord> history;
+	private ArrayList<TileRecord> trueHistory; // used to track ROI's
+	protected List<TileKey> lastRoi;
+	protected int lastZoomOut = -1;
+	protected boolean newRoi = false;
 	private int maxhist;
 	
 	public TileHistoryQueue(int maxhist) {
 		history = new ArrayList<TileRecord>();
+		trueHistory = new ArrayList<TileRecord>();
+		lastRoi = new ArrayList<TileKey>();
 		this.maxhist = maxhist;
 	}
 	
@@ -26,6 +32,8 @@ public class TileHistoryQueue {
 	// maintains history of length maxhist
 	public synchronized void addRecord(Tile Next) {
 		history.add(new TileRecord(Next));
+		trueHistory.add(new TileRecord(Next));
+		updateROI();
 		if(history.size() > maxhist) {
 			history.remove(0);
 		}
@@ -79,6 +87,64 @@ public class TileHistoryQueue {
 			myresult.add(temp);
 		}
 		return myresult;
+	}
+	
+	public synchronized List<UserRequest> getLastROI() {
+		List<UserRequest> myresult = new ArrayList<UserRequest>();
+		
+		return myresult;
+	}
+	
+	public synchronized List<TileKey> getLastRoi() {
+		if(lastRoi.size() > 0) {
+			return lastRoi;
+		}
+		
+		// just return the last request, if there is no ROI yet
+		List<TileKey> makeshiftRoi = new ArrayList<TileKey>();
+		makeshiftRoi.add(history.get(history.size()-1).MyTile.getTileKey());
+		return makeshiftRoi;
+	}
+	
+	public synchronized boolean newRoi() {
+		return newRoi;
+	}
+	
+	// find the user's last region of interest!
+	protected void updateROI() {
+		int lastZoomOut = -1;
+		int lastZoomIn = -1;
+		int i = trueHistory.size() - 2;
+		for(;i > this.lastZoomOut; i--) {
+			TileKey lastKey = trueHistory.get(i+1).MyTile.getTileKey();
+			TileKey nextLastKey = trueHistory.get(i).MyTile.getTileKey();
+			if(lastKey.getZoom() < nextLastKey.getZoom()) { // found zoom out
+					lastZoomOut = i;
+					break;
+			}
+		}
+		for(;i > this.lastZoomOut; i--) {
+			TileKey lastKey = trueHistory.get(i+1).MyTile.getTileKey();
+			TileKey nextLastKey = trueHistory.get(i).MyTile.getTileKey();
+			if(lastKey.getZoom() > nextLastKey.getZoom()) { // found zoom in, new ROI!
+				lastZoomIn = i;
+				break;
+			} else if (lastKey.getZoom() < nextLastKey.getZoom()) { // found another zoom out, abort!
+				lastZoomOut = -1;
+				break;
+			}
+		}
+		
+		if(lastZoomOut >= 0 && lastZoomIn >= 0) {
+			this.lastZoomOut = lastZoomOut;
+			lastRoi.clear();
+			for(i = lastZoomIn; i <= lastZoomOut; i++) {
+				lastRoi.add(history.get(i).MyTile.getTileKey());
+			}
+			newRoi = true;
+		} else {
+			newRoi = false;
+		}
 	}
 	
 	@Override
