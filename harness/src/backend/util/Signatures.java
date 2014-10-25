@@ -141,10 +141,6 @@ public class Signatures {
 		extractor.compute(image, keypoints, descriptors);
 		
 		System.out.println("file: "+t);
-		System.out.println("keypoints cols: "+keypoints.cols()+", rows: "+keypoints.rows());
-		System.out.println("descriptors dimensions: "+descriptors.dims());
-		System.out.println("keypoints cols: "+descriptors.cols()+", rows: "+descriptors.rows());
-		System.out.println("descriptor val at [0,0]: " + descriptors.get(0, 127)[0]);
 		return descriptors;
 	}
 	

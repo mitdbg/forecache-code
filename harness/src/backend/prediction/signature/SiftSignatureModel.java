@@ -2,6 +2,7 @@ package backend.prediction.signature;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +41,9 @@ public class SiftSignatureModel {
 	
 	public static int defaultVocabSize = 5;
 	protected List<double[]> roiHistograms = null;
+	protected boolean haveRealRoi = false;
 	KDTree<Integer> vocab = null;
+	protected Map<TileKey,double[]> histograms;
 
 	public SiftSignatureModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api) {
 		this.history = ref; // reference to (syncrhonized) global history object
@@ -48,6 +51,7 @@ public class SiftSignatureModel {
 		this.diskbuf = diskbuf;
 		this.paramsMap = new ParamsMap(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		this.scidbapi = api;
+		this.histograms = new HashMap<TileKey,double[]>();
 	}
 	
 	// gets ordering of directions by confidence and returns topk viable options
@@ -61,7 +65,10 @@ public class SiftSignatureModel {
 		if(htrace.size() == 0) {
 			return myresult;
 		}
-		if(history.newRoi() || roiHistograms == null) { // if there is a new ROI, update!
+		if(history.newRoi()) { // if there is a new ROI, update!
+			updateRoi(history.getLastRoi(),scidbapi);
+			haveRealRoi = true;
+		} else if (!haveRealRoi){
 			updateRoi(history.getLastRoi(),scidbapi);
 		}
 		List<DirectionPrediction> order = predictOrder(htrace);
@@ -209,37 +216,47 @@ public class SiftSignatureModel {
 		if(all_descriptors.size() > 0) {
 			cols = all_descriptors.get(0).cols();
 			Mat finalMatrix = Mat.zeros(rows,cols, all_descriptors.get(0).type());
+			System.out.println("finalMatrix=("+rows+","+cols+")");
 			int curr = 0;
 			for(int i = 0; i < all_descriptors.size(); i++) {
 				Mat d = all_descriptors.get(i);
 				int r = d.rows();
-				d.copyTo(finalMatrix.submat(new Rect(0,curr,cols-1,curr+r - 1)));
-				d.release(); // remove reference and deallocate
+				d.copyTo(finalMatrix.submat(curr,curr+r,0,cols));
 				curr += r;
 			}
-			System.out.println(finalMatrix.get(0, 0)[0]);
-			System.out.println("got here");
 			// these clusters are our visual words
 			// each center represents the center of a word
 			Mat centers = Signatures.getKmeansCenters(finalMatrix, defaultVocabSize);
 			vocab = Signatures.buildKDTree(centers); // used to find nearest neighbor fast
-			System.out.println("got here 2");
+
 			// now go back through and build histograms for each ROI
 			roiHistograms = new ArrayList<double[]>();
-			for(Mat d : all_descriptors) {
-				roiHistograms.add(buildSignature(d));
+			for(int i = 0; i < all_descriptors.size(); i++) {
+				Mat d = all_descriptors.get(i);
+				TileKey id = roi.get(i);
+				double[] signature = buildSignatureFromMat(d);
+				roiHistograms.add(signature);
+				histograms.put(id, signature); // save for later use
 			}
 		}
-		System.out.println("got here 3");
 	}
 	
 	//TODO: override these to implement a new image signature!
-	public double[] buildSignature(Mat d) {
+	public double[] buildSignatureFromMat(Mat d) {
 		return Signatures.buildSiftSignature(d, vocab, defaultVocabSize);
 	}
 	
-	public double[] buildSignature(TileKey id) {
+	public double[] buildSignatureFromKey(TileKey id) {
 		return Signatures.buildSiftSignature(id, vocab, defaultVocabSize);
+	}
+	
+	public double[] buildSignature(TileKey id) {
+		double[] signature = histograms.get(id);
+		if(signature == null) {
+			signature = buildSignatureFromKey(id);
+			histograms.put(id, signature);
+		}
+		return signature;
 	}
 	
 	public static void main(String[] args) {
