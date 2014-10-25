@@ -1,8 +1,13 @@
 package backend.util;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Scanner;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -11,6 +16,9 @@ import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.highgui.Highgui;
+import org.opencv.core.CvType;
+
+import com.google.gson.Gson;
 
 import edu.wlu.cs.levy.CG.KDTree;
 import edu.wlu.cs.levy.CG.KeyDuplicateException;
@@ -28,6 +36,7 @@ public class Signatures {
 	public static final double [] defaultfiltervals = {1,7,0};
 	public static double default_min = .00000000001;
 	public static int defaultbins = 400;
+	public static String defaultMetadataDir = "forecache_metadata/";
 
 	/**************** Mean/Stddev ****************/
 	public static double[] getNormalSignature(byte[] input) throws Exception {
@@ -120,7 +129,12 @@ public class Signatures {
 	
 	// for use with main thread
 	public static Mat getSiftDescriptorsForImage(TileKey id) {
-		return getSiftDescriptorsForImage(id,MainThread.scidbapi);
+		Mat result = readMat(id); // do we have the descriptors already?
+		if(result == null) {
+			result = getSiftDescriptorsForImage(id,MainThread.scidbapi);
+			writeMat(result,id); // save the descriptors we just computed for this tile
+		}
+		return result;
 	}
 	
 	// for general use
@@ -233,6 +247,84 @@ public class Signatures {
 	}
 	
 	/******************general ********************/
+	public static double[][] matToArray(Mat toConvert) {
+		double[][] array = new double[toConvert.rows()][toConvert.cols()];
+		if(array.length == 0 || array[0].length == 0) {
+			System.out.println("array is empty");
+			return null;
+		}
+		for(int i = 0; i < array.length; i++) {
+			for(int j = 0; j < array[0].length; j++) {
+				array[i][j] = toConvert.get(i,j)[0];
+			}
+		}
+		return array;
+	}
+	
+	public static Mat arrayToMat(double[][] toConvert) {
+		int height = toConvert.length;
+		if(height == 0 || toConvert[0].length == 0) return null;
+		int width = toConvert[0].length;
+		Mat m = Mat.zeros(height, width,CvType.CV_64FC1);
+		for(int i = 0; i < height; i++) { // rows
+			for(int j = 0; j < width; j++) { // cols
+				m.put(i, j, toConvert[i][j]);
+			}
+		}
+		return m;
+	}
+	
+	public static void writeMat(Mat toSave, TileKey id) {
+		File directory = new File(defaultMetadataDir);
+		directory.mkdir();
+		String filename = id.buildTileStringForFile();
+		File file = new File(defaultMetadataDir+filename);
+		try {
+			Gson gson = new Gson();
+			double[][] array = matToArray(toSave);
+			if(array == null) return;
+			String content = gson.toJson(array);
+			BufferedWriter output = new BufferedWriter(new FileWriter(file));
+	        output.write(content);
+	        output.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public static Mat readMat(TileKey id) {
+		Mat returnval = null;
+		String filename = id.buildTileStringForFile();
+		File file = new File(defaultMetadataDir+filename);
+		if(!(file.exists() && file.isFile())) return returnval;
+		StringBuilder fileContents = new StringBuilder((int)file.length());
+	    Scanner scanner = null;
+		try {
+			scanner = new Scanner(file);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    String lineSeparator = System.getProperty("line.separator");
+	    if(scanner != null) {
+		    try {
+		        while(scanner.hasNextLine()) {        
+		            fileContents.append(scanner.nextLine() + lineSeparator);
+		        }
+		        
+		    } finally {
+		        scanner.close();
+		    }
+		    String contents = fileContents.toString();
+		    Gson gson = new Gson();
+		    double[][] array = gson.fromJson(contents, double[][].class);
+		    System.out.println("contents: "+contents);
+		    returnval = arrayToMat(array);
+	    }
+	    return returnval;
+	}
+	
 	// use kd-tree to make nearest neighbor fast
 	public static KDTree<Integer> buildKDTree(Mat keys) {
 		int rows = keys.rows();

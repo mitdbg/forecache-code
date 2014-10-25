@@ -25,7 +25,8 @@ public class DrawHeatmap {
 	public static int defaultPalateLength = 9;
 	public static int defaultWidth = 300;
 	public static int defaultHeight = 150;
-	public static String imageFolder = "images/"+DBInterface.arrayname+"/";
+	public static String imageDir = "images/";
+	public static String imageFolder = imageDir+DBInterface.arrayname+"/";
 	
 	public static void buildImage(NiceTile tile) {
 		buildImage(tile,DBInterface.xdim,DBInterface.ydim,DBInterface.zattr);
@@ -91,6 +92,8 @@ public class DrawHeatmap {
 	
 	public static void saveImageAsPng(BufferedImage img, String name) {
 		try {
+			File directory = new File(imageDir);
+			directory.mkdir(); // in case it doesn't exist
 			ImageIO.write(img, "PNG", new File(name));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

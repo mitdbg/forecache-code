@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect;
 
@@ -204,6 +203,7 @@ public class SiftSignatureModel {
 	}
 	
 	public void updateRoi(List<TileKey> roi, ScidbTileInterface scidbapi) {
+		histograms.clear(); // these histograms are now obsolete
 		List<Mat> all_descriptors = new ArrayList<Mat>();
 		int rows = 0;
 		int cols = 0;
@@ -250,6 +250,7 @@ public class SiftSignatureModel {
 		return Signatures.buildSiftSignature(id, vocab, defaultVocabSize);
 	}
 	
+	// stores the histograms
 	public double[] buildSignature(TileKey id) {
 		double[] signature = histograms.get(id);
 		if(signature == null) {
@@ -268,6 +269,7 @@ public class SiftSignatureModel {
 		int vocabSize = defaultVocabSize;
 		ScidbTileInterface scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		Mat descriptors = Signatures.getSiftDescriptorsForImage(id, scidbapi);
+		System.out.println("descriptors: "+descriptors.rows()+","+descriptors.cols());
 		Mat centers = Signatures.getKmeansCenters(descriptors, vocabSize);
 		System.out.println("centers dimensions: "+centers.dims()+", ("+centers.rows()+","+centers.cols()+")");
 		//for(int i = 0; i < centers.cols(); i++) {
@@ -281,5 +283,11 @@ public class SiftSignatureModel {
 			System.out.print(" "+hist[i]);
 		}
 		System.out.println();
+		
+		Signatures.writeMat(descriptors, id);
+		descriptors.release();
+		Mat test = Signatures.readMat(id);
+		System.out.println(test.get(0, 120)[0]+","+test.get(27,59)[0]);
+		//System.out.println(descriptors.get(0, 120)[0]+","+descriptors.get(27,59)[0]);
 	}
 }
