@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import backend.disk.DiskTileBuffer;
+import backend.disk.ScidbTileInterface;
+import backend.memory.MemoryTileBuffer;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
@@ -19,10 +22,65 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 	public static final double maxdistance = 2.0;
 	protected int hotspotlen;
 	
-	public HotspotDirectionalModel(TileHistoryQueue ref, int hotspotlen) {
-		super(ref);
+	public HotspotDirectionalModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api, int len) {
+		super(ref,membuf,diskbuf,api,len);
 		this.hotspots = new HashMap<TileKey,Integer>();
+		this.hotspotlen = defaulthotspotlen;
+	}
+	
+	public HotspotDirectionalModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api, int len, int hotspotlen) {
+		this(ref,membuf,diskbuf,api,len);
 		this.hotspotlen = hotspotlen;
+	}
+	
+	// computes an ordering of all directions using confidence values
+	@Override
+	public List<DirectionPrediction> predictOrder(List<UserRequest> htrace) {
+		List<DirectionPrediction> order = new ArrayList<DirectionPrediction>();
+		long start = System.currentTimeMillis();
+		
+		// see if hotspots will influence decision
+		Direction hotdirection = null;
+		if((htrace != null) && (htrace.size() > 0)) {
+			hotdirection = this.getHotDirection(htrace.get(htrace.size()-1));
+		}
+		
+		// for each direction, compute confidence
+		this.getVotes(htrace); // check the history
+		DirectionPrediction max = null;
+		double maxscore = 0;
+		for(Direction d : Direction.values()) {
+			DirectionPrediction dp = new DirectionPrediction();
+			dp.d = d;
+			dp.confidence = 0;
+			if(d == hotdirection) {
+				//System.out.println("diverging in favor of hotspot: "+d);
+				max = dp;
+			}
+			Double score = this.votes.get(d);
+			if(score != null) {
+				dp.confidence = score;
+			}
+			if(dp.confidence < defaultprob) {
+				dp.confidence = defaultprob;
+			}
+			if(dp.confidence > maxscore) {
+				maxscore = dp.confidence;
+			}
+			order.add(dp);
+		}
+		if(max != null) {
+			max.confidence = maxscore + 1.0; // make this the top choice
+		}
+		Collections.sort(order,Collections.reverseOrder());
+		long end = System.currentTimeMillis();
+		/*
+		for(DirectionPrediction dp : order) {
+			System.out.println(dp);
+		}
+		*/
+		//System.out.println("time to predict order: "+(end-start)+"ms");
+		return order;
 	}
 	
 	public void train(List<UserRequest> trace) {
@@ -87,56 +145,6 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 		}
 	}
 	
-	// computes an ordering of all directions using confidence values
-	@Override
-	public List<DirectionPrediction> predictOrder(List<UserRequest> htrace) {
-		List<DirectionPrediction> order = new ArrayList<DirectionPrediction>();
-		long start = System.currentTimeMillis();
-		
-		// see if hotspots will influence decision
-		Direction hotdirection = null;
-		if((htrace != null) && (htrace.size() > 0)) {
-			hotdirection = this.getHotDirection(htrace.get(htrace.size()-1));
-		}
-		
-		// for each direction, compute confidence
-		this.getVotes(htrace); // check the history
-		DirectionPrediction max = null;
-		double maxscore = 0;
-		for(Direction d : Direction.values()) {
-			DirectionPrediction dp = new DirectionPrediction();
-			dp.d = d;
-			dp.confidence = 0;
-			if(d == hotdirection) {
-				//System.out.println("diverging in favor of hotspot: "+d);
-				max = dp;
-			}
-			Double score = this.votes.get(d);
-			if(score != null) {
-				dp.confidence = score;
-			}
-			if(dp.confidence < defaultprob) {
-				dp.confidence = defaultprob;
-			}
-			if(dp.confidence > maxscore) {
-				maxscore = dp.confidence;
-			}
-			order.add(dp);
-		}
-		if(max != null) {
-			max.confidence = maxscore + 1.0; // make this the top choice
-		}
-		Collections.sort(order,Collections.reverseOrder());
-		long end = System.currentTimeMillis();
-		/*
-		for(DirectionPrediction dp : order) {
-			System.out.println(dp);
-		}
-		*/
-		//System.out.println("time to predict order: "+(end-start)+"ms");
-		return order;
-	}
-	
 	protected Direction getHotDirection(UserRequest prev) {
 		TileKey minkey = null;
 		double mindist = 0;
@@ -161,7 +169,7 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 
 		double mindist = 0;
 		for(Direction candidate : Direction.values()) {
-			TileKey candidatekey = this.directionToTile(prev, candidate); // moving from prev
+			TileKey candidatekey = this.DirectionToTile(prev, candidate); // moving from prev
 			if(candidatekey != null) {
 				double currdist = goal.getDistance(candidatekey);
 				if((d == null) || (currdist < mindist)) { // does this make progress towards the goal?

@@ -11,6 +11,8 @@ import javax.imageio.ImageIO;
 
 import org.imgscalr.Scalr;
 
+import com.google.gson.Gson;
+
 import utils.ColorBrewer;
 import utils.DBInterface;
 import utils.UtilityFunctions;
@@ -36,8 +38,8 @@ public class DrawHeatmap {
 		BufferedImage bi = getBufferedImage(tile,x,y,z);
 		Graphics2D ig2 = bi.createGraphics();
 		drawHeatMap(tile,x,y,z,ig2);
-		BufferedImage toSave = Scalr.resize(bi, defaultWidth); // resize
-		saveImageAsPng(toSave,buildFilename(tile)); // save
+		//BufferedImage toSave = Scalr.resize(bi, defaultWidth); // resize
+		saveImageAsPng(bi,buildFilename(tile)); // save
 	}
 	
 	public static String buildFilename(NiceTile tile) {
@@ -111,8 +113,8 @@ public class DrawHeatmap {
 		p.ymax = 1800;//1697;
 		p.width = 9;
 		ScidbTileInterface sti = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
-		String idstr = "[0, 0]";
-		int zoom = 0;
+		String idstr = "[1, 3]";
+		int zoom = 4;
 		List<Integer> tile_id = UtilityFunctions.parseTileIdInteger(idstr);
 		TileKey id = new TileKey(tile_id,zoom);
 		NiceTile tile = sti.getNiceTile(id);

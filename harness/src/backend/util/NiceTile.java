@@ -3,7 +3,12 @@ package backend.util;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NiceTile {
+public class NiceTile implements java.io.Serializable {
+	/**
+	 * important for deserialization
+	 */
+	private static final long serialVersionUID = 543885535684644738L;
+	
 	public TileKey id;
 	public List<List<Double>> data;
 	public List<MinMax> extrema;

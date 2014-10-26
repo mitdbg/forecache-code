@@ -292,7 +292,7 @@ public class DiskTileBuffer implements TileBuffer {
 			return null;
 		}
 		path.append(cache_root_dir).append("/").append(hashed_query).append("/")
-		.append(threshold).append("/").append(id.getZoom()).append("/")
+		.append(threshold).append("/").append(id.zoom).append("/")
 			.append(tile_hash);
 		//System.out.println("path: '"+path+"'");
 		return path.toString();

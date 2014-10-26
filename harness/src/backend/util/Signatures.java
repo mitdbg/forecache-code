@@ -37,6 +37,9 @@ public class Signatures {
 	public static double default_min = .00000000001;
 	public static int defaultbins = 400;
 	public static String defaultMetadataDir = "forecache_metadata/";
+	
+	public static String siftString ="sift";
+	public static String denseSiftString = "densesift";
 
 	/**************** Mean/Stddev ****************/
 	public static double[] getNormalSignature(byte[] input) throws Exception {
@@ -86,6 +89,46 @@ public class Signatures {
 		return histogram;
 	}
 	
+	/**************** Dense Sift ****************/
+	public static double[] buildDenseSiftSignature(TileKey id, KDTree<Integer> vocabulary, int vocabsize) {
+		Mat tile = getDenseSiftDescriptorsForImage(id);
+		return buildSiftSignature(tile,vocabulary,vocabsize);
+	}
+	
+	public static double[] buildDenseSiftSignature(Mat tile, KDTree<Integer> vocabulary, int vocabsize) {
+		return buildSiftSignature(tile,vocabulary,vocabsize);
+	}
+	
+	public static Mat getDenseSiftDescriptorsForImage(TileKey id) {
+		Mat result = readMat(denseSiftString,id); // do we have the descriptors already?
+		if(result == null) {
+			result = getDenseSiftDescriptorsForImage(id,MainThread.scidbapi);
+			//TODO: fix error with saving files to disk.
+			writeMat(denseSiftString,result,id); // save the descriptors we just computed for this tile
+		}
+		return result;
+	}
+	
+	// for general use
+	public static Mat getDenseSiftDescriptorsForImage(TileKey id, ScidbTileInterface scidbapi) {
+		NiceTile tile = scidbapi.getNiceTile(id);
+		MatOfKeyPoint keypoints = new MatOfKeyPoint();
+		Mat descriptors = new Mat(1,1,CvType.CV_32FC1);
+		
+		File t = new File(DrawHeatmap.buildFilename(tile));
+		if(!(t.exists() && t.isFile())) {
+			DrawHeatmap.buildImage(tile);
+		}
+		Mat image = Highgui.imread(t.getPath(),Highgui.CV_LOAD_IMAGE_GRAYSCALE);
+
+		FeatureDetector detector = FeatureDetector.create(FeatureDetector.DENSE); // detect dense keypoints
+		DescriptorExtractor extractor = DescriptorExtractor.create(DescriptorExtractor.SIFT); // extract sift features
+		detector.detect(image, keypoints);
+		extractor.compute(image, keypoints, descriptors);
+		
+		//System.out.println("file: "+t);
+		return descriptors;
+	}
 	
 	/**************** Sift ****************/
 	public static double[] buildSiftSignature(TileKey id, KDTree<Integer> vocabulary, int vocabsize) {
@@ -129,10 +172,11 @@ public class Signatures {
 	
 	// for use with main thread
 	public static Mat getSiftDescriptorsForImage(TileKey id) {
-		Mat result = readMat(id); // do we have the descriptors already?
+		Mat result = readMat(siftString,id); // do we have the descriptors already?
 		if(result == null) {
 			result = getSiftDescriptorsForImage(id,MainThread.scidbapi);
-			writeMat(result,id); // save the descriptors we just computed for this tile
+			//TODO: fix error with saving files to disk.
+			writeMat(siftString,result,id); // save the descriptors we just computed for this tile
 		}
 		return result;
 	}
@@ -141,7 +185,7 @@ public class Signatures {
 	public static Mat getSiftDescriptorsForImage(TileKey id, ScidbTileInterface scidbapi) {
 		NiceTile tile = scidbapi.getNiceTile(id);
 		MatOfKeyPoint keypoints = new MatOfKeyPoint();
-		Mat descriptors = new Mat();
+		Mat descriptors = new Mat(1,1,CvType.CV_32FC1);
 		
 		File t = new File(DrawHeatmap.buildFilename(tile));
 		if(!(t.exists() && t.isFile())) {
@@ -154,7 +198,7 @@ public class Signatures {
 		detector.detect(image, keypoints);
 		extractor.compute(image, keypoints, descriptors);
 		
-		System.out.println("file: "+t);
+		//System.out.println("file: "+t);
 		return descriptors;
 	}
 	
@@ -262,27 +306,33 @@ public class Signatures {
 	}
 	
 	public static Mat arrayToMat(double[][] toConvert) {
-		int height = toConvert.length;
-		if(height == 0 || toConvert[0].length == 0) return null;
-		int width = toConvert[0].length;
-		Mat m = Mat.zeros(height, width,CvType.CV_64FC1);
-		for(int i = 0; i < height; i++) { // rows
-			for(int j = 0; j < width; j++) { // cols
+		int rows = toConvert.length;
+		if(rows == 0 || toConvert[0].length == 0) {
+			System.out.println("array is null");
+			return null;
+		}
+		int cols = toConvert[0].length;
+		Mat m = Mat.zeros(rows, cols,CvType.CV_32FC1);
+		for(int i = 0; i < rows; i++) { // rows
+			for(int j = 0; j < cols; j++) { // cols
 				m.put(i, j, toConvert[i][j]);
 			}
 		}
 		return m;
 	}
 	
-	public static void writeMat(Mat toSave, TileKey id) {
-		File directory = new File(defaultMetadataDir);
-		directory.mkdir();
+	public static void writeMat(String sig, Mat toSave, TileKey id) {
+		File directory = new File(defaultMetadataDir+sig+"/");
+		directory.mkdirs();
 		String filename = id.buildTileStringForFile();
-		File file = new File(defaultMetadataDir+filename);
+		File file = new File(defaultMetadataDir+sig+"/"+filename);
 		try {
 			Gson gson = new Gson();
 			double[][] array = matToArray(toSave);
 			if(array == null) return;
+			//System.out.println("writing array "+id.buildTileStringForFile()+": "+array.length+","+array[0].length);
+			//System.out.println("original mat "+id.buildTileStringForFile()+": "+toSave.rows()+","+toSave.cols());
+			//System.out.println();
 			String content = gson.toJson(array);
 			BufferedWriter output = new BufferedWriter(new FileWriter(file));
 	        output.write(content);
@@ -293,10 +343,10 @@ public class Signatures {
 		}
 	}
 	
-	public static Mat readMat(TileKey id) {
+	public static Mat readMat(String sig, TileKey id) {
 		Mat returnval = null;
 		String filename = id.buildTileStringForFile();
-		File file = new File(defaultMetadataDir+filename);
+		File file = new File(defaultMetadataDir+sig+"/"+filename);
 		if(!(file.exists() && file.isFile())) return returnval;
 		StringBuilder fileContents = new StringBuilder((int)file.length());
 	    Scanner scanner = null;
@@ -319,7 +369,10 @@ public class Signatures {
 		    String contents = fileContents.toString();
 		    Gson gson = new Gson();
 		    double[][] array = gson.fromJson(contents, double[][].class);
-		    System.out.println("contents: "+contents);
+		    if(array == null) {
+				System.out.println("array is null for tile"+id.buildTileStringForFile());
+		    }
+		    //System.out.println("contents: "+contents);
 		    returnval = arrayToMat(array);
 	    }
 	    return returnval;
@@ -364,7 +417,7 @@ public class Signatures {
 	
 	public static Mat getKmeansCenters(Mat observations, int totalClusters) {
 		Mat labels = new Mat();
-		TermCriteria criteria = new TermCriteria(TermCriteria.COUNT,100,1);
+		TermCriteria criteria = new TermCriteria(TermCriteria.COUNT,200,1);
 		Mat centers = new Mat();
 		int attempts = 1;
 		Core.kmeans(observations,totalClusters,labels,criteria,attempts, Core.KMEANS_RANDOM_CENTERS, centers);

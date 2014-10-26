@@ -78,7 +78,7 @@ public class ScidbTileInterface {
 			System.out.println("map1 is null");
 			return null;
 		}
-		Params p = map1.get(id.getZoom());
+		Params p = map1.get(id.zoom);
 		if(p == null) {
 			System.out.println("params is null");
 			return null;
@@ -195,7 +195,7 @@ public class ScidbTileInterface {
 			System.out.println("map1 is null");
 			return myresult;
 		}
-		Params p = map1.get(id.getZoom());
+		Params p = map1.get(id.zoom);
 		if(p == null) {
 			System.out.println("params is null");
 			return myresult;

@@ -20,6 +20,7 @@ import org.opencv.core.Core;
 import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
 import backend.memory.MemoryTileBuffer;
+import backend.prediction.BasicModel;
 import backend.prediction.TileHistoryQueue;
 import backend.prediction.TrainModels;
 import backend.prediction.directional.HotspotDirectionalModel;
@@ -59,6 +60,7 @@ public class MainThread {
 	public static String taskname = "task1";
 	public static int[] user_ids = {28};
 	public static int defaultpredictions = 3;
+	public static int defaulthistorylength = 4;
 	
 	// global model objects
 	public static MarkovDirectionalModel mdm;
@@ -72,36 +74,54 @@ public class MainThread {
 	public static FilteredHistogramSignatureModel fsm;
 	public static SiftSignatureModel ssm;
 	
+	public static BasicModel[] all_models;
+	
+	public static void clearModels() {
+		mdm = null;
+		ndm = null;
+		rdm = null;
+		hdm = null;
+		momdm = null;
+		nsm = null;
+		hsm = null;
+		fsm = null;
+		ssm = null;
+		mcdm = null;
+	}
+	
 	public static void setupModels() {
+		// get rid of all previous models
+		clearModels();
+		
 		for(int i = 0; i < modellabels.length; i++) {
 			Model label = modellabels[i];
 			mcdm = new MarkovChainDirectionalModel[4];
 			switch(label) {
-				case MARKOV: mdm = new MarkovDirectionalModel(4,hist);
+				case MARKOV: mdm = new MarkovDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case MARKOV1: mcdm[0] = new MarkovChainDirectionalModel(1,hist);
+				case MARKOV1: mcdm[0] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,1);
 				break;
-				case MARKOV2: mcdm[1] = new MarkovChainDirectionalModel(2,hist);
+				case MARKOV2: mcdm[1] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,2);
 				break;
-				case MARKOV3: mcdm[2] = new MarkovChainDirectionalModel(3,hist);
+				case MARKOV3: mcdm[2] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,3);
 				break;
-				case MARKOV4: mcdm[3] = new MarkovChainDirectionalModel(4,hist);
+				case MARKOV4: mcdm[3] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,4);
 				break;
-				case NGRAM: ndm = new NGramDirectionalModel(4,hist);
+				case NGRAM: ndm = new NGramDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case RANDOM: rdm = new RandomDirectionalModel(hist);
+				case RANDOM: rdm = new RandomDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case HOTSPOT: hdm = new HotspotDirectionalModel(hist,HotspotDirectionalModel.defaulthotspotlen);
+				case HOTSPOT: hdm = new HotspotDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength,HotspotDirectionalModel.defaulthotspotlen);
 				break;
-				case MOMENTUM: momdm = new MomentumDirectionalModel(hist);
+				case MOMENTUM: momdm = new MomentumDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case NORMAL: nsm = new NormalSignatureModel(hist,membuf,diskbuf,scidbapi);
+				case NORMAL: nsm = new NormalSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case HISTOGRAM: hsm = new HistogramSignatureModel(hist,membuf,diskbuf,scidbapi);
+				case HISTOGRAM: hsm = new HistogramSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case FHISTOGRAM: fsm = new FilteredHistogramSignatureModel(hist,membuf,diskbuf,scidbapi);
+				case FHISTOGRAM: fsm = new FilteredHistogramSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case SIFT: ssm = new SiftSignatureModel(hist,membuf,diskbuf,scidbapi);
+				case SIFT: ssm = new SiftSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
 				default://do nothing
 			}
@@ -172,12 +192,15 @@ public class MainThread {
 				
 				default: toadd = null;
 			}
+			
 			if(toadd != null){
-				System.out.println("predictions for model "+label);
+				System.out.print("predictions for model "+label+": ");
 				for(TileKey k : toadd) {
-					System.out.println(k);
+					System.out.print(k+" ");
 				}
+				System.out.println();
 			}
+			
 			// count votes per prediction scheme
 			if((toadd != null) && (toadd.size() > 0)) {
 				// weight votes by ordering
@@ -268,7 +291,7 @@ public class MainThread {
 		// get num predictions
 		if(args.length > 3) {
 			defaultpredictions = Integer.parseInt(args[3]);
-			System.out.println("predictions: "+defaultpredictions);
+			System.out.print("predictions: "+defaultpredictions);
 		}
 		
 		// initialize cache managers

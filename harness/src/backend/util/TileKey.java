@@ -14,10 +14,15 @@ import com.google.common.collect.ImmutableList;
  * Class for storing tile ID's. Also responsible for computing distance metrics.
  * Class fields are immutable
  */
-public class TileKey {
-	private final ImmutableList<Integer> id;
-	private final ImmutableList<Double> weights;
-	private final int zoom;
+public class TileKey implements java.io.Serializable {
+	/**
+	 * important for deserialization
+	 */
+	private static final long serialVersionUID = -8425373901298453080L;
+	
+	public List<Integer> id;
+	public List<Double> weights;
+	public int zoom;
 	
 	public TileKey(List<Integer> id, int zoom) {
 		this.id = new ImmutableList.Builder<Integer>()
@@ -52,22 +57,10 @@ public class TileKey {
 		}
 	}
 	
-	public ImmutableList<Integer> getID() {
-		return this.id;
-	}
-	
-	public ImmutableList<Double> getWeights() {
-		return this.weights;
-	}
-	
-	public int getZoom() {
-		return this.zoom;
-	}
-	
 	public double getDistance(TileKey other) {
-		ImmutableList<Integer> oid = other.getID();
+		List<Integer> oid = other.id;
 		// ignore invalid input
-		if((this.id.size() != oid.size()) || (this.zoom < 0) || (other.getZoom() < 0)) {
+		if((this.id.size() != oid.size()) || (this.zoom < 0) || (other.zoom < 0)) {
 			return -1;
 		}
 		return updatedEuclideanDistance(other);
@@ -75,9 +68,9 @@ public class TileKey {
 	
 	private double updatedEuclideanDistance(TileKey other) {
 		//System.out.println("comparing "+this+" and "+other);
-		ImmutableList<Integer> oid = other.getID();
+		List<Integer> oid = other.id;
 		List<Integer> newid = new ArrayList<Integer>();
-		int zoomdiff = this.zoom - other.getZoom();
+		int zoomdiff = this.zoom - other.zoom;
 		if(zoomdiff > 0) { // this tile is at a lower zoom level
 			for(int i = 0; i < this.id.size(); i++) {
 				newid.add(this.id.get(i) / ((int)Math.pow(2,zoomdiff)));
@@ -85,7 +78,7 @@ public class TileKey {
 			}
 			//System.out.println(this.zoom);
 			//System.out.println("distance: "+euclideanDistance(newid,oid,this.zoom,other.getZoom()));
-			return euclideanDistance(newid,oid,this.zoom,other.getZoom());
+			return euclideanDistance(newid,oid,this.zoom,other.zoom);
 		} else if (zoomdiff < 0) { // other is at lowewr zoom level
 			zoomdiff *= -1;
 			//System.out.println("zoomdiff: "+zoomdiff);
@@ -95,7 +88,7 @@ public class TileKey {
 			}
 			//System.out.println(other.getZoom());
 			//System.out.println("distance: "+euclideanDistance(this.id,newid,this.zoom,other.getZoom()));
-			return euclideanDistance(this.id,newid,this.zoom,other.getZoom());
+			return euclideanDistance(this.id,newid,this.zoom,other.zoom);
 		} else {
 			//System.out.println("distance: "+euclideanDistance(other));
 			return this.euclideanDistance(other);
@@ -117,7 +110,7 @@ public class TileKey {
 	// computes euclidean distance over tile id's
 	// treats zoom level as an additional dimension
 	private double euclideanDistance(TileKey other) {
-		ImmutableList<Integer> oid = other.getID();
+		List<Integer> oid = other.id;
 		if(this.id.size() != oid.size()) {
 			return 100000000;
 		}
@@ -125,7 +118,7 @@ public class TileKey {
 		for(int i = 0; i < this.id.size(); i++) {
 			sum += this.weights.get(i) * Math.pow(this.id.get(i) - oid.get(i), 2);
 		}
-		sum += this.weights.get(this.id.size()) * Math.pow(1.0 * this.zoom - other.getZoom(),2);
+		sum += this.weights.get(this.id.size()) * Math.pow(1.0 * this.zoom - other.zoom,2);
 		return Math.sqrt(sum);
 	}
 	
@@ -195,13 +188,13 @@ public class TileKey {
 		}
 		
 		TileKey o = (TileKey) other;
-		if(this.id.size() != o.getID().size()) {
+		if(this.id.size() != o.id.size()) {
 			return false;
 		}
-		ImmutableList<Integer> oid = o.getID();
-		ImmutableList<Double> ow = o.getWeights();
+		List<Integer> oid = o.id;
+		List<Double> ow = o.weights;
 		EqualsBuilder eb = new EqualsBuilder()
-			.append(this.zoom,o.getZoom());
+			.append(this.zoom,o.zoom);
 		for(int i = 0; i < this.id.size(); i++) {
 			eb.append(this.id.get(i), oid.get(i))
 			.append(this.weights.get(i), ow.get(i));

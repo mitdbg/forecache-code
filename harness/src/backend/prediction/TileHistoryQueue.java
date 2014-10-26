@@ -67,7 +67,7 @@ public class TileHistoryQueue {
 		for(int i = 0; i < history.size(); i++) {
 			TileRecord tr = history.get(i);
 			TileKey tk = tr.MyTile.getTileKey();
-			UserRequest temp = new UserRequest(tk.buildTileString(),tk.getZoom());
+			UserRequest temp = new UserRequest(tk.buildTileString(),tk.zoom);
 			myresult.add(temp);
 		}
 		return myresult;
@@ -83,15 +83,9 @@ public class TileHistoryQueue {
 		for(int i = start; i < history.size(); i++) {
 			TileRecord tr = history.get(i);
 			TileKey tk = tr.MyTile.getTileKey();
-			UserRequest temp = new UserRequest(tk.buildTileString(),tk.getZoom());
+			UserRequest temp = new UserRequest(tk.buildTileString(),tk.zoom);
 			myresult.add(temp);
 		}
-		return myresult;
-	}
-	
-	public synchronized List<UserRequest> getLastROI() {
-		List<UserRequest> myresult = new ArrayList<UserRequest>();
-		
 		return myresult;
 	}
 	
@@ -118,7 +112,7 @@ public class TileHistoryQueue {
 		for(;i > this.lastZoomOut; i--) {
 			TileKey lastKey = trueHistory.get(i+1).MyTile.getTileKey();
 			TileKey nextLastKey = trueHistory.get(i).MyTile.getTileKey();
-			if(lastKey.getZoom() < nextLastKey.getZoom()) { // found zoom out
+			if(lastKey.zoom < nextLastKey.zoom) { // found zoom out
 					lastZoomOut = i;
 					break;
 			}
@@ -126,10 +120,10 @@ public class TileHistoryQueue {
 		for(;i > this.lastZoomOut; i--) {
 			TileKey lastKey = trueHistory.get(i+1).MyTile.getTileKey();
 			TileKey nextLastKey = trueHistory.get(i).MyTile.getTileKey();
-			if(lastKey.getZoom() > nextLastKey.getZoom()) { // found zoom in, new ROI!
+			if(lastKey.zoom > nextLastKey.zoom) { // found zoom in, new ROI!
 				lastZoomIn = i;
 				break;
-			} else if (lastKey.getZoom() < nextLastKey.getZoom()) { // found another zoom out, abort!
+			} else if (lastKey.zoom < nextLastKey.zoom) { // found another zoom out, abort!
 				lastZoomOut = -1;
 				break;
 			}

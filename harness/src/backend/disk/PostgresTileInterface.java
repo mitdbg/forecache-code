@@ -121,7 +121,7 @@ public class PostgresTileInterface {
 		if(map1 == null) {
 			return myresult;
 		}
-		Params p = map1.get(id.getZoom());
+		Params p = map1.get(id.zoom);
 		if(p == null) {
 			return myresult;
 		}
@@ -144,7 +144,7 @@ public class PostgresTileInterface {
 			rs.close();
 			ps.close();
 		} catch (SQLException e) {
-			System.out.println("error occured while getting tile '" + tile_id + "' zoom "+id.getZoom()+" from database");
+			System.out.println("error occured while getting tile '" + tile_id + "' zoom "+id.zoom+" from database");
 			e.printStackTrace();
 		}
 		return myresult;
