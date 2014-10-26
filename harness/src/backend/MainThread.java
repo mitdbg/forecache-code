@@ -29,6 +29,7 @@ import backend.prediction.directional.MarkovDirectionalModel;
 import backend.prediction.directional.MomentumDirectionalModel;
 import backend.prediction.directional.NGramDirectionalModel;
 import backend.prediction.directional.RandomDirectionalModel;
+import backend.prediction.signature.DenseSiftSignatureModel;
 import backend.prediction.signature.FilteredHistogramSignatureModel;
 import backend.prediction.signature.HistogramSignatureModel;
 import backend.prediction.signature.NormalSignatureModel;
@@ -62,68 +63,42 @@ public class MainThread {
 	public static int defaultpredictions = 3;
 	public static int defaulthistorylength = 4;
 	
-	// global model objects
-	public static MarkovDirectionalModel mdm;
-	public static NGramDirectionalModel ndm;
-	public static MarkovChainDirectionalModel[] mcdm;
-	public static RandomDirectionalModel rdm;
-	public static HotspotDirectionalModel hdm;
-	public static MomentumDirectionalModel momdm;
-	public static NormalSignatureModel nsm;
-	public static HistogramSignatureModel hsm;
-	public static FilteredHistogramSignatureModel fsm;
-	public static SiftSignatureModel ssm;
-	
+	// global model objects	
 	public static BasicModel[] all_models;
 	
-	public static void clearModels() {
-		mdm = null;
-		ndm = null;
-		rdm = null;
-		hdm = null;
-		momdm = null;
-		nsm = null;
-		hsm = null;
-		fsm = null;
-		ssm = null;
-		mcdm = null;
-	}
-	
 	public static void setupModels() {
-		// get rid of all previous models
-		clearModels();
-		
+		all_models = new BasicModel[modellabels.length];
 		for(int i = 0; i < modellabels.length; i++) {
 			Model label = modellabels[i];
-			mcdm = new MarkovChainDirectionalModel[4];
 			switch(label) {
-				case MARKOV: mdm = new MarkovDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				case MARKOV: all_models[i] = new MarkovDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case MARKOV1: mcdm[0] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,1);
+				case MARKOV1: all_models[i] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,1);
 				break;
-				case MARKOV2: mcdm[1] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,2);
+				case MARKOV2: all_models[i] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,2);
 				break;
-				case MARKOV3: mcdm[2] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,3);
+				case MARKOV3: all_models[i] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,3);
 				break;
-				case MARKOV4: mcdm[3] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,4);
+				case MARKOV4: all_models[i] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,4);
 				break;
-				case NGRAM: ndm = new NGramDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				case NGRAM: all_models[i] = new NGramDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case RANDOM: rdm = new RandomDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				case RANDOM: all_models[i] = new RandomDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case HOTSPOT: hdm = new HotspotDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength,HotspotDirectionalModel.defaulthotspotlen);
+				case HOTSPOT: all_models[i] = new HotspotDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength,HotspotDirectionalModel.defaulthotspotlen);
 				break;
-				case MOMENTUM: momdm = new MomentumDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				case MOMENTUM: all_models[i] = new MomentumDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case NORMAL: nsm = new NormalSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				case NORMAL: all_models[i] = new NormalSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case HISTOGRAM: hsm = new HistogramSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				case HISTOGRAM: all_models[i] = new HistogramSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case FHISTOGRAM: fsm = new FilteredHistogramSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				case FHISTOGRAM: all_models[i] = new FilteredHistogramSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				case SIFT: ssm = new SiftSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				case SIFT: all_models[i] = new SiftSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
 				break;
-				default://do nothing
+				case DSIFT: all_models[i] = new DenseSiftSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				default://do nothing, will fail if we get here
 			}
 		}
 	}
@@ -131,20 +106,21 @@ public class MainThread {
 	public static void trainModels() {
 		for(int i = 0; i < modellabels.length; i++) {
 			Model label = modellabels[i];
+			BasicModel mod = all_models[i];
 			switch(label) {
-				case MARKOV: TrainModels.TrainMarkovDirectionalModel(user_ids, taskname, mdm);
+				case MARKOV: TrainModels.TrainMarkovDirectionalModel(user_ids, taskname, (MarkovDirectionalModel) mod);
 				break;
-				case MARKOV1: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, mcdm[0]);
+				case MARKOV1: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, (MarkovChainDirectionalModel) mod);
 				break;
-				case MARKOV2: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, mcdm[1]);
+				case MARKOV2: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, (MarkovChainDirectionalModel) mod);
 				break;
-				case MARKOV3: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, mcdm[2]);
+				case MARKOV3: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, (MarkovChainDirectionalModel) mod);
 				break;
-				case MARKOV4: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, mcdm[3]);
+				case MARKOV4: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, (MarkovChainDirectionalModel) mod);
 				break;
-				case NGRAM: TrainModels.TrainNGramDirectionalModel(user_ids, taskname, ndm);
+				case NGRAM: TrainModels.TrainNGramDirectionalModel(user_ids, taskname, (NGramDirectionalModel) mod);
 				break;
-				case HOTSPOT: TrainModels.TrainHotspotDirectionalModel(user_ids, taskname, hdm);
+				case HOTSPOT: TrainModels.TrainHotspotDirectionalModel(user_ids, taskname, (HotspotDirectionalModel) mod);
 				break;
 				default://do nothing
 			}
@@ -155,43 +131,9 @@ public class MainThread {
 		Map<TileKey,Double> predictions = new HashMap<TileKey,Double>();
 		for(int i = 0; i < modellabels.length; i++) {
 			Model label = modellabels[i];
+			BasicModel mod = all_models[i];
 			Double basevote = 1.0; // value of a vote from this model
-			List<TileKey> toadd;
-			switch(label) {
-				case MARKOV: toadd = mdm.predictTiles(defaultpredictions);
-				break;
-				
-				case MARKOV1: toadd = mcdm[0].predictTiles(defaultpredictions);
-				break;
-				case MARKOV2: toadd = mcdm[1].predictTiles(defaultpredictions);
-				break;
-				case MARKOV3: toadd = mcdm[2].predictTiles(defaultpredictions);
-				break;
-				case MARKOV4: toadd = mcdm[3].predictTiles(defaultpredictions);
-				break;
-				
-				case NGRAM: toadd = ndm.predictTiles(defaultpredictions);
-				break;
-				
-				case RANDOM: toadd = rdm.predictTiles(defaultpredictions);
-				break;
-				
-				case HOTSPOT: toadd = hdm.predictTiles(defaultpredictions);
-				break;
-				case MOMENTUM: toadd = momdm.predictTiles(defaultpredictions);
-				break;
-				
-				case NORMAL: toadd = nsm.predictTiles(defaultpredictions);
-				break;
-				case HISTOGRAM: toadd = hsm.predictTiles(defaultpredictions);
-				break;
-				case FHISTOGRAM: toadd = fsm.predictTiles(defaultpredictions);
-				break;
-				case SIFT: toadd = ssm.predictTiles(defaultpredictions);
-				break;
-				
-				default: toadd = null;
-			}
+			List<TileKey> toadd = mod.predictTiles(defaultpredictions);
 			
 			if(toadd != null){
 				System.out.print("predictions for model "+label+": ");
@@ -340,47 +282,49 @@ public class MainThread {
 	}
 	
 	public static void update_model_labels(String[] modelstrs) {
-		Model[] argmodels = new Model[modelstrs.length];
+		modellabels = new Model[modelstrs.length];
 		for(int i = 0; i < modelstrs.length; i++) {
 			System.out.println("modelstrs["+i+"] = '"+modelstrs[i]+"'");
 			if(modelstrs[i].equals("markov")) {
-				argmodels[i] = Model.MARKOV;
+				modellabels[i] = Model.MARKOV;
 			} else if(modelstrs[i].contains("markov")) {
 				String len = modelstrs[i].substring(6);
 				if(len.equals("1")) {
-					argmodels[i] = Model.MARKOV1;
+					modellabels[i] = Model.MARKOV1;
 				} else if (len.equals("2")) {
-					argmodels[i] = Model.MARKOV2;
+					modellabels[i] = Model.MARKOV2;
 				} else if (len.equals("3")) {
-					argmodels[i] = Model.MARKOV3;
+					modellabels[i] = Model.MARKOV3;
 				} else if (len.equals("4")) {
-					argmodels[i] = Model.MARKOV4;
+					modellabels[i] = Model.MARKOV4;
 				} else {
-					argmodels[i] = Model.MARKOV1;
+					modellabels[i] = Model.MARKOV1;
 				}
 			} else if(modelstrs[i].equals("ngram")) {
-				argmodels[i] = Model.NGRAM;
+				modellabels[i] = Model.NGRAM;
 			} else if(modelstrs[i].equals("random")) {
-				argmodels[i] = Model.RANDOM;
+				modellabels[i] = Model.RANDOM;
 			} else if(modelstrs[i].equals("hotspot")) {
-				argmodels[i] = Model.HOTSPOT;
+				modellabels[i] = Model.HOTSPOT;
 			} else if(modelstrs[i].equals("momentum")) {
-				argmodels[i] = Model.MOMENTUM;
+				modellabels[i] = Model.MOMENTUM;
 			} else if(modelstrs[i].equals("normal")) {
-				argmodels[i] = Model.NORMAL;
+				modellabels[i] = Model.NORMAL;
 			} else if(modelstrs[i].equals("histogram")) {
-				argmodels[i] = Model.HISTOGRAM;
+				modellabels[i] = Model.HISTOGRAM;
 			} else if(modelstrs[i].equals("fhistogram")) {
-				argmodels[i] = Model.FHISTOGRAM;
+				modellabels[i] = Model.FHISTOGRAM;
 			} else if(modelstrs[i].equals("sift")) {
 				load_opencv = true;
-				argmodels[i] = Model.SIFT;
+				modellabels[i] = Model.SIFT;
+			} else if (modelstrs[i].equals("dsift")) {
+				load_opencv = true;
+				modellabels[i] = Model.DSIFT;
 			}
 		}
-		if(load_opencv) {
+		if(load_opencv) { // are we actually using opencv?
 			System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		}
-		modellabels = argmodels;
 	}
 	
 	public static void reset(String[] userstrs, String[] modelstrs, String predictions) throws Exception {

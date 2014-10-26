@@ -38,8 +38,8 @@ public class DrawHeatmap {
 		BufferedImage bi = getBufferedImage(tile,x,y,z);
 		Graphics2D ig2 = bi.createGraphics();
 		drawHeatMap(tile,x,y,z,ig2);
-		//BufferedImage toSave = Scalr.resize(bi, defaultWidth); // resize
-		saveImageAsPng(bi,buildFilename(tile)); // save
+		BufferedImage toSave = Scalr.resize(bi, defaultWidth); // resize
+		saveImageAsPng(toSave,buildFilename(tile)); // save
 	}
 	
 	public static String buildFilename(NiceTile tile) {
