@@ -111,12 +111,12 @@ public class Signatures {
 	
 	// for general use
 	public static Mat getDenseSiftDescriptorsForImage(TileKey id, ScidbTileInterface scidbapi) {
-		NiceTile tile = scidbapi.getNiceTile(id);
 		MatOfKeyPoint keypoints = new MatOfKeyPoint();
 		Mat descriptors = new Mat(1,1,CvType.CV_32FC1);
 		
-		File t = new File(DrawHeatmap.buildFilename(tile));
+		File t = new File(DrawHeatmap.buildFilename(id));
 		if(!(t.exists() && t.isFile())) {
+			NiceTile tile = scidbapi.getNiceTile(id);
 			DrawHeatmap.buildImage(tile);
 		}
 		Mat image = Highgui.imread(t.getPath(),Highgui.CV_LOAD_IMAGE_GRAYSCALE);
@@ -183,12 +183,12 @@ public class Signatures {
 	
 	// for general use
 	public static Mat getSiftDescriptorsForImage(TileKey id, ScidbTileInterface scidbapi) {
-		NiceTile tile = scidbapi.getNiceTile(id);
 		MatOfKeyPoint keypoints = new MatOfKeyPoint();
 		Mat descriptors = new Mat(1,1,CvType.CV_32FC1);
 		
-		File t = new File(DrawHeatmap.buildFilename(tile));
+		File t = new File(DrawHeatmap.buildFilename(id));
 		if(!(t.exists() && t.isFile())) {
+			NiceTile tile = scidbapi.getNiceTile(id);
 			DrawHeatmap.buildImage(tile);
 		}
 		Mat image = Highgui.imread(t.getPath(),Highgui.CV_LOAD_IMAGE_GRAYSCALE);

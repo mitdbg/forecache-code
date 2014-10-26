@@ -69,7 +69,12 @@ public class NiceTile implements java.io.Serializable {
 		return size;
 	}
 	
-	public class MinMax {
+	public class MinMax implements java.io.Serializable {
+		/**
+		 * important for serialization
+		 */
+		private static final long serialVersionUID = 7735207857166541976L;
+		
 		public Double min = null;
 		public Double max = null;
 	}

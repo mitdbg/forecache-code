@@ -39,11 +39,11 @@ public class DrawHeatmap {
 		Graphics2D ig2 = bi.createGraphics();
 		drawHeatMap(tile,x,y,z,ig2);
 		BufferedImage toSave = Scalr.resize(bi, defaultWidth); // resize
-		saveImageAsPng(toSave,buildFilename(tile)); // save
+		saveImageAsPng(toSave,buildFilename(tile.id)); // save
 	}
 	
-	public static String buildFilename(NiceTile tile) {
-		return imageFolder+tile.id.buildTileStringForFile()+".png";
+	public static String buildFilename(TileKey id) {
+		return imageFolder+id.buildTileStringForFile()+".png";
 	}
 	
 	public static BufferedImage getBufferedImage(NiceTile tile, String x, String y, String z) {

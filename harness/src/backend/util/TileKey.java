@@ -25,35 +25,25 @@ public class TileKey implements java.io.Serializable {
 	public int zoom;
 	
 	public TileKey(List<Integer> id, int zoom) {
-		this.id = new ImmutableList.Builder<Integer>()
-				.addAll(id)
-				.build();
+		this.id = id;
 		this.zoom = zoom;
 		Double[] temp = new Double[this.id.size() + 1];
 		Arrays.fill(temp, 1.0);
-		this.weights = new ImmutableList.Builder<Double>()
-				.addAll(Arrays.asList(temp))
-				.build();
+		this.weights = Arrays.asList(temp);
 
 	}
 	
 	public TileKey(List<Integer> id, int zoom, List<Double> weights) {
-		this.id = new ImmutableList.Builder<Integer>()
-				.addAll(id)
-				.build();
+		this.id = id;
 		this.zoom = zoom;
 		// if the weights passed are unreliable, set to default
 		// weights must include a value for zoom levels too
 		if(weights.size() != (this.id.size() + 1)) {
 			Double[] temp = new Double[this.id.size() + 1];
 			Arrays.fill(temp, 1.0);
-			this.weights = new ImmutableList.Builder<Double>()
-					.addAll(Arrays.asList(temp))
-					.build();
+			this.weights = Arrays.asList(temp);
 		} else {
-			this.weights = new ImmutableList.Builder<Double>()
-					.addAll(weights)
-					.build();
+			this.weights = weights;
 		}
 	}
 	

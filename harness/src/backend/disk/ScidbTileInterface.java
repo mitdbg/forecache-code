@@ -1,8 +1,14 @@
 package backend.disk;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,8 +72,56 @@ public class ScidbTileInterface {
 		return myresult;
 	}
 	
+	public boolean writeNiceTile(NiceTile tile) {
+		File dir = new File(DBInterface.nice_tile_cache_dir);
+		dir.mkdirs();
+		TileKey id = tile.id;
+		File file = new File(dir,id.buildTileStringForFile()+".ser");
+		ObjectOutputStream out;
+		try {
+			out = new ObjectOutputStream(new FileOutputStream(file));
+			out.writeObject(tile);
+			out.close();
+			return true;
+		} catch (FileNotFoundException e) {
+			System.out.println("could not write NiceTile to disk.");
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.out.println("could not write NiceTile to disk.");
+			e.printStackTrace();
+		}
+		return false;
+	}
+	
+	public NiceTile readNiceTile(TileKey id) {
+		File dir = new File(DBInterface.nice_tile_cache_dir);
+		dir.mkdirs();
+		File file = new File(dir,id.buildTileStringForFile()+".ser");
+		
+		ObjectInputStream in;
+		try {
+			in = new ObjectInputStream(new FileInputStream(file));
+	        NiceTile tile = (NiceTile) in.readObject();
+	        in.close();
+	        return tile;
+		} catch (FileNotFoundException e) {
+			System.out.println("could not find file: "+file);
+			e.printStackTrace();
+		} catch (IOException e) {
+			System.out.println("could not read file from disk: "+file);
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			System.out.println("could not find class definition for class: "+NiceTile.class);
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
 	public NiceTile getNiceTile(TileKey id) {
-		NiceTile tile = new NiceTile(id);
+		NiceTile tile = readNiceTile(id);
+		if(tile != null) return tile;
+		
+		tile = new NiceTile(id);
 		String tile_id = id.buildTileString();
 		if(tile_id == null) {
 			System.out.println("could not build tile_id");
@@ -89,7 +143,7 @@ public class ScidbTileInterface {
 			System.out.println("Error occured while retrieving tile from database");
 			e.printStackTrace();
 		}
-		
+		writeNiceTile(tile);
 		return tile;
 	}
 	
@@ -217,8 +271,10 @@ public class ScidbTileInterface {
 	}
 	
 	public static void main(String[] args) {
-		boolean nicetest = true;
-		boolean tiletest = true;
+		boolean nicetest = false;
+		boolean tiletest = false;
+		boolean writetest = true;
+		boolean readtest = false;
 		Params p = new Params();
 		p.xmin = 0;
 		p.ymin = 0;
@@ -249,6 +305,18 @@ public class ScidbTileInterface {
 			System.out.println(testtile.attributes.get(0)+","+testtile.data.get(0).get(100));
 			System.out.println(testtile.attributes.get(1)+","+testtile.data.get(1).get(100));
 			System.out.println(testtile.attributes.get(2)+","+testtile.data.get(2).get(100));
+		}
+		
+		if(writetest) {
+			NiceTile result = sti.getNiceTile(id);
+			System.out.println("result length: "+result.data.get(0).size()+", total attributes: "+result.attributes.size());
+			boolean success = sti.writeNiceTile(result);
+			System.out.println("successfully wrote tile "+id.buildTileStringForFile()+" to disk? "+success);
+		}
+		
+		if(readtest) {
+			NiceTile result = sti.readNiceTile(id);
+			System.out.println("result length: "+result.data.get(0).size()+", total attributes: "+result.attributes.size());
 		}
 	}
 
