@@ -94,7 +94,7 @@ public class DrawHeatmap {
 	
 	public static void saveImageAsPng(BufferedImage img, String name) {
 		try {
-			File directory = new File(imageDir);
+			File directory = new File(imageFolder);
 			directory.mkdirs(); // in case it doesn't exist
 			ImageIO.write(img, "PNG", new File(name));
 		} catch (IOException e) {
