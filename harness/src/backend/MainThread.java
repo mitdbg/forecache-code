@@ -46,7 +46,6 @@ public class MainThread {
 	public static ScidbTileInterface scidbapi;
 	public static int histmax = 10;
 	public static TileHistoryQueue hist;
-	public static boolean load_opencv = false;
 	
 	//server
 	public static Server server;
@@ -213,6 +212,7 @@ public class MainThread {
 	}
 
 	public static void main(String[] args) throws Exception {
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		// get models to use
 		if(args.length > 0) {
 			String[] modelstrs = args[0].split(",");
@@ -315,15 +315,10 @@ public class MainThread {
 			} else if(modelstrs[i].equals("fhistogram")) {
 				modellabels[i] = Model.FHISTOGRAM;
 			} else if(modelstrs[i].equals("sift")) {
-				load_opencv = true;
 				modellabels[i] = Model.SIFT;
 			} else if (modelstrs[i].equals("dsift")) {
-				load_opencv = true;
 				modellabels[i] = Model.DSIFT;
 			}
-		}
-		if(load_opencv) { // are we actually using opencv?
-			System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		}
 	}
 	
