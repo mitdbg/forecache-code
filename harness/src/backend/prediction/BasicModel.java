@@ -28,6 +28,7 @@ public class BasicModel {
 	protected ScidbTileInterface scidbapi;
 	public static final double defaultprob = .00000000001; // default assigned confidence value
 	public static final int defaultlen = 4; // default history length
+	public List<TileKey> roi = null;
 	
 
 	public BasicModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api, int len) {
@@ -41,6 +42,42 @@ public class BasicModel {
 	
 	public int getMaxLen() {
 		return this.len;
+	}
+	
+	public List<TileKey> orderCandidates(List<TileKey> candidates) throws Exception {
+		updateRoi();
+		List<TileKey> myresult = new ArrayList<TileKey>();
+		List<UserRequest> htrace = history.getHistoryTrace(len);
+		List<TilePrediction> order = new ArrayList<TilePrediction>();
+		// for each direction, compute confidence
+		for(TileKey key : candidates) {
+			TilePrediction tp = new TilePrediction();
+			tp.id = key;
+			tp.confidence = computeConfidence(key, htrace);
+			tp.distance = computeDistance(key,htrace);
+			order.add(tp);
+		}
+		Collections.sort(order);
+		for(int i = 0; i < order.size(); i++) {
+			TilePrediction tp = order.get(i);
+			myresult.add(tp.id);
+			//System.out.println(id);
+		}
+
+		return myresult;
+	}
+	
+	public void updateRoi() {
+		roi = history.getLastRoi();
+	}
+	
+	//TODO: override these to do ROI predictions
+	public Double computeConfidence(TileKey id, List<UserRequest> htrace) {
+		return defaultprob;
+	}
+	
+	public Double computeDistance(TileKey id, List<UserRequest> htrace) {
+		return null;
 	}
 	
 	// gets ordering of directions by confidence and returns topk viable options

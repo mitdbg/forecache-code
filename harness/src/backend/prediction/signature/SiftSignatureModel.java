@@ -34,7 +34,6 @@ import backend.util.TileKey;
 public class SiftSignatureModel extends BasicModel {
 	
 	public static int defaultVocabSize = 100;
-	protected List<TileKey> roi = null;
 	protected boolean haveRealRoi = false;
 	KDTree<Integer> vocab = null;
 	protected Map<TileKey,double[]> histograms;
@@ -70,6 +69,26 @@ public class SiftSignatureModel extends BasicModel {
 		return confidence;
 	}
 	
+	@Override
+	public Double computeConfidence(TileKey id, List<UserRequest> htrace) {
+		return null;
+	}
+	
+	@Override
+	public Double computeDistance(TileKey id, List<UserRequest> htrace) {
+		double distance = 0.0;
+		double[] vocabhist = buildSignature(id);
+		for(TileKey roiKey : roi) {
+			double[] roihist = histograms.get(roiKey);
+			distance += Signatures.chiSquaredDistance(vocabhist, roihist);
+		}
+
+		if(distance < defaultprob) {
+			distance = defaultprob;
+		}
+		return distance;
+	}
+	
 	// stores the histograms
 	public double[] buildSignature(TileKey id) {
 		double[] signature = histograms.get(id);
@@ -87,6 +106,11 @@ public class SiftSignatureModel extends BasicModel {
 	
 	public double[] buildSignatureFromKey(TileKey id) {
 		return Signatures.buildSiftSignature(id, vocab, defaultVocabSize);
+	}
+	
+	@Override
+	public void updateRoi() {
+		updateRoi(scidbapi);
 	}
 	
 	public void updateRoi(ScidbTileInterface scidbapi) {

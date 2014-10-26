@@ -1,13 +1,7 @@
 package backend.prediction.signature;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-
-import utils.DBInterface;
 import utils.UserRequest;
-import utils.UtilityFunctions;
 import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
 import backend.memory.MemoryTileBuffer;
@@ -16,8 +10,7 @@ import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
-import backend.util.Params;
-import backend.util.ParamsMap;
+import backend.util.Signatures;
 import backend.util.Tile;
 import backend.util.TileKey;
 
@@ -50,13 +43,39 @@ public class NormalSignatureModel extends BasicModel {
 		
 		if(candidate != null && orig != null) {
 			try{
-			confidence = orig.getNormalDistance(candidate);
-			} catch(Exception e) {}
+			confidence = Signatures.chiSquaredDistance(candidate.getNormalSignature(), orig.getNormalSignature());
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
 			//System.out.println(ckey+" with confidence: "+dp.confidence);
 		}
 		if(confidence < defaultprob) {
 			confidence = defaultprob;
 		}
 		return confidence;
+	}
+	
+	@Override
+	public Double computeConfidence(TileKey id, List<UserRequest> trace) {
+		return null;
+	}
+	
+	@Override
+	public Double computeDistance(TileKey id, List<UserRequest> trace) {
+		double distance = 0.0;
+		Tile candidate = getTile(id);
+		for(TileKey roiKey : roi) {
+			Tile rtile = getTile(roiKey);
+			try{
+				distance += Signatures.chiSquaredDistance(candidate.getNormalSignature(), rtile.getNormalSignature());
+			} catch(Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		if(distance < defaultprob) {
+			distance = defaultprob;
+		}
+		return distance;
 	}
 }

@@ -18,6 +18,7 @@ import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
 import backend.util.Params;
 import backend.util.ParamsMap;
+import backend.util.Signatures;
 import backend.util.Tile;
 import backend.util.TileKey;
 
@@ -44,12 +45,27 @@ public class FilteredHistogramSignatureModel extends HistogramSignatureModel {
 		}
 		
 		if(candidate != null && orig != null) {
-			confidence = orig.getFilteredHistogramDistance(candidate);
+			confidence = Signatures.chiSquaredDistance(candidate.getFilteredHistogramSignature(), orig.getFilteredHistogramSignature());
 			//System.out.println(ckey+" with confidence: "+dp.confidence);
 		}
 		if(confidence < defaultprob) {
 			confidence = defaultprob;
 		}
 		return confidence;
+	}
+	
+	@Override
+	public Double computeDistance(TileKey id, List<UserRequest> htrace) {
+		double distance = 0.0;
+		Tile candidate = getTile(id);
+		for(TileKey roiKey : roi) {
+			Tile rtile = getTile(roiKey);
+			distance += Signatures.chiSquaredDistance(candidate.getFilteredHistogramSignature(), rtile.getFilteredHistogramSignature());
+		}
+
+		if(distance < defaultprob) {
+			distance = defaultprob;
+		}
+		return distance;
 	}
 }
