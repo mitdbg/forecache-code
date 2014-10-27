@@ -420,7 +420,11 @@ public class Signatures {
 		TermCriteria criteria = new TermCriteria(TermCriteria.COUNT,200,1);
 		Mat centers = new Mat();
 		int attempts = 1;
-		Core.kmeans(observations,totalClusters,labels,criteria,attempts, Core.KMEANS_RANDOM_CENTERS, centers);
+		if(observations.rows() < totalClusters) {
+			//System.out.println("total observations: "+observations.rows());
+			totalClusters = observations.rows();
+		}
+			Core.kmeans(observations,totalClusters,labels,criteria,attempts, Core.KMEANS_RANDOM_CENTERS, centers);
 		return centers;
 	}
 }

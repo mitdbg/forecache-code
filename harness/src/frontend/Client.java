@@ -51,11 +51,13 @@ public class Client {
 				for(int i = 0; i < models.length; i++) {
 					crossValidation(taskname,models[i],testusers,predictions[predict], ma);
 				}
+/*
 				for(int mai = 0; mai < ma.length; mai++) {
 					ma[mai].learnSimpleModelLabels();
 					ma[mai].learnModelLabels();
 					ma[mai].buildTrackRecords(4);
 				}
+*/
 			}
 		}
 	}
@@ -94,8 +96,8 @@ public class Client {
 				}
 			}
 			//System.out.println();
-			System.out.print("train list: ");
-			UtilityFunctions.printIntArray(trainlist);
+			//System.out.print("train list: ");
+			//UtilityFunctions.printIntArray(trainlist);
 			// setup test case on backend
 			sendReset(trainlist,models,predictions);
 			
@@ -524,21 +526,21 @@ public class Client {
 				user_ids = new int[useridstrs.length];
 				for(int i = 0; i < useridstrs.length; i++) {
 					user_ids[i] = Integer.parseInt(useridstrs[i]);
-					System.out.println("adding user: "+user_ids[i]);
+					//System.out.println("adding user: "+user_ids[i]);
 				}
 
 				String[] taskstrs = args[1].split(",");
 				tasknames = new String[taskstrs.length];
 				for(int i = 0; i < taskstrs.length; i++) {
 					tasknames[i] = taskstrs[i];
-					System.out.println("adding task: "+tasknames[i]);
+					//System.out.println("adding task: "+tasknames[i]);
 				}
 				
 				String[] modelstrs = args[2].split(",");
 				models = new String[modelstrs.length];
 				for(int i = 0; i < modelstrs.length; i++) {
 					models[i] = modelstrs[i];
-					System.out.println("adding model: "+models[i]);
+					//System.out.println("adding model: "+models[i]);
 				}
 				
 				if(args.length == 4) {

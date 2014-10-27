@@ -34,6 +34,7 @@ import backend.util.TileKey;
 public class SiftSignatureModel extends BasicModel {
 	
 	public static int defaultVocabSize = 100;
+	public int vocabSize;
 	protected boolean haveRealRoi = false;
 	KDTree<Integer> vocab = null;
 	protected Map<TileKey,double[]> histograms;
@@ -41,6 +42,7 @@ public class SiftSignatureModel extends BasicModel {
 	public SiftSignatureModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api, int len) {
 		super(ref,membuf,diskbuf,api,len);
 		this.histograms = new HashMap<TileKey,double[]>();
+		this.vocabSize = defaultVocabSize;
 	}
 	
 	@Override
@@ -101,11 +103,11 @@ public class SiftSignatureModel extends BasicModel {
 	
 	//TODO: override these to implement a new image signature!
 	public double[] buildSignatureFromMat(Mat d) {
-		return Signatures.buildSiftSignature(d, vocab, defaultVocabSize);
+		return Signatures.buildSiftSignature(d, vocab, vocabSize);
 	}
 	
 	public double[] buildSignatureFromKey(TileKey id) {
-		return Signatures.buildSiftSignature(id, vocab, defaultVocabSize);
+		return Signatures.buildSiftSignature(id, vocab, vocabSize);
 	}
 	
 	@Override
@@ -144,6 +146,17 @@ public class SiftSignatureModel extends BasicModel {
 			// each center represents the center of a word
 			Mat centers = Signatures.getKmeansCenters(finalMatrix, defaultVocabSize);
 			vocab = Signatures.buildKDTree(centers); // used to find nearest neighbor fast
+			vocabSize = centers.rows();
+/*
+			if(vocabSize < defaultVocabSize) {
+				for(int i = 0; i < roi.size(); i++) {
+					TileKey rkey = roi.get(i);
+					System.out.print(rkey.buildTileStringForFile()+ "-");
+					System.out.print(all_descriptors.get(i).rows()+" ");
+				}
+				System.out.println();
+			}
+*/
 
 			// now go back through and build histograms for each ROI
 			for(int i = 0; i < all_descriptors.size(); i++) {
