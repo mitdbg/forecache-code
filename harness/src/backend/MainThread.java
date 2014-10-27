@@ -61,6 +61,7 @@ public class MainThread {
 	public static int[] user_ids = {28};
 	public static int defaultpredictions = 3;
 	public static int defaulthistorylength = 4;
+	public static int defaultport = 8080;
 	
 	// global model objects	
 	public static BasicModel[] all_models;
@@ -202,8 +203,8 @@ public class MainThread {
 		}
 	}
 	
-	public static void setupServer() throws Exception {
-		server = new Server(8080);
+	public static void setupServer(int port) throws Exception {
+		server = new Server(port);
 		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 		context.setContextPath("/gettile");
 		server.setHandler(context);
@@ -213,27 +214,10 @@ public class MainThread {
 
 	public static void main(String[] args) throws Exception {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-		// get models to use
-		if(args.length > 0) {
-			String[] modelstrs = args[0].split(",");
-			update_model_labels(modelstrs);
-		}
-		// get user ids to train on
-		if(args.length > 1) {
-			String[] userstrs = args[1].split(",");
-			update_users(userstrs);
-		}
+		int port = defaultport;
 		
-		// get taskname
-		if(args.length > 2) {
-			taskname = args[2];
-			System.out.println("taskname: "+taskname);
-		}
-		
-		// get num predictions
-		if(args.length > 3) {
-			defaultpredictions = Integer.parseInt(args[3]);
-			System.out.print("predictions: "+defaultpredictions);
+		if(args.length == 1) { // setup MainThread with the given port
+			port = Integer.parseInt(args[0]);
 		}
 		
 		// initialize cache managers
@@ -247,7 +231,7 @@ public class MainThread {
 		trainModels();
 		
 		//start the server
-		setupServer();
+		setupServer(port);
 	}
 	
 	private static class TileVote implements Comparable<TileVote>{

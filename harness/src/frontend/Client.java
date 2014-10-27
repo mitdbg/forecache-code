@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
 import backend.util.DirectionClass;
 import backend.util.History;
@@ -520,39 +519,47 @@ public class Client {
 		boolean test = true;
 		boolean all = false;
 		boolean print = false;
-		if(args.length > 0) {
-			if((args.length == 3) || (args.length == 4)) {
-				String[] useridstrs = args[0].split(",");
+		
+		if(args.length <= 1) return; // nothing to do!
+		
+		backend_port = Integer.parseInt(args[0]);
+		List<String> newArgs = new ArrayList<String>();
+		for(int i = 1; i < args.length; i++) {
+			newArgs.add(args[i]);
+		}
+		if(newArgs.size() > 0) {
+			if((newArgs.size() == 3) || (newArgs.size() == 4)) {
+				String[] useridstrs = newArgs.get(0).split(",");
 				user_ids = new int[useridstrs.length];
 				for(int i = 0; i < useridstrs.length; i++) {
 					user_ids[i] = Integer.parseInt(useridstrs[i]);
 					//System.out.println("adding user: "+user_ids[i]);
 				}
 
-				String[] taskstrs = args[1].split(",");
+				String[] taskstrs = newArgs.get(1).split(",");
 				tasknames = new String[taskstrs.length];
 				for(int i = 0; i < taskstrs.length; i++) {
 					tasknames[i] = taskstrs[i];
 					//System.out.println("adding task: "+tasknames[i]);
 				}
 				
-				String[] modelstrs = args[2].split(",");
+				String[] modelstrs = newArgs.get(2).split(",");
 				models = new String[modelstrs.length];
 				for(int i = 0; i < modelstrs.length; i++) {
 					models[i] = modelstrs[i];
 					//System.out.println("adding model: "+models[i]);
 				}
 				
-				if(args.length == 4) {
-					predictions = Integer.parseInt(args[3]);
+				if(newArgs.size() == 4) {
+					predictions = Integer.parseInt(newArgs.get(3));
 				}
 				
 				test = false;
-			} else if(args.length == 1) {
-				if(args[0].equals("all")) {
+			} else if(newArgs.size() == 1) {
+				if(newArgs.get(0).equals("all")) {
 					all = true;
 					test = false;
-				} else if (args[0].equals("print")) {
+				} else if (newArgs.get(0).equals("print")) {
 					test = false;
 					print = true;
 				}
