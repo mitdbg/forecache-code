@@ -120,6 +120,7 @@ public class SiftSignatureModel extends BasicModel {
 		else if (!haveRealRoi && history.newRoi()) haveRealRoi = true; // now we have a real ROI
 		
 		List<TileKey> roi = history.getLastRoi();
+		List<TileKey> finalRois = new ArrayList<TileKey>();
 		histograms.clear(); // these histograms are now obsolete
 		this.roi = roi;
 		List<Mat> all_descriptors = new ArrayList<Mat>();
@@ -127,9 +128,13 @@ public class SiftSignatureModel extends BasicModel {
 		int cols = 0;
 		for(TileKey id : roi) { // for each tile in the ROI
 			Mat d = Signatures.getSiftDescriptorsForImage(id, scidbapi);
-			rows += d.rows();
-			all_descriptors.add(d); // better have the same number of cols!
+			if(d.rows() > 0) {
+				rows += d.rows();
+				all_descriptors.add(d); // better have the same number of cols!
+				finalRois.add(id);
+			}
 		}
+		roi = finalRois;
 		// merge into a single matrix
 		if(all_descriptors.size() > 0) {
 			cols = all_descriptors.get(0).cols();

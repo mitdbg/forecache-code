@@ -119,6 +119,7 @@ public class Signatures {
 			NiceTile tile = scidbapi.getNiceTile(id);
 			DrawHeatmap.buildImage(tile);
 		}
+		if(!t.exists()) return new Mat();
 		Mat image = Highgui.imread(t.getPath(),Highgui.CV_LOAD_IMAGE_GRAYSCALE);
 
 		FeatureDetector detector = FeatureDetector.create(FeatureDetector.DENSE); // detect dense keypoints
@@ -162,9 +163,11 @@ public class Signatures {
 			}
 		}
 		
-		// normalize histogram
-		for(int i = 0; i < vocabsize; i++) {
-			histogram[i] /= totaldescriptors;
+		if(totaldescriptors > 0) {
+			// normalize histogram
+			for(int i = 0; i < vocabsize; i++) {
+				histogram[i] /= totaldescriptors;
+			}
 		}
 		
 		return histogram;
@@ -191,6 +194,7 @@ public class Signatures {
 			NiceTile tile = scidbapi.getNiceTile(id);
 			DrawHeatmap.buildImage(tile);
 		}
+		if(!t.exists()) return new Mat();
 		Mat image = Highgui.imread(t.getPath(),Highgui.CV_LOAD_IMAGE_GRAYSCALE);
 
 		FeatureDetector detector = FeatureDetector.create(FeatureDetector.SIFT);
@@ -214,7 +218,7 @@ public class Signatures {
 	public static double chiSquaredDistance(double[] a, double[] b) {
 		double distance = 0;
 		for(int i = 0; i < a.length; i++) {
-			distance += Math.pow(a[i] - b[i], 2) / (a[i] + b[i]);
+			distance += Math.pow(a[i] - b[i], 2) / Math.max(.00000001,(a[i] + b[i]));
 		}
 		return distance / 2;
 	}

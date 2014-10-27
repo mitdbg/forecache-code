@@ -35,6 +35,9 @@ public class DrawHeatmap {
 	}
 	
 	public static void buildImage(NiceTile tile, String x, String y, String z) {
+		if(tile.data.size() == 0) { // no data!
+			return;
+		}
 		BufferedImage bi = getBufferedImage(tile,x,y,z);
 		Graphics2D ig2 = bi.createGraphics();
 		drawHeatMap(tile,x,y,z,ig2);
