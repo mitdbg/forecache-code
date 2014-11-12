@@ -284,8 +284,9 @@ public class MainThread {
 				} else {
 					modellabels[i] = Model.MARKOV1;
 				}
-			} else if(modelstrs[i].equals("ngram")) {
+			} else if(modelstrs[i].contains("ngram")) {
 				modellabels[i] = Model.NGRAM;
+				defaulthistorylength = Integer.parseInt(modelstrs[i].substring(5));
 			} else if(modelstrs[i].equals("random")) {
 				modellabels[i] = Model.RANDOM;
 			} else if(modelstrs[i].equals("hotspot")) {
