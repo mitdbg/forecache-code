@@ -94,7 +94,7 @@ public class NGramDirectionalModel extends BasicModel {
 		System.out.println("len: "+this.len+", sentences: "+sentences.size());
 		
 		// this library assumes ngrams of order 3 or higher
-		lm = LmReadersExtension.readKneserNeyLmFromStrings(sentences, wordIndexer, Math.max(3,this.len));
+		lm = LmReadersExtension.readKneserNeyLmFromStrings(sentences, wordIndexer, Math.max(3,this.len-1));
 	}
 	
 	public void train(List<UserRequest> trace) {
