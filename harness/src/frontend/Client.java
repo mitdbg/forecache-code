@@ -546,12 +546,12 @@ public class Client {
 
 	public static void main(String[] args) throws Exception {
 		int[] user_ids = null;
-		String[] tasknames = null;
-		String[] models = null;
-		int predictions = 1;
-		boolean test = true;
-		boolean all = false;
-		boolean print = false;
+        String[] tasknames = null;
+        String[][] models = null;
+        int predictions = 1;
+        boolean test = true;
+        boolean all = false;
+        boolean print = false;
 		
 		if(args.length < 1) return; // nothing to do!
 		
@@ -579,12 +579,18 @@ public class Client {
 						//System.out.println("adding task: "+tasknames[i]);
 					}
 					
-					String[] modelstrs = newArgs.get(2).split(",");
-					models = new String[modelstrs.length];
-					for(int i = 0; i < modelstrs.length; i++) {
-						models[i] = modelstrs[i];
-						//System.out.println("adding model: "+models[i]);
-					}
+					String[] modelstrs = newArgs.get(2).split("-");
+                    models = new String[modelstrs.length][];
+                    for(int i = 0; i < modelstrs.length; i++) {
+                            String[] temp = modelstrs[i].split(",");
+                            models[i] = new String[temp.length];
+                            System.out.print("adding model combination:");
+                            for(int j=0; j < temp.length;j++) {
+                                    models[i][j] = temp[j];
+                                    System.out.print(" "+models[i][j]);
+                            }
+                            System.out.println();
+                    }
 					
 					if(newArgs.size() == 4) {
 						predictions = Integer.parseInt(newArgs.get(3));
@@ -605,28 +611,34 @@ public class Client {
 		if(print) {
 			System.out.println("printing trace output");
 			printTracesForSpecificUsers();
-		}else if (test) {
-			System.out.println("running simple sequence test");
-			int[] users = {28};
-			models = new String[1];
-			models[0] ="normal";
-			predictions = 1;
-			System.out.println("reset?: "+sendReset(users,models,predictions));
-			testsequence();
-			//int[] testusers = {27};
-			//String[] tasks = {"task1"};
-			//getTracesForSpecificUsers(testusers,tasks);
-		} else if((user_ids != null) && (tasknames != null) && (models!=null)) {
-			System.out.println("running specific trace tests");
-			//getTracesForSpecificUsers(user_ids,tasknames,models,predictions);
-			String[][] tm = new String[models.length][];
-			for(int i = 0; i < models.length; i++) {
-				tm[i] = new String[1];
-				tm[i][0] = models[i];
-			}
-			
-			int[] tp = {predictions};
-			crossValidationModelSpecific(user_ids,tasknames,tm,tp);
+		}
+		/*
+        else if (test) {
+                System.out.println("running simple sequence test");
+                int[] users = {28};
+                models = new String[1];
+                models[0] ="normal";
+                predictions = 1;
+                System.out.println("reset?: "+sendReset(users,models,predictions));
+                testsequence();
+                //int[] testusers = {27};
+                //String[] tasks = {"task1"};
+                //getTracesForSpecificUsers(testusers,tasks);
+        }
+        */
+		else if((user_ids != null) && (tasknames != null) && (models!=null)) {
+            System.out.println("running specific trace tests");
+            //getTracesForSpecificUsers(user_ids,tasknames,models,predictions);
+            /*
+            String[][] tm = new String[models.length][];
+            for(int i = 0; i < models.length; i++) {
+                    tm[i] = new String[1];
+                    tm[i][0] = models[i];
+            }
+            */
+            
+            int[] tp = {predictions};
+            crossValidationModelSpecific(user_ids,tasknames,models,tp);
 		} else if(all) {
 			System.out.println("testing all traces for all tasks");
 			//getTracesForAllUsers();
