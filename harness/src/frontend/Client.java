@@ -122,6 +122,8 @@ public class Client {
 				ma[u1].addModel(UtilityFunctions.getModelFromString(models[0]), fullAccuracy);
 			}
 			
+			/*
+			//original printed content
 			System.out.print(user_id+"\t");
 			System.out.print(taskname+"\t");
 			UtilityFunctions.printStringArray(models);
@@ -131,6 +133,20 @@ public class Client {
 			overall_accuracy += accuracy;
 			System.out.print("\t");
 			System.out.println(accuracy);
+			*/
+			
+			// new printed content
+			TraceMetadata metadata = RequestLabeler.getLabels(trace);
+			List<DirectionClass> dirs = metadata.directionClasses;
+			List<ExplorationPhase> phases = metadata.explorationPhases;
+			for(int i = 0; i < trace.size(); i++) {
+				UserRequest request = trace.get(i);
+				List<Integer> id = UtilityFunctions.parseTileIdInteger(request.tile_id);
+				System.out.print(user_id+"\t"+taskname+"\t");
+				UtilityFunctions.printStringArray(models);
+				System.out.println("\t"+predictions+"\t"+request.zoom+"\t"+id.get(0)+"\t"+id.get(1)+"\t"+dirs.get(i)+"\t"+phases.get(i)+
+						"\t"+fullAccuracy[i]);
+			}
 		}
 		overall_accuracy /= testusers.size();
 		//System.out.println("overall\t"+overall_accuracy);
