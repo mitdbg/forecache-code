@@ -11,6 +11,8 @@ import backend.util.DirectionClass;
 import backend.util.History;
 import backend.util.ModelAccuracy;
 import utils.DBInterface;
+import utils.ExplorationPhase;
+import utils.TraceMetadata;
 import utils.UserRequest;
 import utils.UtilityFunctions;
 
@@ -161,6 +163,8 @@ public class Client {
 	}
 	
 	public static void printTracesForSpecificUsers() {
+		//System.out.println("userid\ttaskname\tpath-id\tsteps\tdirection\tin-count\tout-count\tpancount");
+		System.out.println("userid\ttaskname\tzoom\ttile-x\ttile-y\tdirection\texploration-phase");
 		List<Integer> user_ids = DBInterface.getUsersFromTraces();
 		List<String> tasks = DBInterface.getTasksFromTraces();
 		for(int u = 0; u < user_ids.size(); u++) {
@@ -168,6 +172,17 @@ public class Client {
 			for(int t = 0; t < tasks.size(); t++) {
 				String taskname = tasks.get(t);
 				List<UserRequest> trace = DBInterface.getUserTraces(user_id,taskname);
+				TraceMetadata metadata = RequestLabeler.getLabels(trace);
+				List<DirectionClass> dirs = metadata.directionClasses;
+				List<ExplorationPhase> phases = metadata.explorationPhases;
+				if(trace.size() > 0) {
+					for(int i = 0; i < trace.size(); i++) {
+						UserRequest request = trace.get(i);
+						List<Integer> id = UtilityFunctions.parseTileIdInteger(request.tile_id);
+						System.out.println(user_id+"\t"+taskname+"\t"+request.zoom+"\t"+id.get(0)+"\t"+id.get(1)+"\t"+dirs.get(i)+"\t"+phases.get(i));
+					}
+				}
+				/*
 				History history = new History(4);
 				if(trace.size() > 0) {
 					int path_id = 0;
@@ -184,7 +199,6 @@ public class Client {
 								steps = 1;
 							}
 							Map<DirectionClass,Integer> dist = history.getClassDistribution();
-							
 							int incount = dist.containsKey(DirectionClass.IN) ? dist.get(DirectionClass.IN) : 0;
 							int outcount = dist.containsKey(DirectionClass.OUT) ? dist.get(DirectionClass.OUT) : 0;
 							int pancount = dist.containsKey(DirectionClass.PAN) ? dist.get(DirectionClass.PAN) : 0;
@@ -195,10 +209,13 @@ public class Client {
 							System.out.print("\t"+pancount);
 							System.out.println();
 							history.add(dir);
+						} else {
+							
 						}
 						prev = next;
 					}
 				}
+				*/
 			}
 		}
 	}
@@ -520,52 +537,55 @@ public class Client {
 		boolean all = false;
 		boolean print = false;
 		
-		if(args.length <= 1) return; // nothing to do!
+		if(args.length < 1) return; // nothing to do!
 		
-		backend_port = Integer.parseInt(args[0]);
-		List<String> newArgs = new ArrayList<String>();
-		for(int i = 1; i < args.length; i++) {
-			newArgs.add(args[i]);
-		}
-		if(newArgs.size() > 0) {
-			if((newArgs.size() == 3) || (newArgs.size() == 4)) {
-				String[] useridstrs = newArgs.get(0).split(",");
-				user_ids = new int[useridstrs.length];
-				for(int i = 0; i < useridstrs.length; i++) {
-					user_ids[i] = Integer.parseInt(useridstrs[i]);
-					//System.out.println("adding user: "+user_ids[i]);
-				}
-
-				String[] taskstrs = newArgs.get(1).split(",");
-				tasknames = new String[taskstrs.length];
-				for(int i = 0; i < taskstrs.length; i++) {
-					tasknames[i] = taskstrs[i];
-					//System.out.println("adding task: "+tasknames[i]);
-				}
-				
-				String[] modelstrs = newArgs.get(2).split(",");
-				models = new String[modelstrs.length];
-				for(int i = 0; i < modelstrs.length; i++) {
-					models[i] = modelstrs[i];
-					//System.out.println("adding model: "+models[i]);
-				}
-				
-				if(newArgs.size() == 4) {
-					predictions = Integer.parseInt(newArgs.get(3));
-				}
-				
-				test = false;
-			} else if(newArgs.size() == 1) {
-				if(newArgs.get(0).equals("all")) {
-					all = true;
+		if(args[0].equals("print")) {
+			print = true;
+		} else {
+			backend_port = Integer.parseInt(args[0]);
+			List<String> newArgs = new ArrayList<String>();
+			for(int i = 1; i < args.length; i++) {
+				newArgs.add(args[i]);
+			}
+			if(newArgs.size() > 0) {
+				if((newArgs.size() == 3) || (newArgs.size() == 4)) {
+					String[] useridstrs = newArgs.get(0).split(",");
+					user_ids = new int[useridstrs.length];
+					for(int i = 0; i < useridstrs.length; i++) {
+						user_ids[i] = Integer.parseInt(useridstrs[i]);
+						//System.out.println("adding user: "+user_ids[i]);
+					}
+	
+					String[] taskstrs = newArgs.get(1).split(",");
+					tasknames = new String[taskstrs.length];
+					for(int i = 0; i < taskstrs.length; i++) {
+						tasknames[i] = taskstrs[i];
+						//System.out.println("adding task: "+tasknames[i]);
+					}
+					
+					String[] modelstrs = newArgs.get(2).split(",");
+					models = new String[modelstrs.length];
+					for(int i = 0; i < modelstrs.length; i++) {
+						models[i] = modelstrs[i];
+						//System.out.println("adding model: "+models[i]);
+					}
+					
+					if(newArgs.size() == 4) {
+						predictions = Integer.parseInt(newArgs.get(3));
+					}
+					
 					test = false;
-				} else if (newArgs.get(0).equals("print")) {
-					test = false;
-					print = true;
+				} else if(newArgs.size() == 1) {
+					if(newArgs.get(0).equals("all")) {
+						all = true;
+						test = false;
+					} else if (newArgs.get(0).equals("print")) {
+						test = false;
+						print = true;
+					}
 				}
 			}
 		}
-
 		if(print) {
 			System.out.println("printing trace output");
 			printTracesForSpecificUsers();
