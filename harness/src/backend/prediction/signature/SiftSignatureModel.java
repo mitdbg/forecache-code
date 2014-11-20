@@ -17,8 +17,10 @@ import edu.wlu.cs.levy.CG.KeySizeException;
 import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
+import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
+import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.BasicModel;
 import backend.prediction.DirectionPrediction;
@@ -39,7 +41,7 @@ public class SiftSignatureModel extends BasicModel {
 	KDTree<Integer> vocab = null;
 	protected Map<TileKey,double[]> histograms;
 
-	public SiftSignatureModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api, int len) {
+	public SiftSignatureModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
 		super(ref,membuf,diskbuf,api,len);
 		this.histograms = new HashMap<TileKey,double[]>();
 		this.vocabSize = defaultVocabSize;
@@ -177,7 +179,7 @@ public class SiftSignatureModel extends BasicModel {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		String idstr = "[0, 0]";
 		int zoom = 1;
-		List<Integer> tile_id = UtilityFunctions.parseTileIdInteger(idstr);
+		int[] tile_id = UtilityFunctions.parseTileIdInteger(idstr);
 		TileKey id = new TileKey(tile_id,zoom);
 		int vocabSize = defaultVocabSize;
 		ScidbTileInterface scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);

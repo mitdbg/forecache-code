@@ -9,11 +9,14 @@ import java.util.Map;
 import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
+import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
+import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
+import backend.util.NiceTile;
 import backend.util.Params;
 import backend.util.ParamsMap;
 import backend.util.Tile;
@@ -23,15 +26,15 @@ public class BasicModel {
 	protected int len;
 	protected TileHistoryQueue history = null;
 	protected ParamsMap paramsMap; // for checking if predictions are actual tiles
-	protected MemoryTileBuffer membuf;
-	protected DiskTileBuffer diskbuf;
+	protected MemoryNiceTileBuffer membuf;
+	protected DiskNiceTileBuffer diskbuf;
 	protected ScidbTileInterface scidbapi;
 	public static final double defaultprob = .00000000001; // default assigned confidence value
 	public static final int defaultlen = 4; // default history length
 	public List<TileKey> roi = null;
 	
 
-	public BasicModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api, int len) {
+	public BasicModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
 		this.history = ref; // reference to (syncrhonized) global history object
 		this.membuf = membuf;
 		this.diskbuf = diskbuf;
@@ -140,21 +143,21 @@ public class BasicModel {
 		return defaultprob;
 	}
 	
-	public Tile getTile(TileKey key) {
-		Tile t = membuf.getTile(key);
+	public NiceTile getTile(TileKey key) {
+		NiceTile t = membuf.getTile(key);
 		if(t == null) {
 			t = diskbuf.getTile(key);
 			if(t == null) {
-				t = this.scidbapi.getTile(key);
+				t = this.scidbapi.getNiceTile(key);
 			}
 		}
 		return t;
 	}
 	
 	public TileKey DirectionToTile(UserRequest prev, Direction d) {
-		List<Integer> tile_id = UtilityFunctions.parseTileIdInteger(prev.tile_id);
-		int x = tile_id.get(0);
-		int y = tile_id.get(1);
+		int[] tile_id = UtilityFunctions.parseTileIdInteger(prev.tile_id);
+		int x = tile_id[0];
+		int y = tile_id[1];
 		int zoom = prev.zoom;
 		
 		// if zooming in, update values
@@ -162,41 +165,41 @@ public class BasicModel {
 			zoom++;
 			x *= 2;
 			y *=2;
-			tile_id.set(0,x);
-			tile_id.set(1,y);
+			tile_id[0] = x;
+			tile_id[1] = y;
 		}
 		
 		switch(d) {
 		case UP:
-			tile_id.set(1,y+1);
+			tile_id[1] =y+1;
 			break;
 		case DOWN:
-			tile_id.set(1,y-1);
+			tile_id[1] =y-1;
 			break;
 		case LEFT:
-			tile_id.set(0,x-1);
+			tile_id[0] =x-1;
 			break;
 		case RIGHT:
-			tile_id.set(0,x+1);
+			tile_id[0] =x+1;
 			break;
 		case OUT:
 			zoom -= 1;
 			x /= 2;
 			y /= 2;
-			tile_id.set(0,x);
-			tile_id.set(1,y);
+			tile_id[0] =x;
+			tile_id[1] =y;
 			break;
 		case IN0: // handled above
 			break;
 		case IN1:
-			tile_id.set(1,y+1);
+			tile_id[1] =y+1;
 			break;
 		case IN3:
-			tile_id.set(0,x+1);
+			tile_id[0] =x+1;
 			break;
 		case IN2:
-			tile_id.set(0,x+1);
-			tile_id.set(1,y+1);
+			tile_id[0] =x+1;
+			tile_id[1] =y+1;
 			break;
 		}
 		TileKey key = new TileKey(tile_id,zoom);
@@ -233,7 +236,7 @@ public class BasicModel {
 	}
 	
 	public static TileKey getKeyFromRequest(UserRequest request) {
-		List<Integer> id = UtilityFunctions.parseTileIdInteger(request.tile_id);
+		int[] id = UtilityFunctions.parseTileIdInteger(request.tile_id);
 		return new TileKey(id,request.zoom);
 	}
 }

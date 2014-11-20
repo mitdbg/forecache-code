@@ -4,8 +4,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
+import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.BasicModel;
 import backend.prediction.DirectionPrediction;
@@ -19,7 +21,7 @@ import utils.UtilityFunctions;
 public class MarkovDirectionalModel extends BasicModel {
 	protected Map<String,MDMNode> condprobs;
 	
-	public MarkovDirectionalModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api, int len) {
+	public MarkovDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
 		super(ref,membuf,diskbuf,api,len);
 		condprobs = new HashMap<String,MDMNode>();
 	}

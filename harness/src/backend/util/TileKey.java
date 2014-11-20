@@ -1,13 +1,7 @@
 package backend.util;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-
-import com.google.common.collect.ImmutableList;
 
 /**
  * @author leibatt
@@ -20,37 +14,32 @@ public class TileKey implements java.io.Serializable {
 	 */
 	private static final long serialVersionUID = -8425373901298453080L;
 	
-	public List<Integer> id;
-	public List<Double> weights;
+	public int[] id;
+	public double[] weights;
 	public int zoom;
 	
-	public TileKey(List<Integer> id, int zoom) {
+	public TileKey(int[] id, int zoom) {
 		this.id = id;
 		this.zoom = zoom;
-		Double[] temp = new Double[this.id.size() + 1];
-		Arrays.fill(temp, 1.0);
-		this.weights = Arrays.asList(temp);
-
+		this.weights = new double[this.id.length+1];
 	}
 	
-	public TileKey(List<Integer> id, int zoom, List<Double> weights) {
+	public TileKey(int[] id, int zoom, double[] weights) {
 		this.id = id;
 		this.zoom = zoom;
 		// if the weights passed are unreliable, set to default
 		// weights must include a value for zoom levels too
-		if(weights.size() != (this.id.size() + 1)) {
-			Double[] temp = new Double[this.id.size() + 1];
-			Arrays.fill(temp, 1.0);
-			this.weights = Arrays.asList(temp);
+		if(weights.length != (this.id.length + 1)) {
+			this.weights = new double[this.id.length+1];
 		} else {
 			this.weights = weights;
 		}
 	}
 	
 	public double getDistance(TileKey other) {
-		List<Integer> oid = other.id;
+		int[] oid = other.id;
 		// ignore invalid input
-		if((this.id.size() != oid.size()) || (this.zoom < 0) || (other.zoom < 0)) {
+		if((this.id.length != oid.length) || (this.zoom < 0) || (other.zoom < 0)) {
 			return -1;
 		}
 		return updatedEuclideanDistance(other);
@@ -58,12 +47,12 @@ public class TileKey implements java.io.Serializable {
 	
 	private double updatedEuclideanDistance(TileKey other) {
 		//System.out.println("comparing "+this+" and "+other);
-		List<Integer> oid = other.id;
-		List<Integer> newid = new ArrayList<Integer>();
+		int[] oid = other.id;
+		int[] newid = new int[this.id.length];
 		int zoomdiff = this.zoom - other.zoom;
 		if(zoomdiff > 0) { // this tile is at a lower zoom level
-			for(int i = 0; i < this.id.size(); i++) {
-				newid.add(this.id.get(i) / ((int)Math.pow(2,zoomdiff)));
+			for(int i = 0; i < this.id.length; i++) {
+				newid[i] = this.id[i] / ((int)Math.pow(2,zoomdiff));
 				//System.out.println(newid.get(i));
 			}
 			//System.out.println(this.zoom);
@@ -72,8 +61,8 @@ public class TileKey implements java.io.Serializable {
 		} else if (zoomdiff < 0) { // other is at lowewr zoom level
 			zoomdiff *= -1;
 			//System.out.println("zoomdiff: "+zoomdiff);
-			for(int i = 0; i < this.id.size(); i++) {
-				newid.add(oid.get(i) / ((int)Math.pow(2,zoomdiff)));
+			for(int i = 0; i < this.id.length; i++) {
+				newid[i] = oid[i] / ((int)Math.pow(2,zoomdiff));
 				//System.out.println(newid.get(i));
 			}
 			//System.out.println(other.getZoom());
@@ -85,13 +74,13 @@ public class TileKey implements java.io.Serializable {
 		}
 	}
 	
-	private double euclideanDistance(List<Integer> x, List<Integer> y, int zx, int zy) {
-		if(x.size() != y.size()) {
+	private double euclideanDistance(int[] x, int[] y, int zx, int zy) {
+		if(x.length != y.length) {
 			return 100000000;
 		}
 		double sum = 0;
-		for(int i = 0; i < x.size(); i++) {
-			sum += Math.pow(x.get(i) - y.get(i), 2);
+		for(int i = 0; i < x.length; i++) {
+			sum += Math.pow(x[i] - y[i], 2);
 		}
 		sum += Math.pow(1.0 * zx - zy,2);
 		return Math.sqrt(sum);
@@ -100,28 +89,28 @@ public class TileKey implements java.io.Serializable {
 	// computes euclidean distance over tile id's
 	// treats zoom level as an additional dimension
 	private double euclideanDistance(TileKey other) {
-		List<Integer> oid = other.id;
-		if(this.id.size() != oid.size()) {
+		int[] oid = other.id;
+		if(this.id.length != oid.length) {
 			return 100000000;
 		}
 		double sum = 0;
-		for(int i = 0; i < this.id.size(); i++) {
-			sum += this.weights.get(i) * Math.pow(this.id.get(i) - oid.get(i), 2);
+		for(int i = 0; i < this.id.length; i++) {
+			sum += this.weights[i] * Math.pow(this.id[i]- oid[i], 2);
 		}
-		sum += this.weights.get(this.id.size()) * Math.pow(1.0 * this.zoom - other.zoom,2);
+		sum += this.weights[this.id.length] * Math.pow(1.0 * this.zoom - other.zoom,2);
 		return Math.sqrt(sum);
 	}
 	
 	public String buildTileString() {
 		StringBuilder tile_id = new StringBuilder();
 		tile_id.append("[");
-		if(this.id.size() > 0) {
-			tile_id.append(this.id.get(0));
+		if(this.id.length > 0) {
+			tile_id.append(this.id[0]);
 		} else {
 			return null;
 		}
-		for(int i = 1; i < this.id.size(); i++) {
-			tile_id.append(", ").append(this.id.get(i));
+		for(int i = 1; i < this.id.length; i++) {
+			tile_id.append(", ").append(this.id[i]);
 		}
 		tile_id.append("]");
 		return tile_id.toString();
@@ -133,8 +122,8 @@ public class TileKey implements java.io.Serializable {
 			return null;
 		}
 		tile_id.append(this.zoom);
-		for(int i = 0; i < this.id.size(); i++) {
-			tile_id.append("_").append(this.id.get(i));
+		for(int i = 0; i < this.id.length; i++) {
+			tile_id.append("_").append(this.id[i]);
 		}
 		return tile_id.toString();
 	}
@@ -143,11 +132,11 @@ public class TileKey implements java.io.Serializable {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("([");
-		if(this.id.size() > 0) {
-			sb.append(this.id.get(0));
+		if(this.id.length > 0) {
+			sb.append(this.id[0]);
 		}
-		for(int i = 1; i < this.id.size(); i++) {
-			sb.append(", ").append(this.id.get(i));
+		for(int i = 1; i < this.id.length; i++) {
+			sb.append(", ").append(this.id[i]);
 		}
 		sb.append("], ").append(this.zoom).append(")");
 		return sb.toString();
@@ -159,9 +148,9 @@ public class TileKey implements java.io.Serializable {
 		HashCodeBuilder hcb = new HashCodeBuilder(491,37)
 			.append(this.zoom);
 		
-		for(int i = 0; i < this.id.size(); i++) {
-			hcb.append(this.id.get(i))
-			.append(this.weights.get(i));
+		for(int i = 0; i < this.id.length; i++) {
+			hcb.append(this.id[i])
+			.append(this.weights[i]);
 		}
 		return hcb.toHashCode();
 	}
@@ -178,16 +167,16 @@ public class TileKey implements java.io.Serializable {
 		}
 		
 		TileKey o = (TileKey) other;
-		if(this.id.size() != o.id.size()) {
+		if(this.id.length != o.id.length) {
 			return false;
 		}
-		List<Integer> oid = o.id;
-		List<Double> ow = o.weights;
+		int[] oid = o.id;
+		double[] ow = o.weights;
 		EqualsBuilder eb = new EqualsBuilder()
 			.append(this.zoom,o.zoom);
-		for(int i = 0; i < this.id.size(); i++) {
-			eb.append(this.id.get(i), oid.get(i))
-			.append(this.weights.get(i), ow.get(i));
+		for(int i = 0; i < this.id.length; i++) {
+			eb.append(this.id[i], oid[i])
+			.append(this.weights[i], ow[i]);
 		}
 		return eb.isEquals();
 	}

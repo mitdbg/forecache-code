@@ -42,13 +42,24 @@ public class Signatures {
 	public static String denseSiftString = "densesift";
 
 	/**************** Mean/Stddev ****************/
-	public static double[] getNormalSignature(byte[] input) throws Exception {
+	public static double[] getNormalSignature(byte[] input) {
 		return getNormalSignature(input,defaultindex);
 	}
 	
-	public static double[] getNormalSignature(byte[]input, int index) throws Exception {
-		long start = System.currentTimeMillis();
+	public static double[] getNormalSignature(Tile tile) {
+		return getNormalSignature(tile.data,defaultindex);
+	}
+	
+	public static double[] getNormalSignature(byte[] input, int index) {
 		double [] x = getData(input);
+		return getNormalSignature(x,index);
+	}
+	
+	public static double[] getNormalSignature(NiceTile tile) {
+		return getNormalSignature(tile.data,defaultindex);
+	}
+	
+	public static double[] getNormalSignature(double[] x, int index) {
 		int rows = x.length / valcount; // total rows
 		double min = globalmin[index];
 		double max = globalmax[index];
@@ -73,10 +84,10 @@ public class Signatures {
 		histogram[1] = Math.sqrt(histogram[1]/rows);
 		histogram[0] -= min;
 		for(int i = 0; i < histogram.length; i++) {
-			if(histogram[i] > 2.0) {
-				System.out.println("invalid values!" + histogram[i]);
-				throw new Exception();
-			}
+			//if(histogram[i] > 2.0) {
+			//	System.out.println("invalid values!" + histogram[i]);
+			//	throw new Exception();
+			//}
 			histogram[i] /= range; // normalize by range
 			if(histogram[i] < default_min) {
 				histogram[i] = default_min;
@@ -227,9 +238,19 @@ public class Signatures {
 		return getHistogramSignature(input,defaultindex,defaultbins);
 	}
 	
-	public static double[] getHistogramSignature(byte[] input, int index, int bins) {
-		long start = System.currentTimeMillis();
-		double [] x = getData(input);
+	public static double[] getHistogramSignature(Tile tile) {
+		return getHistogramSignature(tile.data);
+	}
+	
+	public static double[] getHistogramSignature(NiceTile tile) {
+		return getHistogramSignature(tile.data);
+	}
+	
+	public static double[] getHistogramSignature(double[] data) {
+		return getHistogramSignature(data,defaultindex,defaultbins);
+	}
+	
+	public static double[] getHistogramSignature(double[] x, int index, int bins) {
 		int rows = x.length / valcount; // total rows
 		double min = globalmin[index];
 		double max = globalmax[index];
@@ -255,20 +276,34 @@ public class Signatures {
 			//System.out.print(histogram[i]+",");
 		}
 		//System.out.println();
-		long end = System.currentTimeMillis();
-		//System.out.println("Time to build histogram: "+(end-start)+"ms");
 		return histogram;
 	}
 	
+	public static double[] getHistogramSignature(byte[] input, int index, int bins) {
+		double [] x = getData(input);
+		return getHistogramSignature(x,index,bins);
+		
+	}
+	
 	/**************** filtered Histograms ****************/
+	
+	public static double[] getFilteredHistogramSignature(Tile tile) {
+		return getFilteredHistogramSignature(tile.data);
+	}
+	
+	public static double[] getFilteredHistogramSignature(NiceTile tile) {
+		return getFilteredHistogramSignature(tile.data);
+	}
+	
+	public static double[] getFilteredHistogramSignature(double[] input) {
+		return getFilteredHistogramSignature(input,defaultindex,defaultfilterindex,defaultfiltervals[0],defaultbins);
+	}
 	
 	public static double[] getFilteredHistogramSignature(byte[] input) {
 		return getFilteredHistogramSignature(input,defaultindex,defaultfilterindex,defaultfiltervals[0],defaultbins);
 	}
 	
-	public static double[] getFilteredHistogramSignature(byte[] input, int index, int filterindex, double filtervalue, int bins) {
-		long start = System.currentTimeMillis();
-		double [] x = getData(input);
+	public static double[] getFilteredHistogramSignature(double[] x, int index, int filterindex, double filtervalue, int bins) {
 		int rows = x.length / valcount; // total rows
 		double min = globalmin[index];
 		double max = globalmax[index];
@@ -289,9 +324,12 @@ public class Signatures {
 			//System.out.print(histogram[i]+",");
 		}
 		//System.out.println();
-		long end = System.currentTimeMillis();
-		//System.out.println("Time to build filtered histogram: "+(end-start)+"ms");
 		return histogram;
+	}
+	
+	public static double[] getFilteredHistogramSignature(byte[] input, int index, int filterindex, double filtervalue, int bins) {
+		double [] x = getData(input);
+		return getFilteredHistogramSignature(x,index,filterindex,filtervalue,bins);
 	}
 	
 	/******************general ********************/

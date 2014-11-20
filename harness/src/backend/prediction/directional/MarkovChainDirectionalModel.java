@@ -5,15 +5,17 @@ import java.util.List;
 import edu.berkeley.nlp.lm.map.NgramMap;
 import edu.berkeley.nlp.lm.values.ProbBackoffPair;
 
+import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
+import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
 import utils.UserRequest;
 
 public class MarkovChainDirectionalModel extends NGramDirectionalModel {
-	public MarkovChainDirectionalModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api, int len) {
+	public MarkovChainDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
 		super(ref,membuf,diskbuf,api,len);
 	}
 	

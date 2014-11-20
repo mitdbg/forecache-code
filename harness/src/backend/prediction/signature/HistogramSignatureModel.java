@@ -8,14 +8,17 @@ import java.util.Map;
 import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
+import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
+import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.BasicModel;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
+import backend.util.NiceTile;
 import backend.util.Params;
 import backend.util.ParamsMap;
 import backend.util.Signatures;
@@ -24,7 +27,7 @@ import backend.util.TileKey;
 
 public class HistogramSignatureModel extends BasicModel {
 
-	public HistogramSignatureModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api, int len) {
+	public HistogramSignatureModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
 		super(ref,membuf,diskbuf,api,len);
 	}
 	
@@ -38,19 +41,20 @@ public class HistogramSignatureModel extends BasicModel {
 		double confidence = 0.0;
 		UserRequest prev = htrace.get(htrace.size()-1);
 		TileKey pkey = MarkovDirectionalModel.getKeyFromRequest(prev);
-		Tile orig = null;
+		NiceTile orig = null;
 		if(pkey != null) {
 			orig = getTile(pkey);
 		}
 		
 		TileKey ckey = this.DirectionToTile(prev, d);
-		Tile candidate = null;
+		NiceTile candidate = null;
 		if(ckey != null) {
 			candidate = getTile(ckey);
 		}
 		
 		if(candidate != null && orig != null) {
-			confidence = Signatures.chiSquaredDistance(candidate.getHistogramSignature(), orig.getHistogramSignature());
+			confidence = Signatures.chiSquaredDistance(Signatures.getHistogramSignature(candidate),
+					Signatures.getHistogramSignature(orig));
 			//System.out.println(ckey+" with confidence: "+dp.confidence);
 		}
 		if(confidence < defaultprob) {
@@ -67,10 +71,11 @@ public class HistogramSignatureModel extends BasicModel {
 	@Override
 	public Double computeDistance(TileKey id, List<UserRequest> htrace) {
 		double distance = 0.0;
-		Tile candidate = getTile(id);
+		NiceTile candidate = getTile(id);
 		for(TileKey roiKey : roi) {
-			Tile rtile = getTile(roiKey);
-			distance += Signatures.chiSquaredDistance(candidate.getHistogramSignature(), rtile.getHistogramSignature());
+			NiceTile rtile = getTile(roiKey);
+			distance += Signatures.chiSquaredDistance(Signatures.getHistogramSignature(candidate),
+					Signatures.getHistogramSignature(rtile));
 		}
 
 		if(distance < defaultprob) {

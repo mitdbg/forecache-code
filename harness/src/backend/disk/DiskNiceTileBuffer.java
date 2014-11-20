@@ -1,25 +1,19 @@
 package backend.disk;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
 import utils.DBInterface;
-import utils.UtilityFunctions;
 
-import com.google.common.io.Files;
-
-import backend.util.Signatures;
-import backend.util.Tile;
-import backend.util.TileBuffer;
+import backend.util.NiceTile;
+import backend.util.NiceTileBuffer;
 import backend.util.TileKey;
 import backend.util.TimePair;
 
-public class DiskTileBuffer implements TileBuffer {
+public class DiskNiceTileBuffer implements NiceTileBuffer {
 	protected String cache_root_dir;
 	protected String threshold;
 	protected String hashed_query;
@@ -31,7 +25,7 @@ public class DiskTileBuffer implements TileBuffer {
 	private final long DEFAULTMAX = 30304315430L; // default buffer size
 	private final int initqueuesize = 50;
 	
-	public DiskTileBuffer(String cache_root_dir, String hashed_query, String threshold) throws Exception {
+	public DiskNiceTileBuffer(String cache_root_dir, String hashed_query, String threshold) throws Exception {
 		File check = new File(cache_root_dir);
 		if(!check.isDirectory()) {
 			throw new Exception("cache root directory '"+cache_root_dir+"' is not a directory!");
@@ -48,7 +42,7 @@ public class DiskTileBuffer implements TileBuffer {
 		init(); // check cache root for existing tiles
 	}
 	
-	public DiskTileBuffer(String cache_root_dir, String hashed_query, String threshold, int storagemax) throws Exception {
+	public DiskNiceTileBuffer(String cache_root_dir, String hashed_query, String threshold, int storagemax) throws Exception {
 		File check = new File(cache_root_dir);
 		if(!check.isDirectory()) {
 			throw new Exception("cache root directory '"+cache_root_dir+"' is not a directory!");
@@ -71,24 +65,8 @@ public class DiskTileBuffer implements TileBuffer {
 	}
 
 	@Override
-	public synchronized Tile getTile(TileKey id) {
-		Tile myresult = null;
-		if(!peek(id)) { // not recorded in cache
-			return myresult;
-		}
-		String pathname = build_tile_filepath(id);
-		if(pathname == null) { // could not get path
-			return myresult;
-		}
-		try {
-			File filepath = new File(pathname);
-			byte[] data = Files.toByteArray(filepath);
-			myresult = new Tile(id,Signatures.getData(data));
-		} catch (IOException e) {
-			System.out.println("error occured while retrieving data from disk");
-			e.printStackTrace();
-		}
-		return myresult;
+	public synchronized NiceTile getTile(TileKey id) {
+		return NiceTilePacker.readNiceTile(id);
 	}
 
 	@Override
@@ -102,16 +80,15 @@ public class DiskTileBuffer implements TileBuffer {
 	}
 
 	@Override
-	public synchronized void insertTile(Tile tile) {
+	public synchronized void insertTile(NiceTile tile) {
 		TileKey id = tile.id;
 		if(!peek(id)) {
-			int tilesize = tile.getDataSize();
 			// make room for new tile in storage
-			while((this.size + tilesize) > this.storagemax) {
+			while(this.size >= this.storagemax) {
 				this.remove_lru_tile();
 			}
 			// insert new tile into storage
-			this.insert_tile(tile);
+			NiceTilePacker.writeNiceTile(tile);
 		} else { // tile already exists
 			// update metadata
 			this.update_time_pair(id);
@@ -122,9 +99,8 @@ public class DiskTileBuffer implements TileBuffer {
 	@Override
 	public synchronized void removeTile(TileKey id) {
 		if(peek(id)) {
-			TimePair toremove = timeMap.get(id);
-			int tilesize = toremove.getTileSize();
-			this.remove_tile(id, tilesize);
+			timeMap.get(id);
+			this.remove_tile(id);
 		}
 
 	}
@@ -139,8 +115,9 @@ public class DiskTileBuffer implements TileBuffer {
 	
 	// find all tiles in cache directory
 	protected synchronized void init() {
-		String rootpath = build_start_path();
-		File root = new File(rootpath);
+		//String rootpath = build_start_path();
+		//File root = new File(rootpath);
+		File root = new File(cache_root_dir);
 		init_helper(root, 0);
 	}
 	
@@ -155,36 +132,14 @@ public class DiskTileBuffer implements TileBuffer {
 				}
 			}
 		} else if (node.isFile() && node.canRead()){ // add file to cache
-			File parent = node.getParentFile(); // get zoom level
-			int zoom = -1;
-			try {
-				zoom = Integer.parseInt(parent.getName());
-			} catch(NumberFormatException e) {
-				System.out.println("error retrieving zoom level for file");
-				e.printStackTrace();
-			}
-			if(zoom < 0) { // couldn't parse int properly
-				return currsize;
-			}
-			String tileidstring = DBInterface.getTileId(node.getName());
-			//System.out.println("zoom: " + zoom);
-			if(tileidstring.length() == 0) { // couldn't get tile_id from db using hash
-				return currsize;
-			}
-			try {
-				byte[] data = Files.toByteArray(node);
-				int tilesize = data.length;
-				int[] tile_id = UtilityFunctions.parseTileIdInteger(tileidstring);
-				TileKey key = new TileKey(tile_id,zoom);
-				if((tilesize + currsize) <= this.storagemax) {
-					insert_time_pair(key, tilesize); // add to lru metadata
-					currsize += tilesize;
+			NiceTile t = NiceTilePacker.readNiceTileDefault(node);
+			if(t != null) {
+				if((currsize+1) <= this.storagemax) {
+					insert_time_pair(t.id); // add to lru metadata
+					currsize++;
 					//System.out.println("using " + currsize + " bytes out of " + storagemax);
 					//System.out.println("inserting tile in disk based cache: '"+tileidstring+"',"+zoom);
 				}
-			} catch (IOException e) {
-				System.out.println("error occured while retrieving data from disk for cache init");
-				e.printStackTrace();
 			}
 		}
 		return currsize;
@@ -202,10 +157,10 @@ public class DiskTileBuffer implements TileBuffer {
 	}
 	
 	// adds new eviction metadata for given tile id
-	protected synchronized void insert_time_pair(TileKey id, int tilesize) {
+	protected synchronized void insert_time_pair(TileKey id) {
 		TimePair tp;
 		if(!timeMap.containsKey(id)) {
-			tp = new TimePair(id, tilesize);
+			tp = new TimePair(id,1);
 			lruQueue.add(tp);
 			timeMap.put(id, tp);
 		}
@@ -221,28 +176,6 @@ public class DiskTileBuffer implements TileBuffer {
 		}
 	}
 	
-	// inserts a specific tile into buffer
-	protected synchronized void insert_tile(Tile tile) {
-		int tilesize = tile.getDataSize();
-		TileKey id = tile.id;
-		String pathname = build_tile_filepath(id);
-		if(pathname == null) { // could not get path
-			return;
-		}
-		try {
-			File filepath = new File(pathname);
-			byte[] theBytes = NiceTilePacker.packData(tile.data);
-			Files.write(theBytes,filepath);
-			
-			// add metadata for eviction purposes
-			this.insert_time_pair(id, tile.getDataSize());
-			this.size += tilesize;
-		} catch (IOException e) {
-			System.out.println("error occured while writing tile to disk");
-			e.printStackTrace();
-		}
-	}
-	
 	// checks priority queue and removes lru tile
 	protected synchronized void remove_lru_tile() {
 		// identify least recently used tile
@@ -250,31 +183,19 @@ public class DiskTileBuffer implements TileBuffer {
 		TimePair tp = lruQueue.peek();
 		if(tp != null) {
 			TileKey toremove = tp.getTileKey();
-			int tilesize = tp.getTileSize();
 			//System.out.println("removing tile from disk based cache: " + toremove);
 			// remove tile from storage
-			this.remove_tile(toremove, tilesize);
+			this.remove_tile(toremove);
 		}
 	}
 	
 	// removes a specific tile from buffer
-	protected synchronized void remove_tile(TileKey id, int tilesize) {
+	protected synchronized void remove_tile(TileKey id) {
 		if(peek(id)) {
-			String pathname = build_tile_filepath(id);
-			if(pathname == null) { // could not get path
-				return;
-			}
-			try {
-				File filepath = new File(pathname);
-				filepath.delete();
-				
-				// remove metadata
-				this.remove_time_pair(id);
-				this.size -= tilesize;
-			} catch (Exception e) {
-				System.out.println("error occured while removing tile from disk");
-				e.printStackTrace();
-			}
+			NiceTilePacker.removeNiceTile(id);
+			// remove metadata
+			this.remove_time_pair(id);
+			this.size --;
 		}
 	}
 	

@@ -105,6 +105,7 @@ public class Client {
 			//send requests
 			int user_id = testusers.get(u1);
 			List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
+			long start = System.currentTimeMillis();
 			for(int r = 0; r < trace.size(); r++) {
 				UserRequest ur = trace.get(r);
 				String tile_id = ur.tile_id;
@@ -113,7 +114,8 @@ public class Client {
 				//System.out.println("tile id: '" +tile_id+ "'");
 				sendRequest(tile_id,zoom,tile_hash);
 			}
-			
+			long end = System.currentTimeMillis();
+			System.out.println("duration: "+(1.0*(end-start)/1000)+" secs");
 			//get accuracy for this user
 			double accuracy = getAccuracy();
 			String[] fullAccuracy = getFullAccuracy();
@@ -136,17 +138,19 @@ public class Client {
 			*/
 			
 			// new printed content
+			
 			TraceMetadata metadata = RequestLabeler.getLabels(trace);
 			List<DirectionClass> dirs = metadata.directionClasses;
 			List<ExplorationPhase> phases = metadata.explorationPhases;
 			for(int i = 0; i < trace.size(); i++) {
 				UserRequest request = trace.get(i);
-				List<Integer> id = UtilityFunctions.parseTileIdInteger(request.tile_id);
+				int[] id = UtilityFunctions.parseTileIdInteger(request.tile_id);
 				System.out.print(user_id+"\t"+taskname+"\t");
 				UtilityFunctions.printStringArray(models);
-				System.out.println("\t"+predictions+"\t"+request.zoom+"\t"+id.get(0)+"\t"+id.get(1)+"\t"+dirs.get(i)+"\t"+phases.get(i)+
+				System.out.println("\t"+predictions+"\t"+request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
 						"\t"+fullAccuracy[i]);
 			}
+			
 		}
 		overall_accuracy /= testusers.size();
 		//System.out.println("overall\t"+overall_accuracy);
@@ -194,8 +198,8 @@ public class Client {
 				if(trace.size() > 0) {
 					for(int i = 0; i < trace.size(); i++) {
 						UserRequest request = trace.get(i);
-						List<Integer> id = UtilityFunctions.parseTileIdInteger(request.tile_id);
-						System.out.println(user_id+"\t"+taskname+"\t"+request.zoom+"\t"+id.get(0)+"\t"+id.get(1)+"\t"+dirs.get(i)+"\t"+phases.get(i));
+						int[] id = UtilityFunctions.parseTileIdInteger(request.tile_id);
+						System.out.println(user_id+"\t"+taskname+"\t"+request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i));
 					}
 				}
 				/*

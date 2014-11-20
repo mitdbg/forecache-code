@@ -17,15 +17,14 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.opencv.core.Core;
 
-import backend.disk.DiskTileBuffer;
+import backend.disk.DiskNiceTileBuffer;
+import backend.disk.NiceTilePacker;
 import backend.disk.ScidbTileInterface;
-import backend.memory.MemoryTileBuffer;
+import backend.memory.MemoryNiceTileBuffer;
 import backend.prediction.BasicModel;
 import backend.prediction.TileHistoryQueue;
 import backend.prediction.TrainModels;
 import backend.prediction.directional.HotspotDirectionalModel;
-import backend.prediction.directional.MarkovChainDirectionalModel;
-import backend.prediction.directional.MarkovDirectionalModel;
 import backend.prediction.directional.MomentumDirectionalModel;
 import backend.prediction.directional.NGramDirectionalModel;
 import backend.prediction.directional.RandomDirectionalModel;
@@ -35,14 +34,14 @@ import backend.prediction.signature.HistogramSignatureModel;
 import backend.prediction.signature.NormalSignatureModel;
 import backend.prediction.signature.SiftSignatureModel;
 import backend.util.Model;
-import backend.util.Tile;
+import backend.util.NiceTile;
 import backend.util.TileKey;
 import utils.DBInterface;
 import utils.UtilityFunctions;
 
 public class MainThread {
-	public static MemoryTileBuffer membuf;
-	public static DiskTileBuffer diskbuf;
+	public static MemoryNiceTileBuffer membuf;
+	public static DiskNiceTileBuffer diskbuf;
 	public static ScidbTileInterface scidbapi;
 	public static int histmax = 10;
 	public static TileHistoryQueue hist;
@@ -56,12 +55,14 @@ public class MainThread {
 	public static List<String> hitslist = new ArrayList<String>();
 	
 	// General Model variables
-	public static Model[] modellabels = {Model.MOMENTUM};
-	public static String taskname = "task1";
-	public static int[] user_ids = {28};
 	public static int defaultpredictions = 3;
 	public static int defaulthistorylength = 4;
 	public static int defaultport = 8080;
+	
+	public static Model[] modellabels = {Model.MOMENTUM};
+	public static int[] historylengths = {defaulthistorylength};
+	public static String taskname = "task1";
+	public static int[] user_ids = {28};
 	
 	// global model objects	
 	public static BasicModel[] all_models;
@@ -71,33 +72,23 @@ public class MainThread {
 		for(int i = 0; i < modellabels.length; i++) {
 			Model label = modellabels[i];
 			switch(label) {
-				case MARKOV: all_models[i] = new MarkovDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				case NGRAM: all_models[i] = new NGramDirectionalModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				break;
-				case MARKOV1: all_models[i] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,1);
+				case RANDOM: all_models[i] = new RandomDirectionalModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				break;
-				case MARKOV2: all_models[i] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,2);
+				case HOTSPOT: all_models[i] = new HotspotDirectionalModel(hist,membuf,diskbuf,scidbapi,historylengths[i],HotspotDirectionalModel.defaulthotspotlen);
 				break;
-				case MARKOV3: all_models[i] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,3);
+				case MOMENTUM: all_models[i] = new MomentumDirectionalModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				break;
-				case MARKOV4: all_models[i] = new MarkovChainDirectionalModel(hist,membuf,diskbuf,scidbapi,4);
+				case NORMAL: all_models[i] = new NormalSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				break;
-				case NGRAM: all_models[i] = new NGramDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				case HISTOGRAM: all_models[i] = new HistogramSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				break;
-				case RANDOM: all_models[i] = new RandomDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				case FHISTOGRAM: all_models[i] = new FilteredHistogramSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				break;
-				case HOTSPOT: all_models[i] = new HotspotDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength,HotspotDirectionalModel.defaulthotspotlen);
+				case SIFT: all_models[i] = new SiftSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				break;
-				case MOMENTUM: all_models[i] = new MomentumDirectionalModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
-				break;
-				case NORMAL: all_models[i] = new NormalSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
-				break;
-				case HISTOGRAM: all_models[i] = new HistogramSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
-				break;
-				case FHISTOGRAM: all_models[i] = new FilteredHistogramSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
-				break;
-				case SIFT: all_models[i] = new SiftSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
-				break;
-				case DSIFT: all_models[i] = new DenseSiftSignatureModel(hist,membuf,diskbuf,scidbapi,defaulthistorylength);
+				case DSIFT: all_models[i] = new DenseSiftSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				default://do nothing, will fail if we get here
 			}
 		}
@@ -108,16 +99,6 @@ public class MainThread {
 			Model label = modellabels[i];
 			BasicModel mod = all_models[i];
 			switch(label) {
-				case MARKOV: TrainModels.TrainMarkovDirectionalModel(user_ids, taskname, (MarkovDirectionalModel) mod);
-				break;
-				case MARKOV1: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, (MarkovChainDirectionalModel) mod);
-				break;
-				case MARKOV2: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, (MarkovChainDirectionalModel) mod);
-				break;
-				case MARKOV3: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, (MarkovChainDirectionalModel) mod);
-				break;
-				case MARKOV4: TrainModels.TrainMarkovChainDirectionalModel(user_ids, taskname, (MarkovChainDirectionalModel) mod);
-				break;
 				case NGRAM: TrainModels.TrainNGramDirectionalModel(user_ids, taskname, (NGramDirectionalModel) mod);
 				break;
 				case HOTSPOT: TrainModels.TrainHotspotDirectionalModel(user_ids, taskname, (HotspotDirectionalModel) mod);
@@ -183,10 +164,10 @@ public class MainThread {
 		if(predictions != null) {
 			for(TileKey key: predictions) { // insert the predictions into the cache
 				if(!membuf.peek(key)) { // not in memory
-					Tile tile = diskbuf.getTile(key);
+					NiceTile tile = diskbuf.getTile(key);
 					if(tile == null) { // not on disk
 						// get from database
-						tile = scidbapi.getTile(key);
+						tile = scidbapi.getNiceTile(key);
 						//insert in disk cache
 						diskbuf.insertTile(tile);
 					} else { // found it on disk
@@ -221,8 +202,9 @@ public class MainThread {
 		}
 		
 		// initialize cache managers
-		membuf = new MemoryTileBuffer();
-		diskbuf = new DiskTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
+		membuf = new MemoryNiceTileBuffer();
+		//diskbuf = new DiskNiceTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
+		diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
 		scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		hist = new TileHistoryQueue(histmax);
 		
@@ -267,26 +249,13 @@ public class MainThread {
 	
 	public static void update_model_labels(String[] modelstrs) {
 		modellabels = new Model[modelstrs.length];
+		historylengths = new int[modelstrs.length];
 		for(int i = 0; i < modelstrs.length; i++) {
 			System.out.println("modelstrs["+i+"] = '"+modelstrs[i]+"'");
-			if(modelstrs[i].equals("markov")) {
-				modellabels[i] = Model.MARKOV;
-			} else if(modelstrs[i].contains("markov")) {
-				String len = modelstrs[i].substring(6);
-				if(len.equals("1")) {
-					modellabels[i] = Model.MARKOV1;
-				} else if (len.equals("2")) {
-					modellabels[i] = Model.MARKOV2;
-				} else if (len.equals("3")) {
-					modellabels[i] = Model.MARKOV3;
-				} else if (len.equals("4")) {
-					modellabels[i] = Model.MARKOV4;
-				} else {
-					modellabels[i] = Model.MARKOV1;
-				}
-			} else if(modelstrs[i].contains("ngram")) {
+			historylengths[i] = defaulthistorylength;
+			if(modelstrs[i].contains("ngram")) {
 				modellabels[i] = Model.NGRAM;
-				defaulthistorylength = Integer.parseInt(modelstrs[i].substring(5));
+				historylengths[i] = Integer.parseInt(modelstrs[i].substring(5));
 			} else if(modelstrs[i].equals("random")) {
 				modellabels[i] = Model.RANDOM;
 			} else if(modelstrs[i].equals("hotspot")) {
@@ -319,9 +288,9 @@ public class MainThread {
 		hitslist = new ArrayList<String>();
 		
 		// reinitialize caches and user history
-		membuf = new MemoryTileBuffer(defaultpredictions);
+		membuf = new MemoryNiceTileBuffer(defaultpredictions);
 		//don't reset this, it takes forever
-		//diskbuf = new DiskTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
+		//diskbuf = new DiskNiceTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
 		hist = new TileHistoryQueue(histmax);
 		
 		setupModels();
@@ -392,7 +361,7 @@ public class MainThread {
 			//System.out.println("zoom: " + zoom);
 			//System.out.println("tile id: " + tile_id);
 			//System.out.println("threshold: " + threshold);
-			Tile t = null;
+			NiceTile t = null;
 			try {
 				t = fetchTile(tile_id,zoom,threshold);
 			} catch (Exception e) {
@@ -404,7 +373,7 @@ public class MainThread {
 			if(t == null) {
 				response.getWriter().println(greeting);
 			} else {
-				response.getWriter().println(t.encodeData());
+				response.getWriter().println(NiceTilePacker.packData(t.data));
 			}
 		}
 		
@@ -413,9 +382,9 @@ public class MainThread {
 		}
 		
 		// fetches tiles from
-		protected Tile fetchTile(String tile_id, String zoom, String threshold) throws Exception {
+		protected NiceTile fetchTile(String tile_id, String zoom, String threshold) throws Exception {
 			String reverse = UtilityFunctions.unurlify(tile_id); // undo urlify
-			List<Integer> id = UtilityFunctions.parseTileIdInteger(reverse);
+			int[] id = UtilityFunctions.parseTileIdInteger(reverse);
 			int z = Integer.parseInt(zoom);
 			TileKey key = new TileKey(id,z);
 			List<TileKey> predictions = null;
@@ -433,14 +402,14 @@ public class MainThread {
 			
 			boolean found = false;
 			//long start = System.currentTimeMillis();
-			Tile t = membuf.getTile(key);
+			NiceTile t = membuf.getTile(key);
 			if(t == null) { // not cached
 				//System.out.println("tile is not in mem-based cache");
 				// go find the tile on disk
 				t = diskbuf.getTile(key);
 				if(t == null) { // not in memory
 					//System.out.println("tile is not in disk-based cache. computing...");
-					t = scidbapi.getTile(key);
+					t = scidbapi.getNiceTile(key); 
 					diskbuf.insertTile(t);
 				} else { // found on disk
 					//System.out.println("found tile in disk-based cache");

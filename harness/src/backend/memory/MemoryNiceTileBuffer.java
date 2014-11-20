@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
 
-import backend.util.Tile;
-import backend.util.TileBuffer;
+import backend.util.NiceTileBuffer;
+import backend.util.NiceTile;
 import backend.util.TileKey;
 import backend.util.TimePair;
 
@@ -16,8 +16,8 @@ import backend.util.TimePair;
  * @author leibatt
  * Class for managing the in-memory tile cache.
  */
-public class MemoryTileBuffer implements TileBuffer {
-	private Map<TileKey,Tile> storage; // for storing tiles
+public class MemoryNiceTileBuffer implements NiceTileBuffer {
+	private Map<TileKey,NiceTile> storage; // for storing tiles
 	private Map<TileKey,TimePair> timeMap; // for finding things in the queue
 	private PriorityQueue<TimePair> lruQueue; // for identifying lru tiles in storage
 	private final int storagemax;
@@ -26,18 +26,18 @@ public class MemoryTileBuffer implements TileBuffer {
 	//private final int DEFAULTMAX = 34000000; // default buffer size
 	private final int initqueuesize = 50;
 	
-	public MemoryTileBuffer() {
+	public MemoryNiceTileBuffer() {
 		// initialize storage
-		this.storage = new HashMap<TileKey,Tile>();
+		this.storage = new HashMap<TileKey,NiceTile>();
 		this.lruQueue = new PriorityQueue<TimePair>(this.initqueuesize,new TimePair.TPSort());
 		timeMap = new HashMap<TileKey,TimePair>();
 		//this.size = 0;
 		this.storagemax = this.DEFAULTMAX;
 	}
 	
-	public MemoryTileBuffer(int storagemax) {
+	public MemoryNiceTileBuffer(int storagemax) {
 		// initialize storage
-		this.storage = new HashMap<TileKey,Tile>();
+		this.storage = new HashMap<TileKey,NiceTile>();
 		this.lruQueue = new PriorityQueue<TimePair>(this.initqueuesize,new TimePair.TPSort());
 		timeMap = new HashMap<TileKey,TimePair>();
 		//this.size = 0;
@@ -50,7 +50,7 @@ public class MemoryTileBuffer implements TileBuffer {
 	}
 
 	@Override
-	public synchronized Tile getTile(TileKey id) {
+	public synchronized NiceTile getTile(TileKey id) {
 		return this.storage.get(id);
 	}
 
@@ -66,20 +66,19 @@ public class MemoryTileBuffer implements TileBuffer {
 
 	
 	@Override
-	public synchronized void insertTile(Tile tile) {
-		TileKey id = tile.id;
-		if(!this.storage.containsKey(id)) {
+	public synchronized void insertTile(NiceTile tile) {
+		if(!this.storage.containsKey(tile.id)) {
 			//int tilesize = tile.getDataSize();
 			// make room for new tile in storage
 			//while((this.size + tilesize) > this.storagemax) {
-			while((this.storage.size() + 1) > this.storagemax) {
+			while(this.storage.size() >= this.storagemax) {
 				this.remove_lru_tile();
 			}
 			// insert new tile into storage
 			this.insert_tile(tile);
 		} else { // tile already exists
 			// update metadata
-			this.update_time_pair(id);
+			this.update_time_pair(tile.id);
 		}
 	}
 
@@ -128,12 +127,11 @@ public class MemoryTileBuffer implements TileBuffer {
 	}
 	
 	// inserts a specific tile into buffer
-	protected synchronized void insert_tile(Tile tile) {
+	protected synchronized void insert_tile(NiceTile tile) {
 		//int tilesize = tile.getDataSize();
-		TileKey id = tile.id;
-		this.storage.put(id, tile);
+		this.storage.put(tile.id, tile);
 		// add metadata for eviction purposes
-		this.insert_time_pair(id);
+		this.insert_time_pair(tile.id);
 		//this.size += tilesize;
 	}
 	

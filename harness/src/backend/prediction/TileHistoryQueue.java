@@ -5,7 +5,7 @@ import java.util.List;
 
 import utils.UserRequest;
 
-import backend.util.Tile;
+import backend.util.NiceTile;
 import backend.util.TileKey;
 
 /**
@@ -30,7 +30,7 @@ public class TileHistoryQueue {
 	// adds record to history for given tile
 	// copies entire tile
 	// maintains history of length maxhist
-	public synchronized void addRecord(Tile Next) {
+	public synchronized void addRecord(NiceTile Next) {
 		history.add(new TileRecord(Next));
 		trueHistory.add(new TileRecord(Next));
 		updateROI();
@@ -41,14 +41,14 @@ public class TileHistoryQueue {
 	
 	// returns a clone of the record at given index
 	// will throw exception if index is outside bounds
-	public synchronized final Tile getRecordTile(int index) {
+	public synchronized final NiceTile getRecordTile(int index) {
 		return history.get(index).MyTile;
 	}
 	
 	// returns a clone of the tile id of the record at given index
 	// will throw exception if index is outside bounds
 	public synchronized final TileKey getRecordTileKey(int index) {
-		return history.get(index).MyTile.getTileKey();
+		return history.get(index).MyTile.id;
 	}
 	
 	// returns the timestamp of the record at the given index
@@ -66,7 +66,7 @@ public class TileHistoryQueue {
 		List<UserRequest> myresult = new ArrayList<UserRequest>();
 		for(int i = 0; i < history.size(); i++) {
 			TileRecord tr = history.get(i);
-			TileKey tk = tr.MyTile.getTileKey();
+			TileKey tk = tr.MyTile.id;
 			UserRequest temp = new UserRequest(tk.buildTileString(),tk.zoom);
 			myresult.add(temp);
 		}
@@ -82,7 +82,7 @@ public class TileHistoryQueue {
 		}
 		for(int i = start; i < history.size(); i++) {
 			TileRecord tr = history.get(i);
-			TileKey tk = tr.MyTile.getTileKey();
+			TileKey tk = tr.MyTile.id;
 			UserRequest temp = new UserRequest(tk.buildTileString(),tk.zoom);
 			myresult.add(temp);
 		}
@@ -96,7 +96,7 @@ public class TileHistoryQueue {
 		
 		// just return the last request, if there is no ROI yet
 		List<TileKey> makeshiftRoi = new ArrayList<TileKey>();
-		makeshiftRoi.add(history.get(history.size()-1).MyTile.getTileKey());
+		makeshiftRoi.add(history.get(history.size()-1).MyTile.id);
 		return makeshiftRoi;
 	}
 	
@@ -110,16 +110,16 @@ public class TileHistoryQueue {
 		int lastZoomIn = -1;
 		int i = trueHistory.size() - 2;
 		for(;i > this.lastZoomOut; i--) {
-			TileKey lastKey = trueHistory.get(i+1).MyTile.getTileKey();
-			TileKey nextLastKey = trueHistory.get(i).MyTile.getTileKey();
+			TileKey lastKey = trueHistory.get(i+1).MyTile.id;
+			TileKey nextLastKey = trueHistory.get(i).MyTile.id;
 			if(lastKey.zoom < nextLastKey.zoom) { // found zoom out
 					lastZoomOut = i;
 					break;
 			}
 		}
 		for(;i > this.lastZoomOut; i--) {
-			TileKey lastKey = trueHistory.get(i+1).MyTile.getTileKey();
-			TileKey nextLastKey = trueHistory.get(i).MyTile.getTileKey();
+			TileKey lastKey = trueHistory.get(i+1).MyTile.id;
+			TileKey nextLastKey = trueHistory.get(i).MyTile.id;
 			if(lastKey.zoom > nextLastKey.zoom) { // found zoom in, new ROI!
 				lastZoomIn = i;
 				break;
@@ -133,7 +133,7 @@ public class TileHistoryQueue {
 			this.lastZoomOut = lastZoomOut;
 			lastRoi.clear();
 			for(i = lastZoomIn; i <= lastZoomOut; i++) {
-				lastRoi.add(history.get(i).MyTile.getTileKey());
+				lastRoi.add(history.get(i).MyTile.id);
 			}
 			newRoi = true;
 		} else {
@@ -157,9 +157,9 @@ public class TileHistoryQueue {
 
 	private class TileRecord {
 		public long timestamp;
-		public Tile MyTile;
+		public NiceTile MyTile;
 		
-		public TileRecord(Tile Next) {
+		public TileRecord(NiceTile Next) {
 			this.timestamp = System.currentTimeMillis() / 1000;
 			this.MyTile = Next;
 		}

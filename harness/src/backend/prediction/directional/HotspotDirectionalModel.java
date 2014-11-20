@@ -6,8 +6,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
+import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
@@ -22,13 +24,13 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 	public static final double maxdistance = 2.0;
 	protected int hotspotlen;
 	
-	public HotspotDirectionalModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api, int len) {
+	public HotspotDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
 		super(ref,membuf,diskbuf,api,len);
 		this.hotspots = new HashMap<TileKey,Integer>();
 		this.hotspotlen = defaulthotspotlen;
 	}
 	
-	public HotspotDirectionalModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api, int len, int hotspotlen) {
+	public HotspotDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len, int hotspotlen) {
 		this(ref,membuf,diskbuf,api,len);
 		this.hotspotlen = hotspotlen;
 	}

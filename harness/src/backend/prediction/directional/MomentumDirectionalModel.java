@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.Map;
 
 import utils.UserRequest;
+import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
+import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.BasicModel;
 import backend.prediction.DirectionPrediction;
@@ -16,7 +18,7 @@ import backend.util.Direction;
 public class MomentumDirectionalModel extends BasicModel {
 	protected Map<Character,Double> votes;
 	
-	public MomentumDirectionalModel(TileHistoryQueue ref, MemoryTileBuffer membuf, DiskTileBuffer diskbuf,ScidbTileInterface api, int len){
+	public MomentumDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len){
 		super(ref,membuf,diskbuf,api,len);
 		this.votes = new HashMap<Character,Double>();
 	}

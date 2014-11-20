@@ -33,14 +33,18 @@ public class DrawHeatmap {
 	public static void buildImage(NiceTile tile) {
 		buildImage(tile,DBInterface.xdim,DBInterface.ydim,DBInterface.zattr);
 	}
-	
+
+	// snow cover data: x=0, y=1, z=2
 	public static void buildImage(NiceTile tile, String x, String y, String z) {
-		if(tile.data.size() == 0) { // no data!
+		if(tile.getSize() == 0) { // no data!
 			return;
 		}
-		BufferedImage bi = getBufferedImage(tile,x,y,z);
+		int xi = tile.getIndex(x);
+		int yi = tile.getIndex(y);
+		int zi = tile.getIndex(z);
+		BufferedImage bi = getBufferedImage(tile,xi,yi);
 		Graphics2D ig2 = bi.createGraphics();
-		drawHeatMap(tile,x,y,z,ig2);
+		drawHeatMap(tile,xi,yi,zi,ig2);
 		BufferedImage toSave = Scalr.resize(bi, defaultWidth); // resize
 		saveImageAsPng(toSave,buildFilename(tile.id)); // save
 	}
@@ -49,36 +53,35 @@ public class DrawHeatmap {
 		return imageFolder+id.buildTileStringForFile()+".png";
 	}
 	
-	public static BufferedImage getBufferedImage(NiceTile tile, String x, String y, String z) {
-		NiceTile.MinMax xrange = tile.extrema.get(tile.getIndex(x));
-		NiceTile.MinMax yrange = tile.extrema.get(tile.getIndex(y));
-		int w = (int) (xrange.max - xrange.min);
-		int h = (int) (yrange.max - yrange.min);
+	public static BufferedImage getBufferedImage(NiceTile tile, int x, int y) {
+		System.out.println(x+","+y);
+		System.out.println(tile.extrema.length);
+		double[] xrange = tile.extrema[x];
+		double[] yrange = tile.extrema[y];
+		System.out.println(xrange[1]+","+xrange[0]+","+yrange[1]+","+yrange[0]);
+		int w = (int) (xrange[1] - xrange[0]);
+		int h = (int) (yrange[1] - yrange[0]);
 		BufferedImage bi = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
 		return bi;
 	}
 	
-	public static void drawHeatMap(NiceTile tile, String x, String y, String z, Graphics g) {
+	public static void drawHeatMap(NiceTile tile, int x, int y, int z, Graphics g) {
 		Color[] palate = defaultColors.getColorPalette(defaultPalateLength);
-		List<Double> xcol = tile.getColumn(x);
-		List<Double> ycol = tile.getColumn(y);
-		List<Double> zcol = tile.getColumn(z);
-		NiceTile.MinMax xrange = tile.extrema.get(tile.getIndex(x));
-		NiceTile.MinMax yrange = tile.extrema.get(tile.getIndex(y));
-		NiceTile.MinMax zrange = tile.extrema.get(tile.getIndex(z));
+		double[] xrange = tile.extrema[x];
+		double[] yrange = tile.extrema[y];
+		double[] zrange = tile.extrema[z];
 		
 		int w = 1;
 		int h = 1;
-		System.out.println(xrange.max+","+xrange.min+","+yrange.max+","+yrange.min);
-		for(int i = 0; i < xcol.size(); i++) {
-			if(xcol.get(i) != null && ycol.get(i) != null && zcol.get(i) != null) {
-				int xpixel = (int) xcol.get(i).doubleValue();
-				int ypixel = (int) ycol.get(i).doubleValue();
-				Color palateIndex = getPalateValue(zcol.get(i),zrange.max,zrange.min,palate);
-				g.setColor(palateIndex);
-				g.fillRect(xpixel, ypixel, w, h);
-				//System.out.println(xpixel +","+ypixel+","+w+","+h+","+palateIndex);
-			}
+		System.out.println(xrange[1]+","+xrange[0]+","+yrange[1]+","+yrange[0]);
+		for(int i = 0; i < tile.getSize(); i++) {
+			int xpixel = (int) tile.get(x,i);
+			int ypixel = (int) tile.get(y,i);
+			double zval = tile.get(z,i);
+			Color palateIndex = getPalateValue(zval,zrange[1],zrange[0],palate);
+			g.setColor(palateIndex);
+			g.fillRect(xpixel, ypixel, w, h);
+			//System.out.println(xpixel +","+ypixel+","+w+","+h+","+palateIndex);
 		}
 	}
 	
@@ -118,7 +121,7 @@ public class DrawHeatmap {
 		ScidbTileInterface sti = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		String idstr = "[1, 3]";
 		int zoom = 4;
-		List<Integer> tile_id = UtilityFunctions.parseTileIdInteger(idstr);
+		int[] tile_id = UtilityFunctions.parseTileIdInteger(idstr);
 		TileKey id = new TileKey(tile_id,zoom);
 		NiceTile tile = sti.getNiceTile(id);
 		

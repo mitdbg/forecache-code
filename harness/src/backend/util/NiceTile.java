@@ -1,6 +1,5 @@
 package backend.util;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class NiceTile implements java.io.Serializable {
@@ -10,16 +9,16 @@ public class NiceTile implements java.io.Serializable {
 	private static final long serialVersionUID = 543885535684644738L;
 	
 	public TileKey id;
-	public List<List<Double>> data;
-	public List<MinMax> extrema;
-	public List<String> attributes;
-	private int size = 0;
+	public double[] data;
+	public double[][] extrema = null;
+	public String[] attributes = null;
+	public double[] norm = null;
+	public double[] hist = null;
+	public double[] fhist = null;
 	
 	public NiceTile() {
-		this.data = new ArrayList<List<Double>>();
-		this.attributes = new ArrayList<String>();
-		this.extrema = new ArrayList<MinMax>();
 		this.id = null;
+		this.data = null;
 	}
 	
 	public NiceTile(TileKey id) {
@@ -27,55 +26,66 @@ public class NiceTile implements java.io.Serializable {
 		this.id = id;
 	}
 	
-	public void addAttribute(String attr) {
-		this.attributes.add(attr);
-		extrema.add(new MinMax());
-		this.data.add(new ArrayList<Double>());
+	public NiceTile(TileKey id, double[] data) {
+		this.id = id;
+		this.data = data;
+	}
+	
+	public void initializeData(List<Double> data,String[] attr) {
+		this.extrema = new double[attr.length][];
+		for(int i = 0; i < attr.length; i++) {
+			extrema[i] = null;
+		}
+		this.attributes = attr;
+		this.data = new double[data.size()];
+		int col = 0;
+		for(int i = 0; i < data.size(); i++) {
+			this.data[i] = data.get(i).doubleValue();
+			double[] mm = extrema[col];
+			double val = this.data[i];
+			if(mm == null) {
+				mm = new double[2];
+				mm[0] = val;
+				mm[1] = val;
+				extrema[i] = mm;
+			} else {
+				if (val < mm[0]) {
+					mm[0] = val;
+				}
+				if(mm == null || val > mm[1]) {
+					mm[1] = val;
+				}
+			}
+			col++;
+			if(col >= attr.length) {
+				col = 0;
+			}
+		}
 	}
 	
 	public int getIndex(String name) {
-		return this.attributes.indexOf(name);
-	}
-	
-	public void insert(Double val, int index) {
-		this.data.get(index).add(val);
-		
-		// track max and min values
-		MinMax mm = extrema.get(index);
-		if(val != null) {
-			if(mm.min == null || val < mm.min) {
-				mm.min = val;
-			}
-			if(mm.max == null || val > mm.max) {
-				mm.max = val;
-			}
+		for(int i = 0; i < attributes.length; i++) {
+			if(name.equals(attributes[i])) return i;
 		}
+		return -1;
 	}
 	
-	public List<Double> getColumn(String name) {
-		int index = attributes.indexOf(name);
-		if(index >= 0) {
-			return data.get(index);
-		}
-		return null;
+	// index1 = column, index2 = row
+	public double get(int index1, int index2) {
+		return this.data[index1+this.attributes.length*index2];
 	}
 	
+	public double[] getData() {
+		return this.data;
+	}
+	
+	// total rows
+	public int getSize() {
+		return data.length / attributes.length;
+	}
+	
+	// total data in bytes
 	public int getDataSize() {
-		if(data.size() == 0) {
-			size = 0;
-		} else {
-			size = attributes.size() * data.get(0).size() * Double.SIZE / Byte.SIZE;
-		}
-		return size;
-	}
-	
-	public class MinMax implements java.io.Serializable {
-		/**
-		 * important for serialization
-		 */
-		private static final long serialVersionUID = 7735207857166541976L;
-		
-		public Double min = null;
-		public Double max = null;
+		return data.length * Double.SIZE / Byte.SIZE;
 	}
 }

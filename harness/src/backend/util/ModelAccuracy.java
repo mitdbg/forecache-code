@@ -101,8 +101,8 @@ public class ModelAccuracy {
 		this.labels = new String[this.tracelength];
 		for(int i = 0; i < this.tracelength; i++) {
 			String label = "none";
-			nflag = this.modelAccuracyMap.containsKey(Model.MARKOV)
-					&& this.modelAccuracyMap.get(Model.MARKOV)[i].equals("hit");
+			nflag = this.modelAccuracyMap.containsKey(Model.NGRAM)
+					&& this.modelAccuracyMap.get(Model.NGRAM)[i].equals("hit");
 
 			int b1 = this.modelAccuracyMap.containsKey(Model.MOMENTUM) 
 					&& this.modelAccuracyMap.get(Model.MOMENTUM)[i].equals("hit") ? 1 : 0;

@@ -14,12 +14,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.nustaq.serialization.FSTObjectInput;
+import org.nustaq.serialization.FSTObjectOutput;
+
 import utils.DBInterface;
 import utils.UtilityFunctions;
 
 import backend.util.NiceTile;
 import backend.util.Params;
 import backend.util.ParamsMap;
+import backend.util.Signatures;
 import backend.util.Tile;
 import backend.util.TileKey;
 
@@ -72,53 +76,8 @@ public class ScidbTileInterface {
 		return myresult;
 	}
 	
-	public boolean writeNiceTile(NiceTile tile) {
-		File dir = new File(DBInterface.nice_tile_cache_dir);
-		dir.mkdirs();
-		TileKey id = tile.id;
-		File file = new File(dir,id.buildTileStringForFile()+".ser");
-		ObjectOutputStream out;
-		try {
-			out = new ObjectOutputStream(new FileOutputStream(file));
-			out.writeObject(tile);
-			out.close();
-			return true;
-		} catch (FileNotFoundException e) {
-			System.out.println("could not write NiceTile to disk.");
-			e.printStackTrace();
-		} catch (IOException e) {
-			System.out.println("could not write NiceTile to disk.");
-			e.printStackTrace();
-		}
-		return false;
-	}
-	
-	public NiceTile readNiceTile(TileKey id) {
-		File dir = new File(DBInterface.nice_tile_cache_dir);
-		dir.mkdirs();
-		File file = new File(dir,id.buildTileStringForFile()+".ser");
-		
-		ObjectInputStream in;
-		try {
-			in = new ObjectInputStream(new FileInputStream(file));
-	        NiceTile tile = (NiceTile) in.readObject();
-	        in.close();
-	        return tile;
-		} catch (FileNotFoundException e) {
-			System.out.println("could not find file: "+file);
-			e.printStackTrace();
-		} catch (IOException e) {
-			System.out.println("could not read file from disk: "+file);
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			System.out.println("could not find class definition for class: "+NiceTile.class);
-			e.printStackTrace();
-		}
-		return null;
-	}
-	
 	public NiceTile getNiceTile(TileKey id) {
-		NiceTile tile = readNiceTile(id);
+		NiceTile tile = NiceTilePacker.readNiceTile(id);
 		if(tile != null) return tile;
 		
 		tile = new NiceTile(id);
@@ -143,7 +102,7 @@ public class ScidbTileInterface {
 			System.out.println("Error occured while retrieving tile from database");
 			e.printStackTrace();
 		}
-		writeNiceTile(tile);
+		NiceTilePacker.writeNiceTile(tile);
 		return tile;
 	}
 	
@@ -162,6 +121,8 @@ public class ScidbTileInterface {
 			System.out.println(line);
 		}
 		*/
+		List<Double> temp = new ArrayList<Double>();
+		String[] labels = new String[0];
 		long start = System.currentTimeMillis();
         BufferedReader br = new BufferedReader(new InputStreamReader(proc.getInputStream()));
         boolean first = true;
@@ -170,22 +131,21 @@ public class ScidbTileInterface {
 			String[] tokens = line.split(",");
 			if(!first) { // ignore first line
 				for(int i = 0; i < tokens.length; i++) {
-					Double next = null;
+					Double next = 0.0;
 					try {
 						next = Double.parseDouble(tokens[i]);
 					} catch (NumberFormatException e) {
 						System.out.println("could not parse SciDB result, skipping...");
 						e.printStackTrace();
 					}
-					tile.insert(next,i); // just add null if we can't parse it
+					temp.add(next); // just add 0.0 if we can't parse it
 				}
 			} else {
 				first = false;
-				for(int i = 0; i < tokens.length; i++) {
-					tile.addAttribute(tokens[i]);
-				}
+				labels = tokens;
 			}
 		}
+		tile.initializeData(temp, labels);
 		/*
 		for(int i = 0; i < tile.attributes.size(); i++) {
 			System.out.print(tile.attributes.get(i)+"\t");
@@ -220,7 +180,11 @@ public class ScidbTileInterface {
 			if(!first) { // ignore first line
 				String[] tokens = line.split(",");
 				for(int i = 0; i < tokens.length; i++) {
-					myresult.add(Double.parseDouble(tokens[i]));
+					if(tokens[i].length() == 0) { // make sure there is always a value
+						myresult.add(0.0);
+					} else {
+						myresult.add(Double.parseDouble(tokens[i]));
+					}
 				}
 			} else {
 				first = false;
@@ -233,7 +197,7 @@ public class ScidbTileInterface {
 	
 	public Tile getTile(TileKey id) {
 		List<Double> input = this.getTileFromDatabase(id);
-		byte[] data = getBytes(input);
+		double[] data = getArray(input);
 		return new Tile(id,data);
 	}
 	
@@ -258,15 +222,11 @@ public class ScidbTileInterface {
 		return myresult;
 	}
 	
-	public byte[] getBytes(List<Double> data) {
-		long start = System.currentTimeMillis();
-		byte [] result = new byte[8*data.size()];
-		ByteBuffer buffer = ByteBuffer.wrap(result);
-		for(int i = 0; i < data.size(); i++) {
-			buffer.putDouble(i*8, data.get(i));
+	public static double[] getArray(List<Double> data) {
+		double[] result = new double[data.size()];
+		for (int i = 0; i < result.length; i++) {
+			result[i] = data.get(i);
 		}
-		long end = System.currentTimeMillis();
-		//System.out.println("Time to convert to bytes: "+(end-start)+"ms");
 		return result;
 	}
 	
@@ -284,39 +244,51 @@ public class ScidbTileInterface {
 		ScidbTileInterface sti = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		String idstr = "[0, 0]";
 		int zoom = 0;
-		List<Integer> tile_id = UtilityFunctions.parseTileIdInteger(idstr);
+		int[] tile_id = UtilityFunctions.parseTileIdInteger(idstr);
 		TileKey id = new TileKey(tile_id,zoom);
 		
 		if(tiletest) {
-			Tile result = sti.getTile(id);
-			
-			System.out.println(result.getDataSize());
-			double[] histogram = result.getHistogramSignature();
-			if(histogram != null && (histogram.length > 0)) {
-				System.out.println("successfully built histogram");
+			List<Double> testresult = sti.executeQuery(p);
+			double[] result = sti.getTile(id).data;
+			for(int i = 0; i < 10; i++) {
+				System.out.print(testresult.get(i*10+5000)+" ");
 			}
+			System.out.println();
+			for(int i = 0; i < 10; i++) {
+				System.out.print(result[i*10+5000]+" ");
+			}
+			System.out.println();
+			
+			//System.out.println(result.getDataSize());
+			//double[] histogram = result.getHistogramSignature();
+			//if(histogram != null && (histogram.length > 0)) {
+			//	System.out.println("successfully built histogram");
+			//}
 			//double[] norm = result.getNormalSignature();
 			//double[] fhistogram = result.getFilteredHistogramSignature();
 		}
 		
 		if(nicetest) {
 			NiceTile testtile = sti.getNiceTile(id);
-			System.out.println("total points: "+testtile.data.get(0).size());
-			System.out.println(testtile.attributes.get(0)+","+testtile.data.get(0).get(100));
-			System.out.println(testtile.attributes.get(1)+","+testtile.data.get(1).get(100));
-			System.out.println(testtile.attributes.get(2)+","+testtile.data.get(2).get(100));
+			System.out.println("total points: "+testtile.getDataSize());
+			System.out.println(testtile.attributes[0]+","+testtile.get(0,100));
+			System.out.println(testtile.attributes[1]+","+testtile.get(1,100));
+			System.out.println(testtile.attributes[2]+","+testtile.get(2,100));
 		}
 		
 		if(writetest) {
 			NiceTile result = sti.getNiceTile(id);
-			System.out.println("result length: "+result.data.get(0).size()+", total attributes: "+result.attributes.size());
-			boolean success = sti.writeNiceTile(result);
+			System.out.print("labels:");
+			UtilityFunctions.printObjectArray(result.attributes);
+			System.out.println();
+			System.out.println("result length: "+result.getDataSize()+", total attributes: "+result.attributes.length);
+			boolean success = NiceTilePacker.writeNiceTile(result);
 			System.out.println("successfully wrote tile "+id.buildTileStringForFile()+" to disk? "+success);
 		}
 		
 		if(readtest) {
-			NiceTile result = sti.readNiceTile(id);
-			System.out.println("result length: "+result.data.get(0).size()+", total attributes: "+result.attributes.size());
+			NiceTile result = NiceTilePacker.readNiceTile(id);
+			System.out.println("result length: "+result.getDataSize()+", total attributes: "+result.attributes.length);
 		}
 	}
 

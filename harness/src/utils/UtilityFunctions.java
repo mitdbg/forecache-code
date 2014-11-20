@@ -13,9 +13,7 @@ import backend.util.TileKey;
 
 public class UtilityFunctions {
 	public static Model getModelFromString(String modelName) {
-		if(modelName.equals("markov")) {
-			return Model.MARKOV;
-		} else if (modelName.equals("random")) {
+		if (modelName.equals("random")) {
 			return Model.RANDOM;
 		} else if (modelName.equals("hotspot")) {
 			return Model.HOTSPOT;
@@ -28,6 +26,16 @@ public class UtilityFunctions {
 		} else {
 			return Model.FHISTOGRAM;
 		}
+	}
+	
+	public static void printObjectArray(Object[] array) {
+		if(array.length > 0) {
+			System.out.print(array[0]);
+		}
+		for(int i = 1; i < array.length; i++) {
+			System.out.print(","+array[i]);
+		}
+		//System.out.println();
 	}
 	
 	public static void printStringArray(String[] array) {
@@ -58,6 +66,10 @@ public class UtilityFunctions {
 		return "[" + str.replace("_",", ") + "]";
 	}
 	
+	public static TileKey getKeyFromRequest(UserRequest request) {
+		return new TileKey(parseTileIdInteger(request.tile_id), request.zoom);
+	}
+	
 	public static List<Double> parseTileIdDouble(String tile_id, String delim) {
 		List<Double> myresult = new ArrayList<Double>();
 		String stripped = tile_id.substring(1, tile_id.length() - 1); // remove brackets
@@ -74,14 +86,14 @@ public class UtilityFunctions {
 		return myresult;
 	}
 	
-	public static List<Integer> parseTileIdInteger(String tile_id, String delim) {
-		List<Integer> myresult = new ArrayList<Integer>();
+	public static int[] parseTileIdInteger(String tile_id, String delim) {
 		String stripped = tile_id.substring(1, tile_id.length() - 1); // remove brackets
 		String [] tokens = stripped.split(delim);
+		int[] myresult = new int[tokens.length];
 		try {
 			for(int i = 0; i < tokens.length; i++) {
 				if(tokens[i].length() > 0) {
-					myresult.add(Integer.parseInt(tokens[i]));
+					myresult[i] = Integer.parseInt(tokens[i]);
 				}
 			}
 		} catch (NumberFormatException e) {
@@ -94,19 +106,19 @@ public class UtilityFunctions {
 		return parseTileIdDouble(tile_id,", ");
 	}
 	
-	public static List<Integer> parseTileIdInteger(String tile_id) {
+	public static int[] parseTileIdInteger(String tile_id) {
 		return parseTileIdInteger(tile_id,", ");
 	}
 	
 	public static Direction getDirection(UserRequest p, UserRequest n) {
-		List<Integer> n_id = parseTileIdInteger(n.tile_id);
-		List<Integer> p_id = parseTileIdInteger(p.tile_id);
+		int[] n_id = parseTileIdInteger(n.tile_id);
+		int[] p_id = parseTileIdInteger(p.tile_id);
 		return getDirection(p_id,n_id,p.zoom,n.zoom);
 	}
 	
 	public static String getDirectionWord(UserRequest p, UserRequest n) {
-		List<Integer> n_id = parseTileIdInteger(n.tile_id);
-		List<Integer> p_id = parseTileIdInteger(p.tile_id);
+		int[] n_id = parseTileIdInteger(n.tile_id);
+		int[] p_id = parseTileIdInteger(p.tile_id);
 		return getDirectionWord(p_id,n_id,p.zoom,n.zoom);
 	}
 	
@@ -120,14 +132,14 @@ public class UtilityFunctions {
 		}
 	}
 	
-	public static DirectionClass getDirectionClass(List<Integer> p_id, List<Integer> n_id, int pzoom, int nzoom) {
+	public static DirectionClass getDirectionClass(int[] p_id, int[] n_id, int pzoom, int nzoom) {
 		return getDirectionClass(getDirection(p_id,n_id,pzoom,nzoom));
 	}
 	
-	public static String getDirectionWord(List<Integer> p_id, List<Integer> n_id, int pzoom, int nzoom) {
+	public static String getDirectionWord(int[] p_id, int[] n_id, int pzoom, int nzoom) {
 		int zoomdiff = nzoom - pzoom;
-		int xdiff = n_id.get(0) - p_id.get(0);
-		int ydiff = n_id.get(1) - p_id.get(1);
+		int xdiff = n_id[0] - p_id[0];
+		int ydiff = n_id[1] - p_id[1];
 		Direction d = null;
 		//System.out.println("zoomdiff: "+zoomdiff+", xdiff: "+xdiff+", ydiff: "+ydiff);
 		if(zoomdiff < -1) { // user reset back to top level tile
@@ -135,8 +147,8 @@ public class UtilityFunctions {
 		} else if(zoomdiff < 0) { // zoom out
 			d = Direction.OUT;
 		} else if(zoomdiff > 0) { // zoom in
-			xdiff = n_id.get(0) - 2 * p_id.get(0);
-			ydiff = n_id.get(1) - 2 * p_id.get(1);
+			xdiff = n_id[0] - 2 * p_id[0];
+			ydiff = n_id[1] - 2 * p_id[1];
 			if((xdiff > 0) && (ydiff > 0)) {
 				d = Direction.IN2;
 			} else if(xdiff > 0) {
@@ -161,18 +173,18 @@ public class UtilityFunctions {
 		return null;
 	}
 	
-	public static Direction getDirection(List<Integer> p_id, List<Integer> n_id, int pzoom, int nzoom) {
+	public static Direction getDirection(int[] p_id, int[] n_id, int pzoom, int nzoom) {
 		int zoomdiff = nzoom - pzoom;
-		int xdiff = n_id.get(0) - p_id.get(0);
-		int ydiff = n_id.get(1) - p_id.get(1);
+		int xdiff = n_id[0] - p_id[0];
+		int ydiff = n_id[1] - p_id[1];
 		//System.out.println("zoomdiff: "+zoomdiff+", xdiff: "+xdiff+", ydiff: "+ydiff);
 		if(zoomdiff < -1) { // user reset back to top level tile
 			return null;
 		} else if(zoomdiff < 0) { // zoom out
 			return Direction.OUT;
 		} else if(zoomdiff > 0) { // zoom in
-			xdiff = n_id.get(0) - 2 * p_id.get(0);
-			ydiff = n_id.get(1) - 2 * p_id.get(1);
+			xdiff = n_id[0] - 2 * p_id[0];
+			ydiff = n_id[1] - 2 * p_id[1];
 			if((xdiff > 0) && (ydiff > 0)) {
 				return Direction.IN2;
 			} else if(xdiff > 0) {
