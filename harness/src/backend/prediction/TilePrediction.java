@@ -6,6 +6,7 @@ public class TilePrediction implements Comparable<TilePrediction> {
 	public TileKey id;
 	public Double confidence = null;
 	public Double distance = null;
+	public Double physicalDistance = 1.0;
 	
 	@Override
 	public String toString() {
@@ -13,7 +14,9 @@ public class TilePrediction implements Comparable<TilePrediction> {
 	}
 	
 	public int compareConfidence(TilePrediction other) {
-		double diff = this.confidence - other.confidence;
+		double diff = this.confidence -
+				other.confidence;
+		//diff /= Math.pow(10,(physicalDistance-1)); // worse if far away
 		if(diff < 0) {
 			return 1;
 		} else if (diff > 0) {
@@ -24,7 +27,9 @@ public class TilePrediction implements Comparable<TilePrediction> {
 	}
 	
 	public int compareDistance(TilePrediction other) {
-		double diff = this.distance - other.distance;
+		double diff = this.distance -
+				other.distance;
+		//diff *= Math.pow(10,(physicalDistance-1)); // worse if far away
 		if(diff < 0) {
 			return -1;
 		} else if (diff > 0) {

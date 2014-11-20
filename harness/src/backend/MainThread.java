@@ -61,7 +61,7 @@ public class MainThread {
 	public static int defaulthistorylength = 4;
 	public static int defaultport = 8080;
 	public static int[] allocatedStorage; // storage per model
-	public static int defaultstorage = 1; // default storage per model
+	public static int defaultstorage = 2; // default storage per model
 	public static int neighborhood = 1; // default neighborhood from which to pick candidates
 	
 	public static Model[] modellabels = {Model.MOMENTUM};
@@ -89,6 +89,7 @@ public class MainThread {
 				case MOMENTUM: all_models[i] = new MomentumDirectionalModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				break;
 				case NORMAL: all_models[i] = new NormalSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
+				//allocatedStorage[i] = 1;
 				break;
 				case HISTOGRAM: all_models[i] = new HistogramSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				break;
@@ -127,8 +128,14 @@ public class MainThread {
 			Model label = modellabels[m];
 			BasicModel mod = all_models[m];
 			List<TileKey> orderedCandidates = mod.orderCandidates(candidates);
-			for(int i = 0; i < allocatedStorage[m] && i < orderedCandidates.size(); i++) {
-				toInsert.put(orderedCandidates.get(i), true);
+			int count = 0;
+			for(int i = 0; i < orderedCandidates.size(); i++) {
+				if(count == allocatedStorage[m]) break;
+				TileKey key = orderedCandidates.get(i);
+				if(!toInsert.containsKey(key)) {
+					toInsert.put(key, true);
+					count++;
+				}
 			}
 
 			System.out.print("predicted ordering for model "+label+": ");
@@ -209,6 +216,11 @@ public class MainThread {
 	}
 	
 	public static void insertPredictions(List<TileKey> predictions) {
+		//System.out.print("predictions to insert:");
+		//for(TileKey key : predictions) {
+		//	System.out.print(key+" ");
+		//}
+		//System.out.println();
 		if(predictions != null) {
 			for(TileKey key: predictions) { // insert the predictions into the cache
 				if(!membuf.peek(key)) { // not in memory
@@ -230,6 +242,11 @@ public class MainThread {
 				}
 			}
 		}
+		//System.out.print("tiles in cache:");
+		//for(TileKey key : membuf.getAllTileKeys()) {
+		//	System.out.print(key+" ");
+		//}
+		//System.out.println();
 	}
 	
 	public static void setupServer(int port) throws Exception {

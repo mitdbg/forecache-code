@@ -53,6 +53,7 @@ public class BasicModel {
 		if(htrace.size() == 0) {
 			return new ArrayList<TileKey>();
 		}
+		TileKey prev = htrace.get(htrace.size() - 1);
 		List<TileKey> myresult = new ArrayList<TileKey>();
 		List<TilePrediction> order = new ArrayList<TilePrediction>();
 		// for each direction, compute confidence
@@ -61,6 +62,7 @@ public class BasicModel {
 			tp.id = key;
 			tp.confidence = computeConfidence(key, htrace);
 			tp.distance = computeDistance(key,htrace);
+			//tp.physicalDistance = UtilityFunctions.manhattanDist(prev, key);
 			order.add(tp);
 		}
 		Collections.sort(order);
