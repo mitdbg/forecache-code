@@ -78,6 +78,13 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 	public synchronized int tileCount() {
 		return this.timeMap.size();
 	}
+	
+	@Override
+	public synchronized void clear() {
+		lruQueue.clear();
+		timeMap.clear();
+		this.size = 0;
+	}
 
 	@Override
 	public synchronized void insertTile(NiceTile tile) {
@@ -192,7 +199,7 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 	// removes a specific tile from buffer
 	protected synchronized void remove_tile(TileKey id) {
 		if(peek(id)) {
-			NiceTilePacker.removeNiceTile(id);
+			//NiceTilePacker.removeNiceTile(id);
 			// remove metadata
 			this.remove_time_pair(id);
 			this.size --;

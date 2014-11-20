@@ -27,6 +27,7 @@ import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
+import backend.util.NiceTile;
 import backend.util.Params;
 import backend.util.ParamsMap;
 import backend.util.Signatures;
@@ -48,14 +49,14 @@ public class SiftSignatureModel extends BasicModel {
 	}
 	
 	@Override
-	public List<DirectionPrediction> predictOrder(List<UserRequest> htrace) throws Exception {
+	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
 		updateRoi(scidbapi); // make sure we're using the most recent ROI
 		return super.predictOrder(htrace,false); // don't reverse the order here
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<UserRequest> trace) {
-		UserRequest prev = trace.get(trace.size() - 1);
+	public double computeConfidence(Direction d, List<TileKey> trace) {
+		TileKey prev = trace.get(trace.size() - 1);
 		TileKey ckey = this.DirectionToTile(prev, d);
 		if(ckey == null) {
 			return defaultprob;
@@ -74,12 +75,12 @@ public class SiftSignatureModel extends BasicModel {
 	}
 	
 	@Override
-	public Double computeConfidence(TileKey id, List<UserRequest> htrace) {
+	public Double computeConfidence(TileKey id, List<TileKey> htrace) {
 		return null;
 	}
 	
 	@Override
-	public Double computeDistance(TileKey id, List<UserRequest> htrace) {
+	public Double computeDistance(TileKey id, List<TileKey> htrace) {
 		double distance = 0.0;
 		double[] vocabhist = buildSignature(id);
 		for(TileKey roiKey : roi) {
@@ -109,7 +110,8 @@ public class SiftSignatureModel extends BasicModel {
 	}
 	
 	public double[] buildSignatureFromKey(TileKey id) {
-		return Signatures.buildSiftSignature(id, vocab, vocabSize);
+		NiceTile tile = getTile(id);
+		return Signatures.buildSiftSignature(tile, vocab, vocabSize);
 	}
 	
 	@Override
@@ -129,7 +131,7 @@ public class SiftSignatureModel extends BasicModel {
 		int rows = 0;
 		int cols = 0;
 		for(TileKey id : roi) { // for each tile in the ROI
-			Mat d = Signatures.getSiftDescriptorsForImage(id, scidbapi);
+			Mat d = Signatures.getSiftDescriptorsForImage(getTile(id));
 			if(d.rows() > 0) {
 				rows += d.rows();
 				all_descriptors.add(d); // better have the same number of cols!
@@ -183,7 +185,7 @@ public class SiftSignatureModel extends BasicModel {
 		TileKey id = new TileKey(tile_id,zoom);
 		int vocabSize = defaultVocabSize;
 		ScidbTileInterface scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
-		Mat descriptors = Signatures.getSiftDescriptorsForImage(id, scidbapi);
+		Mat descriptors = Signatures.getSiftDescriptorsForImage(scidbapi.getNiceTile(id));
 		System.out.println("descriptors: "+descriptors.rows()+","+descriptors.cols());
 		Mat centers = Signatures.getKmeansCenters(descriptors, vocabSize);
 		System.out.println("centers dimensions: "+centers.dims()+", ("+centers.rows()+","+centers.cols()+")");

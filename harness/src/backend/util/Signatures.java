@@ -101,33 +101,26 @@ public class Signatures {
 	}
 	
 	/**************** Dense Sift ****************/
-	public static double[] buildDenseSiftSignature(TileKey id, KDTree<Integer> vocabulary, int vocabsize) {
-		Mat tile = getDenseSiftDescriptorsForImage(id);
-		return buildSiftSignature(tile,vocabulary,vocabsize);
+	public static double[] buildDenseSiftSignature(NiceTile tile, KDTree<Integer> vocabulary, int vocabsize) {
+		Mat m = getDenseSiftDescriptorsForImage(tile);
+		return buildSiftSignature(m,vocabulary,vocabsize);
 	}
 	
 	public static double[] buildDenseSiftSignature(Mat tile, KDTree<Integer> vocabulary, int vocabsize) {
 		return buildSiftSignature(tile,vocabulary,vocabsize);
 	}
 	
-	public static Mat getDenseSiftDescriptorsForImage(TileKey id) {
-		Mat result = readMat(denseSiftString,id); // do we have the descriptors already?
-		if(result == null) {
-			result = getDenseSiftDescriptorsForImage(id,MainThread.scidbapi);
-			//TODO: fix error with saving files to disk.
-			writeMat(denseSiftString,result,id); // save the descriptors we just computed for this tile
-		}
-		return result;
-	}
-	
 	// for general use
-	public static Mat getDenseSiftDescriptorsForImage(TileKey id, ScidbTileInterface scidbapi) {
+	public static Mat getDenseSiftDescriptorsForImage(NiceTile tile) {
+		Mat descriptors = readMat(denseSiftString,tile.id); // do we have the descriptors already?
+		if(descriptors != null) {
+			return descriptors;
+		}
 		MatOfKeyPoint keypoints = new MatOfKeyPoint();
-		Mat descriptors = new Mat(1,1,CvType.CV_32FC1);
+		descriptors = new Mat(1,1,CvType.CV_32FC1);
 		
-		File t = new File(DrawHeatmap.buildFilename(id));
+		File t = new File(DrawHeatmap.buildFilename(tile.id));
 		if(!(t.exists() && t.isFile())) {
-			NiceTile tile = scidbapi.getNiceTile(id);
 			DrawHeatmap.buildImage(tile);
 		}
 		if(!t.exists()) return new Mat();
@@ -139,13 +132,14 @@ public class Signatures {
 		extractor.compute(image, keypoints, descriptors);
 		
 		//System.out.println("file: "+t);
+		writeMat(denseSiftString,descriptors,tile.id); // save the descriptors we just computed for this tile
 		return descriptors;
 	}
 	
 	/**************** Sift ****************/
-	public static double[] buildSiftSignature(TileKey id, KDTree<Integer> vocabulary, int vocabsize) {
-		Mat tile = getSiftDescriptorsForImage(id);
-		return buildSiftSignature(tile,vocabulary,vocabsize);
+	public static double[] buildSiftSignature(NiceTile tile, KDTree<Integer> vocabulary, int vocabsize) {
+		Mat m = getSiftDescriptorsForImage(tile);
+		return buildSiftSignature(m,vocabulary,vocabsize);
 	}
 	
 	public static double[] buildSiftSignature(Mat tile, KDTree<Integer> vocabulary, int vocabsize) {
@@ -184,25 +178,18 @@ public class Signatures {
 		return histogram;
 	}
 	
-	// for use with main thread
-	public static Mat getSiftDescriptorsForImage(TileKey id) {
-		Mat result = readMat(siftString,id); // do we have the descriptors already?
-		if(result == null) {
-			result = getSiftDescriptorsForImage(id,MainThread.scidbapi);
-			//TODO: fix error with saving files to disk.
-			writeMat(siftString,result,id); // save the descriptors we just computed for this tile
-		}
-		return result;
-	}
-	
 	// for general use
-	public static Mat getSiftDescriptorsForImage(TileKey id, ScidbTileInterface scidbapi) {
-		MatOfKeyPoint keypoints = new MatOfKeyPoint();
-		Mat descriptors = new Mat(1,1,CvType.CV_32FC1);
+	public static Mat getSiftDescriptorsForImage(NiceTile tile) {
+		Mat descriptors = readMat(siftString,tile.id); // do we have the descriptors already?
+		if(descriptors != null) {
+			return descriptors;
+		}
 		
-		File t = new File(DrawHeatmap.buildFilename(id));
+		MatOfKeyPoint keypoints = new MatOfKeyPoint();
+		descriptors = new Mat(1,1,CvType.CV_32FC1);
+		
+		File t = new File(DrawHeatmap.buildFilename(tile.id));
 		if(!(t.exists() && t.isFile())) {
-			NiceTile tile = scidbapi.getNiceTile(id);
 			DrawHeatmap.buildImage(tile);
 		}
 		if(!t.exists()) return new Mat();
@@ -214,6 +201,7 @@ public class Signatures {
 		extractor.compute(image, keypoints, descriptors);
 		
 		//System.out.println("file: "+t);
+		writeMat(siftString,descriptors,tile.id); // save the descriptors we just computed for this tile
 		return descriptors;
 	}
 	

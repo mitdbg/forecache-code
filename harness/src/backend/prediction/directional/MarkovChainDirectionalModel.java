@@ -12,6 +12,7 @@ import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
+import backend.util.TileKey;
 import utils.UserRequest;
 
 public class MarkovChainDirectionalModel extends NGramDirectionalModel {
@@ -20,8 +21,8 @@ public class MarkovChainDirectionalModel extends NGramDirectionalModel {
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<UserRequest> trace) {
-		String p = buildDirectionString(trace);
+	public double computeConfidence(Direction d, List<TileKey> trace) {
+		String p = buildDirectionStringFromKey(trace);
 		p += " " + d.getWord();
 		//System.out.println("dirstring: \""+p +"\"");
 		String[] prefix = p.split(" ");

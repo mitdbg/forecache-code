@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -58,6 +60,9 @@ public class MainThread {
 	public static int defaultpredictions = 3;
 	public static int defaulthistorylength = 4;
 	public static int defaultport = 8080;
+	public static int[] allocatedStorage; // storage per model
+	public static int defaultstorage = 1; // default storage per model
+	public static int neighborhood = 1; // default neighborhood from which to pick candidates
 	
 	public static Model[] modellabels = {Model.MOMENTUM};
 	public static int[] historylengths = {defaulthistorylength};
@@ -68,8 +73,11 @@ public class MainThread {
 	public static BasicModel[] all_models;
 	
 	public static void setupModels() {
+		membuf.setStorageMax(modellabels.length*defaultstorage);
 		all_models = new BasicModel[modellabels.length];
+		allocatedStorage = new int[modellabels.length];
 		for(int i = 0; i < modellabels.length; i++) {
+			allocatedStorage[i] = defaultstorage;
 			Model label = modellabels[i];
 			switch(label) {
 				case NGRAM: all_models[i] = new NGramDirectionalModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
@@ -108,7 +116,47 @@ public class MainThread {
 		}
 	}
 	
-	public static List<TileKey> getPredictions() throws Exception {
+	public static void doPredictions() {
+		if(all_models.length == 0) return;
+		Map<TileKey,Boolean> toInsert = new HashMap<TileKey,Boolean>();
+		
+		// get the current list of candidates
+		List<TileKey> candidates = all_models[0].getCandidates(neighborhood);
+		
+		for(int m = 0; m < modellabels.length; m++) {
+			Model label = modellabels[m];
+			BasicModel mod = all_models[m];
+			List<TileKey> orderedCandidates = mod.orderCandidates(candidates);
+			for(int i = 0; i < allocatedStorage[m] && i < orderedCandidates.size(); i++) {
+				toInsert.put(orderedCandidates.get(i), true);
+			}
+
+			System.out.print("predicted ordering for model "+label+": ");
+			for(int i = 0; i < orderedCandidates.size(); i++) {
+				System.out.print(orderedCandidates.get(i)+" ");
+			}
+			System.out.println();
+		}
+		//System.out.print("predictions:");
+		//for(TileKey k : toInsert.keySet()) {
+		//	System.out.print(k+" ");
+		//}
+		//System.out.println();
+		Set<TileKey> oldKeys = new HashSet<TileKey>();
+		for(TileKey k : membuf.getAllTileKeys()) {
+			oldKeys.add(k);
+		}
+		for(TileKey old : oldKeys) {
+			if (!toInsert.containsKey(old)) {
+				membuf.removeTile(old);
+			}
+		}
+		List<TileKey> insertList = new ArrayList<TileKey>();
+		insertList.addAll(toInsert.keySet());
+		insertPredictions(insertList);
+	}
+	
+	public static List<TileKey> getPredictions() {
 		Map<TileKey,Double> predictions = new HashMap<TileKey,Double>();
 		for(int i = 0; i < modellabels.length; i++) {
 			Model label = modellabels[i];
@@ -288,10 +336,10 @@ public class MainThread {
 		hitslist = new ArrayList<String>();
 		
 		// reinitialize caches and user history
-		membuf = new MemoryNiceTileBuffer(defaultpredictions);
+		membuf.clear();
 		//don't reset this, it takes forever
 		//diskbuf = new DiskNiceTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
-		hist = new TileHistoryQueue(histmax);
+		hist.clear();
 		
 		setupModels();
 		trainModels();
@@ -299,7 +347,6 @@ public class MainThread {
 	
 	/**
 	 * Java requires a serial version ID for the class.
-	 * Has something to do with it being serializable?
 	 */
 	public static class FetchTileServlet extends HttpServlet {
 
@@ -387,7 +434,7 @@ public class MainThread {
 			int[] id = UtilityFunctions.parseTileIdInteger(reverse);
 			int z = Integer.parseInt(zoom);
 			TileKey key = new TileKey(id,z);
-			List<TileKey> predictions = null;
+			//List<TileKey> predictions = null;
 			
 			//System.out.println("history length: " + hist.getHistoryLength());
 			//System.out.println("history:");
@@ -395,8 +442,9 @@ public class MainThread {
 
 			// get predictions for next request
 			//long pstart = System.currentTimeMillis();
-			predictions = getPredictions();
-			insertPredictions(predictions);
+			//predictions = getPredictions();
+			//insertPredictions(predictions);
+			doPredictions();
 			//long pend = System.currentTimeMillis();
 			//System.out.println("time to insert predictions: " + ((pend - pstart)/1000)+"s");
 			

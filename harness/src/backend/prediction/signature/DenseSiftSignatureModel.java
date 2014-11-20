@@ -8,6 +8,7 @@ import backend.disk.ScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.TileHistoryQueue;
+import backend.util.NiceTile;
 import backend.util.Signatures;
 import backend.util.TileKey;
 
@@ -24,7 +25,8 @@ public class DenseSiftSignatureModel extends SiftSignatureModel{
 	
 	@Override
 	public double[] buildSignatureFromKey(TileKey id) {
-		return Signatures.buildDenseSiftSignature(id, vocab, defaultVocabSize);
+		NiceTile tile = getTile(id);
+		return Signatures.buildDenseSiftSignature(tile, vocab, defaultVocabSize);
 	}
 
 }

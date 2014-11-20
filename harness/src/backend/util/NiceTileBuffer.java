@@ -24,4 +24,7 @@ public interface NiceTileBuffer {
 	
 	// get count of tiles currently in buffer
 	public int tileCount();
+	
+	// remove all tiles currently in buffer
+	public void clear();
 }

@@ -20,10 +20,9 @@ public class MemoryNiceTileBuffer implements NiceTileBuffer {
 	private Map<TileKey,NiceTile> storage; // for storing tiles
 	private Map<TileKey,TimePair> timeMap; // for finding things in the queue
 	private PriorityQueue<TimePair> lruQueue; // for identifying lru tiles in storage
-	private final int storagemax;
+	private int storagemax;
 	//private int size;
 	private final int DEFAULTMAX = 1; // default buffer size
-	//private final int DEFAULTMAX = 34000000; // default buffer size
 	private final int initqueuesize = 50;
 	
 	public MemoryNiceTileBuffer() {
@@ -42,6 +41,15 @@ public class MemoryNiceTileBuffer implements NiceTileBuffer {
 		timeMap = new HashMap<TileKey,TimePair>();
 		//this.size = 0;
 		this.storagemax = storagemax;
+	}
+	
+	public synchronized void setStorageMax(int newmax) {
+		this.clear();
+		this.storagemax = newmax;
+	}
+	
+	public synchronized int freeSpace() {
+		return storagemax - this.storage.size();
 	}
 
 	@Override
@@ -62,6 +70,13 @@ public class MemoryNiceTileBuffer implements NiceTileBuffer {
 	@Override
 	public synchronized int tileCount() {
 		return this.storage.size();
+	}
+	
+	@Override
+	public synchronized void clear() {
+		lruQueue.clear();
+		timeMap.clear();
+		this.storage.clear();
 	}
 
 	
@@ -150,13 +165,11 @@ public class MemoryNiceTileBuffer implements NiceTileBuffer {
 	
 	// removes a specific tile from buffer
 	protected synchronized void remove_tile(TileKey id) {
-		if(this.storage.containsKey(id)) {
-			//int tilesize = storage.get(id).getDataSize();
-			this.storage.remove(id);
-			// remove metadata
-			this.remove_time_pair(id);
-			//this.size -= tilesize;
-		}
+		//int tilesize = storage.get(id).getDataSize();
+		this.storage.remove(id);
+		// remove metadata
+		this.remove_time_pair(id);
+		//this.size -= tilesize;
 	}
 
 }

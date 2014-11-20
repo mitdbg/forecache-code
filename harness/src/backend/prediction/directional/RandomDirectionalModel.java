@@ -12,6 +12,7 @@ import backend.prediction.BasicModel;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
+import backend.util.TileKey;
 
 import utils.UserRequest;
 
@@ -26,12 +27,12 @@ public class RandomDirectionalModel extends BasicModel {
 	}
 	
 	@Override
-	public List<DirectionPrediction> predictOrder(List<UserRequest> htrace) throws Exception {
+	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
 		return super.predictOrder(htrace,true);
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<UserRequest> trace) {
+	public double computeConfidence(Direction d, List<TileKey> trace) {
 		return generator.nextDouble();
 	}
 }

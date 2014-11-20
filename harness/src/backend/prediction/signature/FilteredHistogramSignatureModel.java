@@ -32,16 +32,15 @@ public class FilteredHistogramSignatureModel extends HistogramSignatureModel {
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<UserRequest> htrace) {
+	public double computeConfidence(Direction d, List<TileKey> htrace) {
 		double confidence = 0.0;
-		UserRequest prev = htrace.get(htrace.size()-1);
-		TileKey pkey = MarkovDirectionalModel.getKeyFromRequest(prev);
+		TileKey pkey = htrace.get(htrace.size()-1);
 		NiceTile orig = null;
 		if(pkey != null) {
 			orig = getTile(pkey);
 		}
 		
-		TileKey ckey = this.DirectionToTile(prev, d);
+		TileKey ckey = this.DirectionToTile(pkey, d);
 		NiceTile candidate = null;
 		if(ckey != null) {
 			candidate = getTile(ckey);
@@ -59,7 +58,7 @@ public class FilteredHistogramSignatureModel extends HistogramSignatureModel {
 	}
 	
 	@Override
-	public Double computeDistance(TileKey id, List<UserRequest> htrace) {
+	public Double computeDistance(TileKey id, List<TileKey> htrace) {
 		double distance = 0.0;
 		NiceTile candidate = getTile(id);
 		for(TileKey roiKey : roi) {

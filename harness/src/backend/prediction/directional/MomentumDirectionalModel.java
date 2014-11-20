@@ -14,6 +14,7 @@ import backend.prediction.BasicModel;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
+import backend.util.TileKey;
 
 public class MomentumDirectionalModel extends BasicModel {
 	protected Map<Character,Double> votes;
@@ -25,13 +26,13 @@ public class MomentumDirectionalModel extends BasicModel {
 	
 	// computes an ordering of all directions using confidence values
 	@Override
-	public List<DirectionPrediction> predictOrder(List<UserRequest> htrace) throws Exception {
+	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
 		getVotes(htrace); // update our voting system;
 		return super.predictOrder(htrace,true);
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<UserRequest> trace) {
+	public double computeConfidence(Direction d, List<TileKey> trace) {
 		Double score = this.votes.get(d);
 		double confidence = 0.0;
 		if(score != null) {
@@ -43,14 +44,14 @@ public class MomentumDirectionalModel extends BasicModel {
 		return confidence;
 	}
 	
-	public void getVotes(List<UserRequest> trace) {
+	public void getVotes(List<TileKey> trace) {
 		votes.clear();
 		if(this.history == null) {
 			return;
 		}
 		
 		double currvotevalue = 1.0;
-		String dirstring = buildDirectionString(trace);
+		String dirstring = buildDirectionStringFromKey(trace);
 		for(int i =dirstring.length() - 1; i >= 0; i--) {
 			char d = dirstring.charAt(i);
 			Double vote = votes.get(d);

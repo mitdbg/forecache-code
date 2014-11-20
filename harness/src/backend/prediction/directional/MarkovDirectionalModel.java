@@ -27,19 +27,19 @@ public class MarkovDirectionalModel extends BasicModel {
 	}
 	
 	@Override
-	public List<DirectionPrediction> predictOrder(List<UserRequest> htrace) throws Exception {
+	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
 		return super.predictOrder(htrace,true);
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<UserRequest> trace) {
+	public double computeConfidence(Direction d, List<TileKey> trace) {
 		if(trace.size() <= 1) { // if there is no prior direction
 			return computeBaseProb(d);
 		}
 		// trace is at least 2 here
 		int last = trace.size() - 1;
 		int nextlast = last - 1;
-		String prefix = buildDirectionString(trace);
+		String prefix = buildDirectionStringFromKey(trace);
 		double prior = 1.0;
 		MDMNode node = condprobs.get(prefix);
 		if(node != null) {
@@ -157,8 +157,8 @@ public class MarkovDirectionalModel extends BasicModel {
 			return;
 		}
 		long start = System.currentTimeMillis();
-		List<UserRequest> htrace = history.getHistoryTrace(this.len);
-		String dirstring = buildDirectionString(htrace);
+		List<TileKey> htrace = history.getHistoryTrace(this.len);
+		String dirstring = buildDirectionStringFromKey(htrace);
 		TileKey prediction = null;
 		System.out.println("dirstring: "+dirstring);
 		for(int i = 0; i < dirstring.length(); i++) {

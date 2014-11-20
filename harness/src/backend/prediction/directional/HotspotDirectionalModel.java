@@ -37,7 +37,7 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 	
 	// computes an ordering of all directions using confidence values
 	@Override
-	public List<DirectionPrediction> predictOrder(List<UserRequest> htrace) {
+	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
 		List<DirectionPrediction> order = new ArrayList<DirectionPrediction>();
 		long start = System.currentTimeMillis();
 		
@@ -147,10 +147,9 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 		}
 	}
 	
-	protected Direction getHotDirection(UserRequest prev) {
+	protected Direction getHotDirection(TileKey prevkey) {
 		TileKey minkey = null;
 		double mindist = 0;
-		TileKey prevkey = MarkovDirectionalModel.getKeyFromRequest(prev);
 		for(TileKey key : hotspots.keySet()) {
 			double currdist = prevkey.getDistance(key);
 			if(currdist <= maxdistance) {
@@ -160,10 +159,10 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 				}
 			}
 		}
-		return getClose(prev, minkey);
+		return getClose(prevkey, minkey);
 	}
 	
-	protected Direction getClose(UserRequest prev, TileKey goal) {
+	protected Direction getClose(TileKey prev, TileKey goal) {
 		Direction d = null;
 		if(goal == null) { // nothing was close enough
 			return d;

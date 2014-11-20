@@ -27,6 +27,12 @@ public class TileHistoryQueue {
 		this.maxhist = maxhist;
 	}
 	
+	public synchronized void clear() {
+		history.clear();
+		trueHistory.clear();
+		lastRoi.clear();
+	}
+	
 	// adds record to history for given tile
 	// copies entire tile
 	// maintains history of length maxhist
@@ -73,18 +79,21 @@ public class TileHistoryQueue {
 		return myresult;
 	}
 	
+	public synchronized TileKey getLast() {
+		if(history.size() == 0) return null;
+		return history.get(history.size() - 1).MyTile.id;
+	}
+	
 	// returns last k elements in history as user requests for directional models
-	public synchronized List<UserRequest> getHistoryTrace(int length) {
-		List<UserRequest> myresult = new ArrayList<UserRequest>();
+	public synchronized List<TileKey> getHistoryTrace(int length) {
+		List<TileKey> myresult = new ArrayList<TileKey>();
 		int start = history.size() - length;
 		if(start < 0) {
 			start = 0;
 		}
 		for(int i = start; i < history.size(); i++) {
 			TileRecord tr = history.get(i);
-			TileKey tk = tr.MyTile.id;
-			UserRequest temp = new UserRequest(tk.buildTileString(),tk.zoom);
-			myresult.add(temp);
+			myresult.add(tr.MyTile.id);
 		}
 		return myresult;
 	}
@@ -96,6 +105,7 @@ public class TileHistoryQueue {
 		
 		// just return the last request, if there is no ROI yet
 		List<TileKey> makeshiftRoi = new ArrayList<TileKey>();
+		if(history.size() == 0) return makeshiftRoi;
 		makeshiftRoi.add(history.get(history.size()-1).MyTile.id);
 		return makeshiftRoi;
 	}

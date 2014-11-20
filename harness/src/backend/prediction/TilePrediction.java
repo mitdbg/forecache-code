@@ -9,7 +9,7 @@ public class TilePrediction implements Comparable<TilePrediction> {
 	
 	@Override
 	public String toString() {
-		return id.buildTileStringForFile() + "(" + confidence + ")";
+		return id.buildTileStringForFile() + "(" + confidence+","+distance + ")";
 	}
 	
 	public int compareConfidence(TilePrediction other) {

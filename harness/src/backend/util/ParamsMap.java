@@ -5,10 +5,16 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+
+import utils.UtilityFunctions;
 
 public class ParamsMap {
 	public Map<String,Map<Integer,Params>> paramsMap;
+	public Map<TileKey,Boolean> allKeys;
+	public Set<TileKey> allKeysSet;
 	private String paramsfile;
 	private String delim;
 	
@@ -16,6 +22,8 @@ public class ParamsMap {
 		this.paramsfile = paramsfile;
 		this.delim = delim;
 		this.paramsMap = new HashMap<String, Map<Integer, Params>>();
+		this.allKeys = new HashMap<TileKey,Boolean>();
+		this.allKeysSet = new HashSet<TileKey>();
 		parseParamsFile();
 	}
 	
@@ -57,7 +65,7 @@ public class ParamsMap {
 						default:
 					}
 				}
-				if((zoom >= 0) && (tile_id != null)) {
+				if((zoom >= 0) && (tile_id != null) && (tile_id.length() > 0)) {
 					//System.out.println("tile id: '"+tile_id+"'");
 					//System.out.println("zoom: "+zoom);
 					Map<Integer, Params> temp = this.paramsMap.get(tile_id);
@@ -66,8 +74,12 @@ public class ParamsMap {
 						this.paramsMap.put(tile_id,temp);
 					}
 					temp.put(zoom, p);
+					
+					// this is used to enumerate over all tiles
+					this.allKeys.put(new TileKey(UtilityFunctions.parseTileIdInteger(tile_id),zoom), true);
 				}
 			}
+			this.allKeysSet = this.allKeys.keySet();
 		} catch (IOException e) {
 			System.out.println("error occured while reading params file");
 			e.printStackTrace();

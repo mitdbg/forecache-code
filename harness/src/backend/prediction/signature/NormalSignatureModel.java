@@ -24,15 +24,14 @@ public class NormalSignatureModel extends BasicModel {
 	}
 	
 	@Override
-	public List<DirectionPrediction> predictOrder(List<UserRequest> htrace) throws Exception {
+	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
 		return super.predictOrder(htrace,false); // don't reverse the order here
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<UserRequest> htrace) {
+	public double computeConfidence(Direction d, List<TileKey> htrace) {
 		double confidence = 0.0;
-		UserRequest prev = htrace.get(htrace.size()-1);
-		TileKey pkey = MarkovDirectionalModel.getKeyFromRequest(prev);
+		TileKey pkey = htrace.get(htrace.size()-1);
 		//Tile orig = null;
 		NiceTile orig = null;
 		if(pkey != null) {
@@ -40,7 +39,7 @@ public class NormalSignatureModel extends BasicModel {
 			orig = this.scidbapi.getNiceTile(pkey);
 		}
 		
-		TileKey ckey = this.DirectionToTile(prev, d);
+		TileKey ckey = this.DirectionToTile(pkey, d);
 		//Tile candidate = null;
 		NiceTile candidate = null;
 		if(ckey != null) {
@@ -65,12 +64,12 @@ public class NormalSignatureModel extends BasicModel {
 	}
 	
 	@Override
-	public Double computeConfidence(TileKey id, List<UserRequest> trace) {
+	public Double computeConfidence(TileKey id, List<TileKey> trace) {
 		return null;
 	}
 	
 	@Override
-	public Double computeDistance(TileKey id, List<UserRequest> trace) {
+	public Double computeDistance(TileKey id, List<TileKey> trace) {
 		double distance = 0.0;
 		NiceTile candidate = getTile(id);
 		for(TileKey roiKey : roi) {
