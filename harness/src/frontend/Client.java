@@ -50,8 +50,32 @@ public class Client {
 					ma[mai] = new ModelAccuracy();
 				}
 				for(int i = 0; i < models.length; i++) {
-					crossValidation(taskname,models[i],testusers,predictions[predict], ma);
+					crossValidation(taskname,models[i],testusers,new int[]{predictions[predict]}, ma);
 				}
+/*
+				for(int mai = 0; mai < ma.length; mai++) {
+					ma[mai].learnSimpleModelLabels();
+					ma[mai].learnModelLabels();
+					ma[mai].buildTrackRecords(4);
+				}
+*/
+			}
+		}
+	}
+	
+	public static void crossValidationModelSpecific(int[] users, String[] tasknames, String[][] models, int[][] allocations) throws Exception {
+		List<Integer> testusers = new ArrayList<Integer>();
+		for(int i = 0; i < users.length; i++) {
+			testusers.add(users[i]);
+		}
+		
+		for(String taskname : tasknames) {
+			for(int allc = 0; allc < allocations.length; allc++) {
+				ModelAccuracy[] ma = new ModelAccuracy[testusers.size()];
+				for(int mai = 0; mai < ma.length; mai++) {
+					ma[mai] = new ModelAccuracy();
+				}
+				crossValidation(taskname,models[allc],testusers,allocations[allc], ma);
 /*
 				for(int mai = 0; mai < ma.length; mai++) {
 					ma[mai].learnSimpleModelLabels();
@@ -66,12 +90,12 @@ public class Client {
 	// test all users
 	public static void crossValidation(String taskname, String[] models, int predictions, ModelAccuracy[] ma) throws Exception {
 		List<Integer> testusers = DBInterface.getUsers();
-		crossValidation(taskname,models,testusers,predictions, ma);
+		crossValidation(taskname,models,testusers,new int[]{predictions}, ma);
 
 	}
 	
 	// only test specific users, but train on all users
-	public static void crossValidation(String taskname, String[] models, List<Integer> testusers, int predictions,
+	public static void crossValidation(String taskname, String[] models, List<Integer> testusers, int[] predictions,
 			ModelAccuracy[] ma) throws Exception {
 		List<Integer> users = DBInterface.getUsers();
 		List<Integer> finalusers = new ArrayList<Integer>();
@@ -139,18 +163,18 @@ public class Client {
 			
 			// new printed content
 			
-			TraceMetadata metadata = RequestLabeler.getLabels(trace);
-			List<DirectionClass> dirs = metadata.directionClasses;
-			List<ExplorationPhase> phases = metadata.explorationPhases;
-			for(int i = 0; i < trace.size(); i++) {
-				UserRequest request = trace.get(i);
-				int[] id = UtilityFunctions.parseTileIdInteger(request.tile_id);
-				System.out.print(user_id+"\t"+taskname+"\t");
-				UtilityFunctions.printStringArray(models);
-				System.out.println("\t"+predictions+"\t"+request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
-						"\t"+fullAccuracy[i]);
-			}
-			
+//			TraceMetadata metadata = RequestLabeler.getLabels(trace);
+//			List<DirectionClass> dirs = metadata.directionClasses;
+//			List<ExplorationPhase> phases = metadata.explorationPhases;
+//			for(int i = 0; i < trace.size(); i++) {
+//				UserRequest request = trace.get(i);
+//				int[] id = UtilityFunctions.parseTileIdInteger(request.tile_id);
+//				System.out.print(user_id+"\t"+taskname+"\t");
+//				UtilityFunctions.printStringArray(models);
+//				System.out.println("\t"+predictions+"\t"+request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
+//						"\t"+fullAccuracy[i]);
+//			}
+			System.out.println(accuracy);
 		}
 		overall_accuracy /= testusers.size();
 		//System.out.println("overall\t"+overall_accuracy);
@@ -256,7 +280,7 @@ public class Client {
 				List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
 				System.out.println("found trace of size " + trace.size() + " for task '" + taskname + "' and user '" + user_id + "'");
 				long average = 0;
-				sendReset(user_ids,models,predictions);
+				sendReset(user_ids,models,new int[]{predictions});
 				for(int r = 0; r < trace.size(); r++) {
 					UserRequest ur = trace.get(r);
 					String tile_id = ur.tile_id;
@@ -395,7 +419,7 @@ public class Client {
 	}
 
 	// tell server what user ids and models to train on
-	public static boolean sendReset(int[] user_ids, String[] models, int predictions) {
+	public static boolean sendReset(int[] user_ids, String[] models, int[] predictions) {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
 				+ "?"+buildResetParams(user_ids,models, predictions);
 		URL geturl = null;
@@ -521,7 +545,7 @@ public class Client {
 		return params;
 	}
 	
-	public static String buildResetParams(int[] user_ids, String[] models, int predictions) {
+	public static String buildResetParams(int[] user_ids, String[] models, int[] predictions) {
 		String params = "reset&user_ids=";
 		if(user_ids.length > 0) {
 			params += user_ids[0];
@@ -536,7 +560,13 @@ public class Client {
 		for(int i = 1; i < models.length; i++) {
 			params += "_" + models[i];
 		}
-		params+= "&predictions="+predictions;
+		params += "&predictions=";
+		if(predictions.length > 0) {
+			params += predictions[0];
+		}
+		for(int i = 1; i < predictions.length; i++) {
+			params += "_" + predictions[i];
+		}
 		return params;
 	}
 
@@ -552,7 +582,8 @@ public class Client {
 		int[] user_ids = null;
         String[] tasknames = null;
         String[][] models = null;
-        int predictions = 1;
+        //int predictions = 1;
+        int[][] allocations = new int[1][];
         boolean test = true;
         boolean all = false;
         boolean print = false;
@@ -597,7 +628,24 @@ public class Client {
                     }
 					
 					if(newArgs.size() == 4) {
-						predictions = Integer.parseInt(newArgs.get(3));
+						// use predictions as space allocations
+						String[] tempallocations = newArgs.get(3).split("-"); // for each model combo
+						if(tempallocations.length != models.length) {
+							System.out.println("Not enough allocations!");
+							return;
+						}
+						allocations = new int[tempallocations.length][];
+						for(int i = 0; i < tempallocations.length; i++) {
+							 String[] temp = tempallocations[i].split(",");
+	                            allocations[i] = new int[temp.length];
+	                            System.out.print("adding allocation combination:");
+	                            for(int j=0; j < temp.length;j++) {
+	                                    allocations[i][j] = Integer.parseInt(temp[j]);
+	                                    System.out.print(" "+allocations[i][j]);
+	                            }
+	                            System.out.println();
+						}
+						//predictions = Integer.parseInt(newArgs.get(3));
 					}
 					
 					test = false;
@@ -641,8 +689,8 @@ public class Client {
             }
             */
             
-            int[] tp = {predictions};
-            crossValidationModelSpecific(user_ids,tasknames,models,tp);
+            //int[] tp = {predictions};
+            crossValidationModelSpecific(user_ids,tasknames,models,allocations);
 		} else if(all) {
 			System.out.println("testing all traces for all tasks");
 			//getTracesForAllUsers();

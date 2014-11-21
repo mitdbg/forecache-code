@@ -61,7 +61,7 @@ public class MainThread {
 	public static int defaulthistorylength = 4;
 	public static int defaultport = 8080;
 	public static int[] allocatedStorage; // storage per model
-	public static int defaultstorage = 2; // default storage per model
+	public static int defaultstorage = 1; // default storage per model
 	public static int neighborhood = 1; // default neighborhood from which to pick candidates
 	
 	public static Model[] modellabels = {Model.MOMENTUM};
@@ -73,11 +73,8 @@ public class MainThread {
 	public static BasicModel[] all_models;
 	
 	public static void setupModels() {
-		membuf.setStorageMax(modellabels.length*defaultstorage);
 		all_models = new BasicModel[modellabels.length];
-		allocatedStorage = new int[modellabels.length];
 		for(int i = 0; i < modellabels.length; i++) {
-			allocatedStorage[i] = defaultstorage;
 			Model label = modellabels[i];
 			switch(label) {
 				case NGRAM: all_models[i] = new NGramDirectionalModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
@@ -89,7 +86,6 @@ public class MainThread {
 				case MOMENTUM: all_models[i] = new MomentumDirectionalModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				break;
 				case NORMAL: all_models[i] = new NormalSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
-				//allocatedStorage[i] = 1;
 				break;
 				case HISTOGRAM: all_models[i] = new HistogramSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				break;
@@ -124,7 +120,7 @@ public class MainThread {
 		// get the current list of candidates
 		List<TileKey> candidates = all_models[0].getCandidates(neighborhood);
 		
-		for(int m = 0; m < modellabels.length; m++) {
+		for(int m = 0; m < modellabels.length; m++) { // for each model
 			Model label = modellabels[m];
 			BasicModel mod = all_models[m];
 			List<TileKey> orderedCandidates = mod.orderCandidates(candidates);
@@ -138,26 +134,27 @@ public class MainThread {
 				}
 			}
 
-			System.out.print("predicted ordering for model "+label+": ");
-			for(int i = 0; i < orderedCandidates.size(); i++) {
-				System.out.print(orderedCandidates.get(i)+" ");
-			}
-			System.out.println();
+			//System.out.print("predicted ordering for model "+label+": ");
+			//for(int i = 0; i < orderedCandidates.size(); i++) {
+			//	System.out.print(orderedCandidates.get(i)+" ");
+			//}
+			//System.out.println();
 		}
-		//System.out.print("predictions:");
-		//for(TileKey k : toInsert.keySet()) {
-		//	System.out.print(k+" ");
-		//}
-		//System.out.println();
+		System.out.print("predictions:");
+		for(TileKey k : toInsert.keySet()) {
+			System.out.print(k+" ");
+		}
+		System.out.println();
 		Set<TileKey> oldKeys = new HashSet<TileKey>();
 		for(TileKey k : membuf.getAllTileKeys()) {
 			oldKeys.add(k);
 		}
-		for(TileKey old : oldKeys) {
-			if (!toInsert.containsKey(old)) {
-				membuf.removeTile(old);
-			}
-		}
+		//for(TileKey old : oldKeys) {
+		//	if (!toInsert.containsKey(old)) {
+		//		membuf.removeTile(old);
+		//	}
+		//}
+		membuf.clear();
 		List<TileKey> insertList = new ArrayList<TileKey>();
 		insertList.addAll(toInsert.keySet());
 		insertPredictions(insertList);
@@ -341,11 +338,24 @@ public class MainThread {
 		}
 	}
 	
-	public static void reset(String[] userstrs, String[] modelstrs, String predictions) throws Exception {
+	public static void update_allocations(String[] allocations) {
+		int required = 0;
+		allocatedStorage = new int[allocations.length];
+		for(int i = 0; i < allocations.length; i++) {
+			System.out.println("allocations["+i+"] = '"+allocations[i]+"'");
+			allocatedStorage[i] = Integer.parseInt(allocations[i]);
+			required += allocatedStorage[i];
+		}
+		membuf.clear();
+		membuf.setStorageMax(required);
+	}
+	
+	public static void reset(String[] userstrs, String[] modelstrs, String[] predictions) throws Exception {
 		update_users(userstrs);
 		update_model_labels(modelstrs);
-		defaultpredictions = Integer.parseInt(predictions);
-		System.out.println("predictions: "+defaultpredictions);
+		update_allocations(predictions);
+		//defaultpredictions = Integer.parseInt(predictions);
+		//System.out.println("predictions: "+defaultpredictions);
 		
 		//reset accuracy
 		cache_hits = 0;
@@ -387,7 +397,7 @@ public class MainThread {
 				String modelstr = request.getParameter("models");
 				String predictions = request.getParameter("predictions");
 				try {
-					reset(useridstr.split("_"),modelstr.split("_"), predictions);
+					reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"));
 					response.getWriter().println(done);
 				} catch (Exception e) {
 					System.out.println("error resetting");
