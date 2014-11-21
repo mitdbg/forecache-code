@@ -163,18 +163,22 @@ public class Client {
 			
 			// new printed content
 			
-//			TraceMetadata metadata = RequestLabeler.getLabels(trace);
-//			List<DirectionClass> dirs = metadata.directionClasses;
-//			List<ExplorationPhase> phases = metadata.explorationPhases;
-//			for(int i = 0; i < trace.size(); i++) {
-//				UserRequest request = trace.get(i);
-//				int[] id = UtilityFunctions.parseTileIdInteger(request.tile_id);
-//				System.out.print(user_id+"\t"+taskname+"\t");
-//				UtilityFunctions.printStringArray(models);
-//				System.out.println("\t"+predictions+"\t"+request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
-//						"\t"+fullAccuracy[i]);
-//			}
-			System.out.println(accuracy);
+			TraceMetadata metadata = RequestLabeler.getLabels(trace);
+			List<DirectionClass> dirs = metadata.directionClasses;
+			List<ExplorationPhase> phases = metadata.explorationPhases;
+			for(int i = 0; i < trace.size(); i++) {
+				UserRequest request = trace.get(i);
+				int[] id = UtilityFunctions.parseTileIdInteger(request.tile_id);
+				System.out.print(user_id+"\t"+taskname+"\t");
+				UtilityFunctions.printStringArray(models);
+				System.out.print("\t");
+				UtilityFunctions.printIntArray(predictions);
+				System.out.print("\t");
+				System.out.println(request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
+						"\t"+fullAccuracy[i]);
+				//System.out.println("\t"+predictions+"\t"+request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
+				//		"\t"+fullAccuracy[i]);
+			}
 		}
 		overall_accuracy /= testusers.size();
 		//System.out.println("overall\t"+overall_accuracy);
