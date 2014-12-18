@@ -17,6 +17,6 @@ copy mixed_accuracy to
 csv;
 
 --calculates accuracy across all users
-select taskname, model,allocated, avg(accuracy) from mixed_accuracy where model='ngram5' or
+select taskname, model,allocated, avg(accuracy),stddev(accuracy) from mixed_accuracy where model='ngram5' or
 model='sift' or model='sift,ngram5' group by taskname,model,allocated order by
 taskname,model,allocated;
