@@ -35,6 +35,20 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 		this.hotspotlen = hotspotlen;
 	}
 	
+	@Override
+	public double computeConfidence(Direction d, List<TileKey> trace) {
+		Direction hotDirection = this.getHotDirection(trace.get(trace.size()-1));
+		if(d == hotDirection) {
+			return 1.0001;
+		} else {
+			double confidence = super.computeConfidence(d, trace);
+			if(confidence > 1.0) {
+				return 1.0;
+			}
+			return confidence;
+		}
+	}
+	
 	// computes an ordering of all directions using confidence values
 	@Override
 	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {

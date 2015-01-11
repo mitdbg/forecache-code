@@ -102,6 +102,9 @@ public class MomentumDirectionalModel extends BasicModel {
 		}
 		
 		double currvotevalue = 1.0;
+		double sum = 0;
+		
+		//disribute votes based on recent history
 		String dirstring = buildDirectionStringFromKey(trace);
 		for(int i =dirstring.length() - 1; i >= 0; i--) {
 			char d = dirstring.charAt(i);
@@ -111,7 +114,13 @@ public class MomentumDirectionalModel extends BasicModel {
 			} else {
 				votes.put(d,vote+currvotevalue);
 			}
+			sum += currvotevalue;
 			currvotevalue /= 2;
+		}
+		
+		//normalize
+		for(Character d: votes.keySet()) {
+			votes.put(d, votes.get(d) / sum);
 		}
 	}
 }

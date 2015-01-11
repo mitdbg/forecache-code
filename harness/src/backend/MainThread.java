@@ -320,8 +320,11 @@ public class MainThread {
 				historylengths[i] = Integer.parseInt(modelstrs[i].substring(5));
 			} else if(modelstrs[i].equals("random")) {
 				modellabels[i] = Model.RANDOM;
-			} else if(modelstrs[i].equals("hotspot")) {
+			} else if(modelstrs[i].contains("hotspot")) {
 				modellabels[i] = Model.HOTSPOT;
+				if(modelstrs[i].length() > 7) {
+					historylengths[i] = Integer.parseInt(modelstrs[i].substring(8));
+				}
 			} else if(modelstrs[i].contains("momentum")) {
 				modellabels[i] = Model.MOMENTUM;
 				if(modelstrs[i].length() > 8) {
