@@ -322,8 +322,11 @@ public class MainThread {
 				modellabels[i] = Model.RANDOM;
 			} else if(modelstrs[i].equals("hotspot")) {
 				modellabels[i] = Model.HOTSPOT;
-			} else if(modelstrs[i].equals("momentum")) {
+			} else if(modelstrs[i].contains("momentum")) {
 				modellabels[i] = Model.MOMENTUM;
+				if(modelstrs[i].length() > 8) {
+					historylengths[i] = Integer.parseInt(modelstrs[i].substring(8));
+				}
 			} else if(modelstrs[i].equals("normal")) {
 				modellabels[i] = Model.NORMAL;
 			} else if(modelstrs[i].equals("histogram")) {

@@ -57,7 +57,7 @@ public class UtilityFunctions {
 		for(int i = 1; i < array.length; i++) {
 			System.out.print(","+array[i]);
 		}
-		System.out.println();
+		//System.out.println();
 	}
 	
 	public static String urlify(String str) {

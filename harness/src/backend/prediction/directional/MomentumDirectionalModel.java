@@ -1,10 +1,12 @@
 package backend.prediction.directional;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import utils.UserRequest;
+import utils.UtilityFunctions;
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
@@ -29,6 +31,55 @@ public class MomentumDirectionalModel extends BasicModel {
 	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
 		getVotes(htrace); // update our voting system;
 		return super.predictOrder(htrace,true);
+	}
+	
+	@Override
+	public Double computeConfidence(TileKey id, List<TileKey> trace) {
+		getVotes(trace); // update our voting system;
+		List<TileKey> traceCopy = new ArrayList<TileKey>();
+		traceCopy.addAll(trace);
+		TileKey prev = traceCopy.get(traceCopy.size() - 1);
+		//List<TileKey> path = UtilityFunctions.buildPath2(prev, id); // build a path to this key
+		List<TileKey> path = UtilityFunctions.buildPath(prev, id); // build a path to this key
+		return computeConfidenceForPath(path,traceCopy);
+	}
+	
+	@Override
+	public Double computeDistance(TileKey id, List<TileKey> trace) {
+		return null;
+	}
+	
+	// probability of entire path to this tile
+	public Double computeConfidenceForPath(List<TileKey> path, List<TileKey> traceCopy) {
+		List<Direction> dirPath = UtilityFunctions.buildDirectionPath(path);
+		if(dirPath.size() == 1) {
+			return computeConfidence(dirPath.get(0),traceCopy);
+		}
+		double prob = 0;
+		for(int i = 0; i < dirPath.size(); i++) {
+			Direction d = dirPath.get(i);
+			prob += Math.log(computeConfidence(d,traceCopy)); // log probabilities
+			traceCopy.remove(0);
+			traceCopy.add(path.get(i+1));
+		}
+		return prob;
+	}
+	
+	// average confidence across all directions in the path for this tile
+	public Double computeConfidenceForPath2(List<TileKey> path, List<TileKey> traceCopy) {
+		List<Direction> dirPath = UtilityFunctions.buildDirectionPath(path);
+		if(dirPath.size() == 1) {
+			return computeConfidence(dirPath.get(0),traceCopy);
+		}
+		double prob = 0;
+		int count = dirPath.size();
+		for(int i = 0; i < dirPath.size(); i++) {
+			Direction d = dirPath.get(i);
+			prob += computeConfidence(d,traceCopy);
+			traceCopy.remove(0);
+			traceCopy.add(path.get(i+1));
+		}
+		return prob / count; // just return the average
 	}
 	
 	@Override
