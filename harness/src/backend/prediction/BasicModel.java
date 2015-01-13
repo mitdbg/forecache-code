@@ -62,6 +62,7 @@ public class BasicModel {
 			tp.id = key;
 			tp.confidence = computeConfidence(key, htrace);
 			tp.distance = computeDistance(key,htrace);
+			//tp.useDistance = true;
 			//tp.physicalDistance = UtilityFunctions.manhattanDist(prev, key);
 			order.add(tp);
 		}
