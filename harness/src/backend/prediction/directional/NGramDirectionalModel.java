@@ -59,7 +59,7 @@ public class NGramDirectionalModel extends BasicModel {
 		TileKey prev = traceCopy.get(traceCopy.size() - 1);
 		//List<TileKey> path = UtilityFunctions.buildPath2(prev, id); // build a path to this key
 		List<TileKey> path = UtilityFunctions.buildPath(prev, id); // build a path to this key
-		return computeConfidenceForPath(path,traceCopy);
+		return computeConfidenceForPath2(path,traceCopy);
 	}
 	
 	@Override
@@ -80,6 +80,22 @@ public class NGramDirectionalModel extends BasicModel {
 			traceCopy.add(path.get(i+1));
 		}
 		return prob;
+	}
+	
+	// average confidence across all directions in the path for this tile
+	public Double computeConfidenceForPath2(List<TileKey> path, List<TileKey> traceCopy) {
+		List<Direction> dirPath = UtilityFunctions.buildDirectionPath(path);
+		if(dirPath.size() == 1) {
+			return computeConfidence(dirPath.get(0),traceCopy);
+		}
+		double prob = 0;
+		for(int i = 0; i < dirPath.size(); i++) {
+			Direction d = dirPath.get(i);
+			prob += computeConfidence(d,traceCopy);
+			traceCopy.remove(0);
+			traceCopy.add(path.get(i+1));
+		}
+		return prob / dirPath.size(); // just return the average
 	}
 	
 	@Override

@@ -469,6 +469,8 @@ public class MainThread {
 			TileKey key = new TileKey(id,z);
 			//List<TileKey> predictions = null;
 			
+			System.out.println("last key: "+hist.getLast());
+			System.out.println("key to predict: "+key);
 			//System.out.println("history length: " + hist.getHistoryLength());
 			//System.out.println("history:");
 			//System.out.println(hist);

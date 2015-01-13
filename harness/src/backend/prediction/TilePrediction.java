@@ -7,6 +7,8 @@ public class TilePrediction implements Comparable<TilePrediction> {
 	public Double confidence = null;
 	public Double distance = null;
 	public Double physicalDistance = 1.0;
+	public boolean useDistance = false;
+	public double base = 10;
 	
 	@Override
 	public String toString() {
@@ -14,9 +16,26 @@ public class TilePrediction implements Comparable<TilePrediction> {
 	}
 	
 	public int compareConfidence(TilePrediction other) {
-		double diff = this.confidence -
-				other.confidence;
-		//diff /= Math.pow(10,(physicalDistance-1)); // worse if far away
+		double a = this.confidence;
+		double b = other.confidence;
+		double diff = 0;
+		
+		if(useDistance) {
+			if(this.confidence < 0.0) { // log
+				a -= physicalDistance-1;
+			} else {
+				a /= Math.pow(base,(physicalDistance-1)); // worse if far away
+			}
+			
+			if(this.confidence < 0.0) { // log
+				b -= other.physicalDistance-1;
+			} else {
+				b /= Math.pow(base,(other.physicalDistance-1)); // worse if far away
+			}
+		}
+		
+		diff = a-b;
+		
 		if(diff < 0) {
 			return 1;
 		} else if (diff > 0) {
@@ -27,9 +46,17 @@ public class TilePrediction implements Comparable<TilePrediction> {
 	}
 	
 	public int compareDistance(TilePrediction other) {
-		double diff = this.distance -
-				other.distance;
-		//diff *= Math.pow(10,(physicalDistance-1)); // worse if far away
+		double a = this.distance;
+		double b = other.distance;
+		double diff = 0;
+		
+		if(useDistance) {
+			a *= Math.pow(base,(physicalDistance-1)); // worse if far away
+			b *= Math.pow(base,(other.physicalDistance-1)); // worse if far away
+		}
+		
+		diff = a-b;
+		
 		if(diff < 0) {
 			return -1;
 		} else if (diff > 0) {

@@ -41,7 +41,7 @@ public class MomentumDirectionalModel extends BasicModel {
 		TileKey prev = traceCopy.get(traceCopy.size() - 1);
 		//List<TileKey> path = UtilityFunctions.buildPath2(prev, id); // build a path to this key
 		List<TileKey> path = UtilityFunctions.buildPath(prev, id); // build a path to this key
-		return computeConfidenceForPath(path,traceCopy);
+		return computeConfidenceForPath2(path,traceCopy);
 	}
 	
 	@Override
