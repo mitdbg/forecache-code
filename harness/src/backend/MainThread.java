@@ -23,6 +23,7 @@ import backend.disk.DiskNiceTileBuffer;
 import backend.disk.NiceTilePacker;
 import backend.disk.ScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
+import backend.memory.NiceTileLruBuffer;
 import backend.prediction.BasicModel;
 import backend.prediction.TileHistoryQueue;
 import backend.prediction.TrainModels;
@@ -47,6 +48,7 @@ public class MainThread {
 	public static ScidbTileInterface scidbapi;
 	public static int histmax = 10;
 	public static TileHistoryQueue hist;
+	public static NiceTileLruBuffer lmbuf;
 	
 	//server
 	public static Server server;
@@ -57,6 +59,7 @@ public class MainThread {
 	public static List<String> hitslist = new ArrayList<String>();
 	
 	// General Model variables
+	public static int deflmbuflen = 0; // default is don't use lru cache
 	public static int defaultpredictions = 3;
 	public static int defaulthistorylength = 4;
 	public static int defaultport = 8080;
@@ -115,20 +118,23 @@ public class MainThread {
 	
 	public static void doPredictions() {
 		if(all_models.length == 0) return;
+		
+		// running list of tiles to insert for prediction
 		Map<TileKey,Boolean> toInsert = new HashMap<TileKey,Boolean>();
 		
 		// get the current list of candidates
 		List<TileKey> candidates = all_models[0].getCandidates(neighborhood);
 		
 		for(int m = 0; m < modellabels.length; m++) { // for each model
-			Model label = modellabels[m];
+			//Model label = modellabels[m];
 			BasicModel mod = all_models[m];
 			List<TileKey> orderedCandidates = mod.orderCandidates(candidates);
 			int count = 0;
 			for(int i = 0; i < orderedCandidates.size(); i++) {
 				if(count == allocatedStorage[m]) break;
 				TileKey key = orderedCandidates.get(i);
-				if(!toInsert.containsKey(key)) {
+				if(!toInsert.containsKey(key) // not already slated to be inserted
+						&& !lmbuf.peek(key)) { // not in lru cache already
 					toInsert.put(key, true);
 					count++;
 				}
@@ -246,7 +252,8 @@ public class MainThread {
 		//System.out.println();
 	}
 	
-	public static void setupServer(int port) throws Exception {
+	public static void setupServer(int port, int lmbuflen) throws Exception {
+		deflmbuflen = lmbuflen;
 		server = new Server(port);
 		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 		context.setContextPath("/gettile");
@@ -258,9 +265,14 @@ public class MainThread {
 	public static void main(String[] args) throws Exception {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		int port = defaultport;
+		int lmbuflen = deflmbuflen;
 		
-		if(args.length == 1) { // setup MainThread with the given port
+		if(args.length <= 1) { // setup MainThread with the given port
 			port = Integer.parseInt(args[0]);
+		}
+		
+		if(args.length == 2) {
+			lmbuflen = Integer.parseInt(args[1]);
 		}
 		
 		// initialize cache managers
@@ -268,6 +280,7 @@ public class MainThread {
 		//diskbuf = new DiskNiceTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
 		diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
 		scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+		lmbuf = new NiceTileLruBuffer(deflmbuflen); // tracks the user's last x moves
 		hist = new TileHistoryQueue(histmax);
 		
 		//setup models for prediction
@@ -275,7 +288,7 @@ public class MainThread {
 		trainModels();
 		
 		//start the server
-		setupServer(port);
+		setupServer(port, lmbuflen);
 	}
 	
 	private static class TileVote implements Comparable<TileVote>{
@@ -370,6 +383,7 @@ public class MainThread {
 		
 		// reinitialize caches and user history
 		membuf.clear();
+		lmbuf.clear();
 		//don't reset this, it takes forever
 		//diskbuf = new DiskNiceTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
 		hist.clear();
@@ -485,33 +499,41 @@ public class MainThread {
 			
 			boolean found = false;
 			//long start = System.currentTimeMillis();
-			NiceTile t = membuf.getTile(key);
-			if(t == null) { // not cached
-				//System.out.println("tile is not in mem-based cache");
-				// go find the tile on disk
-				t = diskbuf.getTile(key);
-				if(t == null) { // not in memory
-					//System.out.println("tile is not in disk-based cache. computing...");
-					t = scidbapi.getNiceTile(key); 
-					diskbuf.insertTile(t);
-				} else { // found on disk
-					//System.out.println("found tile in disk-based cache");
+			NiceTile t = lmbuf.getTile(key); // check lru cache
+			if(t == null) { // not in user's last x moves. check mem cache
+				t = membuf.getTile(key);
+				if(t == null) { // not cached
+					//System.out.println("tile is not in mem-based cache");
+					// go find the tile on disk
+					t = diskbuf.getTile(key);
+					if(t == null) { // not in memory
+						//System.out.println("tile is not in disk-based cache. computing...");
+						t = scidbapi.getNiceTile(key); 
+						diskbuf.insertTile(t);
+					} else { // found on disk
+						//System.out.println("found tile in disk-based cache");
+						//System.out.println("data size: " + t.getDataSize());
+						// update timestamp
+						diskbuf.touchTile(key);
+					}
+					// put the tile in the cache
+					membuf.insertTile(t);
+				} else { // found in memory
+					cache_hits++;
+					//System.out.println("found tile in mem-based cache");
 					//System.out.println("data size: " + t.getDataSize());
 					// update timestamp
-					diskbuf.touchTile(key);
+					membuf.touchTile(key);
+					found = true;
 				}
-				// put the tile in the cache
-				membuf.insertTile(t);
-			} else { // found in memory
+			} else { // found in lru cache
+				System.out.println("found in lru cache");
 				cache_hits++;
-				//System.out.println("found tile in mem-based cache");
-				//System.out.println("data size: " + t.getDataSize());
-				// update timestamp
-				membuf.touchTile(key);
 				found = true;
 			}
 			total_requests++;
 			hist.addRecord(t);
+			lmbuf.insertTile(t);
 			//long end = System.currentTimeMillis();
 			//System.out.println("time to retrieve requested tile: " + ((end - start)/1000)+"s");
 			if(found) {
