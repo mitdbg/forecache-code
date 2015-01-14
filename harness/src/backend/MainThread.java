@@ -252,8 +252,7 @@ public class MainThread {
 		//System.out.println();
 	}
 	
-	public static void setupServer(int port, int lmbuflen) throws Exception {
-		deflmbuflen = lmbuflen;
+	public static void setupServer(int port) throws Exception {
 		server = new Server(port);
 		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 		context.setContextPath("/gettile");
@@ -267,11 +266,12 @@ public class MainThread {
 		int port = defaultport;
 		int lmbuflen = deflmbuflen;
 		
-		if(args.length <= 1) { // setup MainThread with the given port
+		if(args.length >= 1) { // setup MainThread with the given port
 			port = Integer.parseInt(args[0]);
 		}
 		
 		if(args.length == 2) {
+			//System.out.println("found lmbuflen: "+args[1]);
 			lmbuflen = Integer.parseInt(args[1]);
 		}
 		
@@ -280,7 +280,7 @@ public class MainThread {
 		//diskbuf = new DiskNiceTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
 		diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
 		scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
-		lmbuf = new NiceTileLruBuffer(deflmbuflen); // tracks the user's last x moves
+		lmbuf = new NiceTileLruBuffer(lmbuflen); // tracks the user's last x moves
 		hist = new TileHistoryQueue(histmax);
 		
 		//setup models for prediction
@@ -288,7 +288,7 @@ public class MainThread {
 		trainModels();
 		
 		//start the server
-		setupServer(port, lmbuflen);
+		setupServer(port);
 	}
 	
 	private static class TileVote implements Comparable<TileVote>{
