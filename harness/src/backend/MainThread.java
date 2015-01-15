@@ -123,6 +123,7 @@ public class MainThread {
 		Map<TileKey,Boolean> toInsert = new HashMap<TileKey,Boolean>();
 		
 		// get the current list of candidates
+		System.out.println("neighborhood: "+neighborhood);
 		List<TileKey> candidates = all_models[0].getCandidates(neighborhood);
 		
 		for(int m = 0; m < modellabels.length; m++) { // for each model
@@ -270,9 +271,13 @@ public class MainThread {
 			port = Integer.parseInt(args[0]);
 		}
 		
-		if(args.length == 2) {
+		if(args.length >= 2) {
 			//System.out.println("found lmbuflen: "+args[1]);
 			lmbuflen = Integer.parseInt(args[1]);
+		}
+		
+		if(args.length == 3) {
+			neighborhood = Integer.parseInt(args[2]);
 		}
 		
 		// initialize cache managers
