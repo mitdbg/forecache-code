@@ -35,6 +35,7 @@ public class NGramDirectionalModel extends BasicModel {
 		super(ref,membuf,diskbuf,api,len);
 		sentences = new ArrayList<String>();
 		setupNgramModel();
+		this.useDistanceCorrection = false;
 	}
 	
 	protected void setupNgramModel() {
@@ -59,7 +60,7 @@ public class NGramDirectionalModel extends BasicModel {
 		TileKey prev = traceCopy.get(traceCopy.size() - 1);
 		//List<TileKey> path = UtilityFunctions.buildPath2(prev, id); // build a path to this key
 		List<TileKey> path = UtilityFunctions.buildPath(prev, id); // build a path to this key
-		return computeConfidenceForPath2(path,traceCopy);
+		return computeConfidenceForPath(path,traceCopy);
 	}
 	
 	@Override
@@ -79,6 +80,7 @@ public class NGramDirectionalModel extends BasicModel {
 			traceCopy.remove(0);
 			traceCopy.add(path.get(i+1));
 		}
+
 		return prob;
 	}
 	

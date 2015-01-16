@@ -29,6 +29,7 @@ public class BasicModel {
 	protected MemoryNiceTileBuffer membuf;
 	protected DiskNiceTileBuffer diskbuf;
 	protected ScidbTileInterface scidbapi;
+	protected boolean useDistanceCorrection = true;
 	public static final double defaultprob = .00000000001; // default assigned confidence value
 	public static final int defaultlen = 4; // default history length
 	public List<TileKey> roi = null;
@@ -62,8 +63,10 @@ public class BasicModel {
 			tp.id = key;
 			tp.confidence = computeConfidence(key, htrace);
 			tp.distance = computeDistance(key,htrace);
-			tp.useDistance = true;
-			tp.physicalDistance = UtilityFunctions.manhattanDist(prev, key);
+			tp.useDistance = useDistanceCorrection;
+			if(tp.useDistance) {
+				tp.physicalDistance = UtilityFunctions.manhattanDist(prev, key);
+			}
 			order.add(tp);
 		}
 		Collections.sort(order);

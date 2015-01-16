@@ -24,6 +24,7 @@ public class RandomDirectionalModel extends BasicModel {
 	public RandomDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
 		super(ref,membuf,diskbuf,api,len);
 		this.generator = new Random(seed); // use seed for consistency
+		this.useDistanceCorrection = false;
 	}
 	
 	@Override

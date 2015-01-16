@@ -272,12 +272,13 @@ public class MainThread {
 		}
 		
 		if(args.length >= 2) {
-			//System.out.println("found lmbuflen: "+args[1]);
+			System.out.println("lmbuflen: "+args[1]);
 			lmbuflen = Integer.parseInt(args[1]);
 		}
 		
 		if(args.length == 3) {
 			neighborhood = Integer.parseInt(args[2]);
+			System.out.println("neighborhood: "+neighborhood);
 		}
 		
 		// initialize cache managers
@@ -341,7 +342,7 @@ public class MainThread {
 			} else if(modelstrs[i].contains("hotspot")) {
 				modellabels[i] = Model.HOTSPOT;
 				if(modelstrs[i].length() > 7) {
-					historylengths[i] = Integer.parseInt(modelstrs[i].substring(8));
+					historylengths[i] = Integer.parseInt(modelstrs[i].substring(7));
 				}
 			} else if(modelstrs[i].contains("momentum")) {
 				modellabels[i] = Model.MOMENTUM;

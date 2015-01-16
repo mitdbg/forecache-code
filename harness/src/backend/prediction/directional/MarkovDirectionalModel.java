@@ -24,6 +24,7 @@ public class MarkovDirectionalModel extends BasicModel {
 	public MarkovDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
 		super(ref,membuf,diskbuf,api,len);
 		condprobs = new HashMap<String,MDMNode>();
+		this.useDistanceCorrection = false;
 	}
 	
 	@Override

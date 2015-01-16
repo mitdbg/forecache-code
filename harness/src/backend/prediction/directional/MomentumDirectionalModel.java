@@ -24,6 +24,7 @@ public class MomentumDirectionalModel extends BasicModel {
 	public MomentumDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len){
 		super(ref,membuf,diskbuf,api,len);
 		this.votes = new HashMap<Character,Double>();
+		this.useDistanceCorrection = false;
 	}
 	
 	// computes an ordering of all directions using confidence values
@@ -41,7 +42,7 @@ public class MomentumDirectionalModel extends BasicModel {
 		TileKey prev = traceCopy.get(traceCopy.size() - 1);
 		//List<TileKey> path = UtilityFunctions.buildPath2(prev, id); // build a path to this key
 		List<TileKey> path = UtilityFunctions.buildPath(prev, id); // build a path to this key
-		return computeConfidenceForPath2(path,traceCopy);
+		return computeConfidenceForPath(path,traceCopy);
 	}
 	
 	@Override
@@ -52,8 +53,14 @@ public class MomentumDirectionalModel extends BasicModel {
 	// probability of entire path to this tile
 	public Double computeConfidenceForPath(List<TileKey> path, List<TileKey> traceCopy) {
 		List<Direction> dirPath = UtilityFunctions.buildDirectionPath(path);
+		//System.out.print("path for "+path.get(path.size()-1)+":");
+		//for(Direction d : dirPath) {
+		//	System.out.print(d+",");
+		//}
+		//System.out.println();
+		
 		if(dirPath.size() == 1) {
-			return computeConfidence(dirPath.get(0),traceCopy);
+			return Math.log(computeConfidence(dirPath.get(0),traceCopy));
 		}
 		double prob = 0;
 		for(int i = 0; i < dirPath.size(); i++) {
@@ -62,6 +69,7 @@ public class MomentumDirectionalModel extends BasicModel {
 			traceCopy.remove(0);
 			traceCopy.add(path.get(i+1));
 		}
+		//System.out.println("prob for "+path.get(path.size()-1)+": "+prob);
 		return prob;
 	}
 	
@@ -84,7 +92,7 @@ public class MomentumDirectionalModel extends BasicModel {
 	
 	@Override
 	public double computeConfidence(Direction d, List<TileKey> trace) {
-		Double score = this.votes.get(d);
+		Double score = this.votes.get(d.getVal().charAt(0));
 		double confidence = 0.0;
 		if(score != null) {
 			confidence = score;
@@ -92,11 +100,12 @@ public class MomentumDirectionalModel extends BasicModel {
 		if(confidence < defaultprob) {
 			confidence = defaultprob;
 		}
+		//System.out.println("confidence for direction "+d+": "+confidence);
 		return confidence;
 	}
 	
 	public void getVotes(List<TileKey> trace) {
-		votes.clear();
+		this.votes.clear();
 		if(this.history == null) {
 			return;
 		}
@@ -104,23 +113,39 @@ public class MomentumDirectionalModel extends BasicModel {
 		double currvotevalue = 1.0;
 		double sum = 0;
 		
-		//disribute votes based on recent history
+		//distribute votes based on recent history
 		String dirstring = buildDirectionStringFromKey(trace);
 		for(int i =dirstring.length() - 1; i >= 0; i--) {
 			char d = dirstring.charAt(i);
-			Double vote = votes.get(d);
+			Double vote = this.votes.get(d);
 			if(vote == null) {
-				votes.put(d,currvotevalue);
+				this.votes.put(d,currvotevalue);
 			} else {
-				votes.put(d,vote+currvotevalue);
+				this.votes.put(d,vote+currvotevalue);
 			}
 			sum += currvotevalue;
 			currvotevalue /= 2;
 		}
 		
+		// fill in some blanks
+		double remainder = Direction.values().length - this.votes.size();
+		if(remainder > 0) {
+			// add 1 vote
+			sum += 1;
+			//share this extra vote amongst the remaining directions
+			double toAdd = 1.0 / remainder;
+			for(Direction d : Direction.values()) {
+				Character dc = d.getVal().charAt(0);
+				if(!this.votes.containsKey(dc)) {
+					votes.put(dc, toAdd);
+				}
+			}
+		}
+		
 		//normalize
-		for(Character d: votes.keySet()) {
-			votes.put(d, votes.get(d) / sum);
+		for(Character d: this.votes.keySet()) {
+			this.votes.put(d, this.votes.get(d) / sum);
+			//System.out.println("votes for "+d+": "+this.votes.get(d));
 		}
 	}
 }

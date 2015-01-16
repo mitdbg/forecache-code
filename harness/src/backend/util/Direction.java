@@ -21,4 +21,8 @@ public enum Direction {
 	public String getWord() {
 		return word;
 	}
+	
+	public String getVal() {
+		return this.val;
+	}
 }
