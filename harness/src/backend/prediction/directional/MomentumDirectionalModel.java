@@ -127,13 +127,15 @@ public class MomentumDirectionalModel extends BasicModel {
 			currvotevalue /= 2;
 		}
 		
+		/*
 		// fill in some blanks
 		double remainder = Direction.values().length - this.votes.size();
+		double toShare = sum / 10; // only add a small fraction to the alloted votes
 		if(remainder > 0) {
-			// add 1 vote
-			sum += 1;
+			// add extra votes
+			sum += toShare;
 			//share this extra vote amongst the remaining directions
-			double toAdd = 1.0 / remainder;
+			double toAdd = toShare / remainder;
 			for(Direction d : Direction.values()) {
 				Character dc = d.getVal().charAt(0);
 				if(!this.votes.containsKey(dc)) {
@@ -141,6 +143,7 @@ public class MomentumDirectionalModel extends BasicModel {
 				}
 			}
 		}
+		*/
 		
 		//normalize
 		for(Character d: this.votes.keySet()) {
