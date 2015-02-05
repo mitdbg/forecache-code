@@ -573,6 +573,123 @@ public class Client {
 		}
 		return params;
 	}
+	
+	public static void printGroundTruth(String input, String output, boolean header, int cmax) {
+		int oldphase = 0;
+		int direction = 1;
+		int userid = 2;
+		int taskname = 3;
+		int x = 4;
+		int y = 5;
+		int zoom = 6;
+		int phase = 7;
+		int added = 8;
+		int deleted = 9;
+		
+		String splitBy = "\t";
+		BufferedReader br;
+		BufferedWriter bw;
+		try {
+			br = new BufferedReader(new FileReader(input));
+			bw = new BufferedWriter(new FileWriter(output));
+			String user = null;
+			if(header) br.readLine(); //get rid of header
+			String line = br.readLine();
+			
+			int prevzoom = -1;
+			List<DirectionClass> hist = new ArrayList<DirectionClass>();
+			
+			int incount = 0;
+			int outcount = 0;
+			int pancount = 0;
+			String prev = null;
+			
+
+			bw.write("user\ttaskname\tx\ty\tzoom\tprevdirection\tdirection\tincount\toutcount\tpancount\tphase");
+			bw.newLine();
+			
+			while(line!=null){
+				String[] b = line.split(splitBy);
+				if(b[deleted].equals("1")) {
+					line = br.readLine();
+					continue;
+				}
+				
+				String ustring = b[userid];
+				String currtask = b[taskname];
+				int currzoom = Integer.parseInt(b[zoom]);
+				int currx = Integer.parseInt(b[x]);
+				int curry = Integer.parseInt(b[y]);
+				String currphase = b[phase];
+				String currdir = b[direction];
+				
+				if(user == null || !ustring.equals(user)) {
+					user = ustring;
+					hist.clear();
+					incount = 0;
+					outcount = 0;
+					pancount = 0;
+					prevzoom = -1;
+				}
+				
+				if(prevzoom > -1) {
+					//System.out.println("here");
+					int zoomdiff = currzoom - prevzoom;
+					//System.out.println("zoomdiff: "+zoomdiff);
+					if(zoomdiff == 0) { // pan
+						hist.add(DirectionClass.PAN);
+						pancount++;
+					} else if (zoomdiff > 0) { // currzoom > prevzoom -> zoom in
+						hist.add(DirectionClass.IN);
+						incount++;
+					} else {
+						hist.add(DirectionClass.OUT);
+						outcount++;
+					}
+					
+					if(hist.size() > cmax) {
+						//System.out.println("here");
+						DirectionClass toRemove = hist.remove(0);
+						if(toRemove == DirectionClass.IN) {
+							incount--;
+						} else if (toRemove == DirectionClass.OUT) {
+							outcount--;
+						} else {
+							pancount--;
+						}
+					}
+				}
+				
+				prevzoom = currzoom;
+				
+				System.out.print(ustring+"\t"+currtask+"\t"+currx+"\t"+curry+"\t"+currzoom+"\t"+prev+"\t"+currdir);
+				// print the counts of zooms and pans for the last X steps
+				int max = Math.max(incount+outcount+pancount, 1);
+				System.out.print("\t"+incount);
+				System.out.print("\t"+outcount);
+				System.out.print("\t"+pancount);
+				System.out.print("\t"+currphase);
+				System.out.println();
+				
+				bw.write(ustring+"\t"+currtask+"\t"+currx+"\t"+curry+"\t"+currzoom+"\t"+prev+"\t"+currdir);
+				bw.write("\t"+incount);
+				bw.write("\t"+outcount);
+				bw.write("\t"+pancount);
+				bw.write("\t"+currphase);
+				bw.newLine();
+				prev = currdir;
+				line = br.readLine();
+			}
+			br.close();
+			bw.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
 	public static void testsequence() throws Exception {
 		sendRequest("[0, 0]", 0, "123");
@@ -591,12 +708,17 @@ public class Client {
         boolean test = true;
         boolean all = false;
         boolean print = false;
+        boolean groundtruth = false;
+        String gtf = "";
 		
 		if(args.length < 1) return; // nothing to do!
 		
 		if(args[0].equals("print")) {
 			print = true;
-		} else {
+		} else if (args[0].equals("groundtruth")) {
+			groundtruth = true;
+			gtf = args[1];
+	    } else {
 			backend_port = Integer.parseInt(args[0]);
 			List<String> newArgs = new ArrayList<String>();
 			for(int i = 1; i < args.length; i++) {
@@ -664,7 +786,11 @@ public class Client {
 				}
 			}
 		}
-		if(print) {
+		if(groundtruth) {
+			for(int len = 1; len <= 10; len++) {
+				printGroundTruth(gtf,"out_"+len+".tsv",true,len);
+			}
+		} else if(print) {
 			System.out.println("printing trace output");
 			printTracesForSpecificUsers();
 		}
