@@ -3,7 +3,8 @@ from sklearn import preprocessing
 import csv
 
 #hlens = [1,2,3,4,5,6,7,8,9,10]
-hlens = [1,2]
+#hlens = [1,2]
+hlens = [1]
 users = ['146', '150', '123', '145', '140', '132', '141', '151', '144', '148', '121', '130', '124', '135', '134', '137', '139', '138']
 
 for hlen in hlens:
@@ -27,12 +28,15 @@ for hlen in hlens:
           X.append(inp)
           y.append(label)
     scaler = preprocessing.StandardScaler().fit(X)
+    #print scaler
     X_scaled = scaler.transform(X)
   
    #print len(X),",",len(y),X_scaled.shape
 
-    clf = svm.SVC() # choose the SVM setup you want
+    clf = svm.SVC(gamma=0.07,C=1,verbose=True) # choose the SVM setup you want
     clf.fit(X_scaled, y)  # train the model
+    #print clf
+    print clf.get_params()
     accuracy = 0.0
   
     for i,row in enumerate(testX):
