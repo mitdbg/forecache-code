@@ -28,6 +28,7 @@ public class DBInterface {
 	public static final String xdim = "longitude_e4ndsi_06_03_2013";
 	public static final String ydim = "latitude_e4ndsi_06_03_2013";
 	public static final String zattr = "avg_ndsi";
+	public static final String groundTruth = "/home/leilani/scalar-prefetch/gt_updated.csv";
 */	
 
 	public static String nice_tile_cache_dir = "/home/leibatt/projects/user_study/scalar_backend/nice_tile_cache";
@@ -48,6 +49,7 @@ public class DBInterface {
 	public static final String xdim = "x";
 	public static final String ydim = "y";
 	public static final String zattr = "avg_ndsi";
+	public static final String groundTruth = "/home/leibatt/projects/scalar-prefetch/gt_updated.csv";
 
 	public static String defaultdelim = "\t";
 	public static final String warmup_query  = "select * from cali100";

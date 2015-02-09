@@ -25,6 +25,7 @@ import backend.disk.ScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.NiceTileLruBuffer;
 import backend.prediction.BasicModel;
+import backend.prediction.TestSVM;
 import backend.prediction.TileHistoryQueue;
 import backend.prediction.TrainModels;
 import backend.prediction.directional.HotspotDirectionalModel;
@@ -49,6 +50,8 @@ public class MainThread {
 	public static int histmax = 10;
 	public static TileHistoryQueue hist;
 	public static NiceTileLruBuffer lmbuf;
+	public static TestSVM.SvmWrapper pclas;
+	public static boolean usePclas = false;
 	
 	//server
 	public static Server server;
@@ -118,6 +121,9 @@ public class MainThread {
 	
 	public static void doPredictions() {
 		if(all_models.length == 0) return;
+		
+		//update allocations amongst predictors
+		update_allocations();
 		
 		// running list of tiles to insert for prediction
 		Map<TileKey,Boolean> toInsert = new HashMap<TileKey,Boolean>();
@@ -292,6 +298,7 @@ public class MainThread {
 		//setup models for prediction
 		setupModels();
 		trainModels();
+		pclas = TestSVM.buildSvmPhaseClassifier();
 		
 		//start the server
 		setupServer(port);
@@ -363,7 +370,36 @@ public class MainThread {
 		}
 	}
 	
-	public static void update_allocations(String[] allocations) {
+	public static void update_allocations() {
+		if(usePclas) {
+			int total = 0;
+			for(int i = 0; i < allocatedStorage.length; i++) {
+				total += allocatedStorage[i];
+			}
+			membuf.clear();
+			membuf.setStorageMax(total);
+			
+			String phase = pclas.predictLabel(hist.getHistoryTrace(2)); // only need last 2 tile requests
+			allocatedStorage = new int[allocatedStorage.length]; // clear previous allocations
+			int idx = -1;
+			System.out.println("predicted phase: "+phase);
+			if (phase.equals("Sensemaking")) {
+				idx = indexOf(modellabels,Model.SIFT);
+			} else {
+				idx = indexOf(modellabels,Model.NGRAM);
+			}
+			if(idx >= 0) allocatedStorage[idx] = total;
+		}
+	}
+	
+	public static int indexOf(Model[] mll, Model x) {
+		for(int i = 0; i < mll.length; i++) {
+			if(mll[i] == x) return i;
+		}
+		return -1;
+	}
+	
+	public static void update_allocations_from_string(String[] allocations) {
 		int required = 0;
 		allocatedStorage = new int[allocations.length];
 		for(int i = 0; i < allocations.length; i++) {
@@ -375,10 +411,11 @@ public class MainThread {
 		membuf.setStorageMax(required);
 	}
 	
-	public static void reset(String[] userstrs, String[] modelstrs, String[] predictions) throws Exception {
+	public static void reset(String[] userstrs, String[] modelstrs, String[] predictions,boolean usePhases) throws Exception {
 		update_users(userstrs);
 		update_model_labels(modelstrs);
-		update_allocations(predictions);
+		update_allocations_from_string(predictions);
+		usePclas = usePhases;
 		//defaultpredictions = Integer.parseInt(predictions);
 		//System.out.println("predictions: "+defaultpredictions);
 		
@@ -422,8 +459,9 @@ public class MainThread {
 				String useridstr = request.getParameter("user_ids");
 				String modelstr = request.getParameter("models");
 				String predictions = request.getParameter("predictions");
+				String usePhases = request.getParameter("usephases");
 				try {
-					reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"));
+					reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"), (usePhases != null) && usePhases.equals("true"));
 					response.getWriter().println(done);
 				} catch (Exception e) {
 					System.out.println("error resetting");

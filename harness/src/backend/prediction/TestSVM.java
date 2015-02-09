@@ -16,6 +16,7 @@ import backend.util.Direction;
 import backend.util.DirectionClass;
 import backend.util.History;
 import backend.util.ModelAccuracy;
+import backend.util.TileKey;
 import utils.DBInterface;
 import utils.ExplorationPhase;
 import utils.TraceMetadata;
@@ -31,11 +32,61 @@ public class TestSVM {
 		public svm_parameter params;
 		double[] sum;
 		double[] diffs;
+		Map<String,Integer> LabelsToInts;
+		List<String> IntsToLabels;
+		
+		public double[] getFeatures(List<TileKey> history) {
+			if(history.size() == 0) return new double[]{0,0,0,0,0,0};
+			TileKey last = history.get(history.size()-1);
+			int x = last.id[0];
+			int y = last.id[1];
+			int zoom = last.zoom;
+			int incount = 0;
+			int outcount = 0;
+			int pancount = 0;
+			if(history.size() > 1) {
+				int prevz = history.get(0).zoom;
+				for(int i = 1; i < history.size(); i++) {
+					int currz = history.get(i).zoom;
+					int zdiff = currz-prevz;
+					if(zdiff > 0) { // zoom in
+						incount++;
+					} else if (zdiff < 0) { // zoom out
+						outcount++;
+					} else {
+						pancount++;
+					}
+					prevz=currz;
+				}
+			}
+			return new double[]{incount, outcount, pancount, zoom, x, y};
+		}
+		
+		// get the label name for the predicted class
+		public String predictLabel(List<TileKey> history) {
+			return IntsToLabels.get(predict(history));
+		}
+		
+		// get the ID of the predicted class
+		public int predict(List<TileKey> history) {
+			double[] features = getFeatures(history);
+			int[] labels = new int[model.nr_class];
+			svm.svm_get_labels(model, labels);
+			svm_node[] nodes = new svm_node[features.length];
+			for(int j = 0; j < features.length; j++) {
+				nodes[j] = new svm_node();
+				nodes[j].index = j+1;
+				// normalize using the same mean/stddev from the training data
+				nodes[j].value = (features[j] - sum[j]) / diffs[j];
+			}
+			
+			int v = (int) svm.svm_predict(model, nodes);
+			return labels[v];
+		}
 	}
 	
 	public static SvmWrapper buildSvmPhaseClassifier() {
 		boolean header = true;
-		String filename = "/Volumes/E/mit/vis/code/scalar-prefetch/gt_updated.csv";
 		int cmax = 1;
 		String splitby = "\t";
 		
@@ -61,7 +112,7 @@ public class TestSVM {
 		
 		BufferedReader br;
 		try {
-			br = new BufferedReader(new FileReader(filename));
+			br = new BufferedReader(new FileReader(DBInterface.groundTruth));
 			int user = -1;
 			if(header) br.readLine(); //get rid of header
 			String line = br.readLine();
@@ -151,7 +202,11 @@ public class TestSVM {
 			e.printStackTrace();
 		}
 		
-		return buildModel(X,labels);
+		SvmWrapper model = buildModel(X,labels);
+		model.LabelsToInts = LabelsToInts;
+		model.IntsToLabels = IntsToLabels;
+		
+		return model;
 	}
 	
 	public static SvmWrapper buildModel(List<double[]> X, List<Integer> labels) {

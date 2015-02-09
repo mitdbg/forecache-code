@@ -31,13 +31,13 @@ public class Client {
 		for(String taskname : tasknames) {
 			for(int i = 0; i < models.length; i++) {
 				for(int predict = 0; predict < predictions.length; predict++) {
-					crossValidation(taskname,models[i],predictions[predict], null);
+					crossValidation(taskname,models[i],predictions[predict], null,false);
 				}
 			}
 		}
 	}
 	
-	public static void crossValidationModelSpecific(int[] users, String[] tasknames, String[][] models, int[] predictions) throws Exception {
+	public static void crossValidationModelSpecific(int[] users, String[] tasknames, String[][] models, int[] predictions, boolean[] usePhases) throws Exception {
 		List<Integer> testusers = new ArrayList<Integer>();
 		for(int i = 0; i < users.length; i++) {
 			testusers.add(users[i]);
@@ -50,7 +50,7 @@ public class Client {
 					ma[mai] = new ModelAccuracy();
 				}
 				for(int i = 0; i < models.length; i++) {
-					crossValidation(taskname,models[i],testusers,new int[]{predictions[predict]}, ma);
+					crossValidation(taskname,models[i],testusers,new int[]{predictions[predict]}, ma,usePhases[i]);
 				}
 /*
 				for(int mai = 0; mai < ma.length; mai++) {
@@ -63,7 +63,7 @@ public class Client {
 		}
 	}
 	
-	public static void crossValidationModelSpecific(int[] users, String[] tasknames, String[][] models, int[][] allocations) throws Exception {
+	public static void crossValidationModelSpecific(int[] users, String[] tasknames, String[][] models, int[][] allocations, boolean[] usePhases) throws Exception {
 		List<Integer> testusers = new ArrayList<Integer>();
 		for(int i = 0; i < users.length; i++) {
 			testusers.add(users[i]);
@@ -75,7 +75,7 @@ public class Client {
 				for(int mai = 0; mai < ma.length; mai++) {
 					ma[mai] = new ModelAccuracy();
 				}
-				crossValidation(taskname,models[allc],testusers,allocations[allc], ma);
+				crossValidation(taskname,models[allc],testusers,allocations[allc], ma,usePhases[allc]);
 /*
 				for(int mai = 0; mai < ma.length; mai++) {
 					ma[mai].learnSimpleModelLabels();
@@ -88,15 +88,15 @@ public class Client {
 	}
 	
 	// test all users
-	public static void crossValidation(String taskname, String[] models, int predictions, ModelAccuracy[] ma) throws Exception {
+	public static void crossValidation(String taskname, String[] models, int predictions, ModelAccuracy[] ma, boolean usePhases) throws Exception {
 		List<Integer> testusers = DBInterface.getUsers();
-		crossValidation(taskname,models,testusers,new int[]{predictions}, ma);
+		crossValidation(taskname,models,testusers,new int[]{predictions}, ma, usePhases);
 
 	}
 	
 	// only test specific users, but train on all users
 	public static void crossValidation(String taskname, String[] models, List<Integer> testusers, int[] predictions,
-			ModelAccuracy[] ma) throws Exception {
+			ModelAccuracy[] ma, boolean usePhases) throws Exception {
 		List<Integer> users = DBInterface.getUsers();
 		List<Integer> finalusers = new ArrayList<Integer>();
 		
@@ -124,7 +124,7 @@ public class Client {
 			//System.out.print("train list: ");
 			//UtilityFunctions.printIntArray(trainlist);
 			// setup test case on backend
-			sendReset(trainlist,models,predictions);
+			sendReset(trainlist,models,predictions,usePhases);
 			
 			//send requests
 			int user_id = testusers.get(u1);
@@ -268,7 +268,7 @@ public class Client {
 		}
 	}
 
-	public static void getTracesForSpecificUsers(int[] user_ids, String[] tasks, String[] models, int predictions) throws Exception {
+	public static void getTracesForSpecificUsers(int[] user_ids, String[] tasks, String[] models, int predictions, boolean usePhases) throws Exception {
 		int[] train = new int[user_ids.length - 1];
 		for(int u = 0; u < user_ids.length; u++) {
 			int user_id = user_ids[u];
@@ -284,7 +284,7 @@ public class Client {
 				List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
 				System.out.println("found trace of size " + trace.size() + " for task '" + taskname + "' and user '" + user_id + "'");
 				long average = 0;
-				sendReset(user_ids,models,new int[]{predictions});
+				sendReset(user_ids,models,new int[]{predictions},usePhases);
 				for(int r = 0; r < trace.size(); r++) {
 					UserRequest ur = trace.get(r);
 					String tile_id = ur.tile_id;
@@ -423,9 +423,9 @@ public class Client {
 	}
 
 	// tell server what user ids and models to train on
-	public static boolean sendReset(int[] user_ids, String[] models, int[] predictions) {
+	public static boolean sendReset(int[] user_ids, String[] models, int[] predictions,boolean usePhases) {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
-				+ "?"+buildResetParams(user_ids,models, predictions);
+				+ "?"+buildResetParams(user_ids,models, predictions,usePhases);
 		URL geturl = null;
 		HttpURLConnection connection = null;
 		BufferedReader reader = null;
@@ -549,7 +549,7 @@ public class Client {
 		return params;
 	}
 	
-	public static String buildResetParams(int[] user_ids, String[] models, int[] predictions) {
+	public static String buildResetParams(int[] user_ids, String[] models, int[] predictions, boolean usePhases) {
 		String params = "reset&user_ids=";
 		if(user_ids.length > 0) {
 			params += user_ids[0];
@@ -570,6 +570,9 @@ public class Client {
 		}
 		for(int i = 1; i < predictions.length; i++) {
 			params += "_" + predictions[i];
+		}
+		if(usePhases) {
+			params += "&usephases=true";
 		}
 		return params;
 	}
@@ -709,6 +712,7 @@ public class Client {
         boolean all = false;
         boolean print = false;
         boolean groundtruth = false;
+        boolean[] usePhases = {false};
         String gtf = "";
 		
 		if(args.length < 1) return; // nothing to do!
@@ -725,7 +729,7 @@ public class Client {
 				newArgs.add(args[i]);
 			}
 			if(newArgs.size() > 0) {
-				if((newArgs.size() == 3) || (newArgs.size() == 4)) {
+				if((newArgs.size() == 3) || (newArgs.size() == 4) || (newArgs.size() == 5)) {
 					String[] useridstrs = newArgs.get(0).split(",");
 					user_ids = new int[useridstrs.length];
 					for(int i = 0; i < useridstrs.length; i++) {
@@ -753,7 +757,7 @@ public class Client {
                             System.out.println();
                     }
 					
-					if(newArgs.size() == 4) {
+					if(newArgs.size() >= 4) {
 						// use predictions as space allocations
 						String[] tempallocations = newArgs.get(3).split("-"); // for each model combo
 						if(tempallocations.length != models.length) {
@@ -761,6 +765,7 @@ public class Client {
 							return;
 						}
 						allocations = new int[tempallocations.length][];
+						usePhases = new boolean[tempallocations.length];
 						for(int i = 0; i < tempallocations.length; i++) {
 							 String[] temp = tempallocations[i].split(",");
 	                            allocations[i] = new int[temp.length];
@@ -772,6 +777,19 @@ public class Client {
 	                            System.out.println();
 						}
 						//predictions = Integer.parseInt(newArgs.get(3));
+					}
+					
+					if(newArgs.size() == 5) {
+						String[] tempflags = newArgs.get(4).split("-"); // for each model combo
+						if(tempflags.length != models.length) {
+							System.out.println("Not enough usePhase flags!");
+							return;
+						}
+						usePhases = new boolean[tempflags.length];
+						for(int i = 0; i < tempflags.length; i++) {
+							usePhases[i] = Boolean.parseBoolean(tempflags[i]);
+							System.out.println("adding phase usage: "+usePhases[i]);
+						}
 					}
 					
 					test = false;
@@ -820,7 +838,7 @@ public class Client {
             */
             
             //int[] tp = {predictions};
-            crossValidationModelSpecific(user_ids,tasknames,models,allocations);
+            crossValidationModelSpecific(user_ids,tasknames,models,allocations,usePhases);
 		} else if(all) {
 			System.out.println("testing all traces for all tasks");
 			//getTracesForAllUsers();

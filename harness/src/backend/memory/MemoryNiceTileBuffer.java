@@ -48,6 +48,10 @@ public class MemoryNiceTileBuffer implements NiceTileBuffer {
 		this.storagemax = newmax;
 	}
 	
+	public synchronized int getStorageMax() {
+		return storagemax;
+	}
+	
 	public synchronized int freeSpace() {
 		return storagemax - this.storage.size();
 	}
