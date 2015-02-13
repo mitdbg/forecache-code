@@ -70,6 +70,7 @@ public class MainThread {
 	public static int defaultstorage = 1; // default storage per model
 	public static int neighborhood = 1; // default neighborhood from which to pick candidates
 	
+	public static boolean shiftby4 = false;
 	public static Model[] modellabels = {Model.MOMENTUM};
 	public static int[] historylengths = {defaulthistorylength};
 	public static String taskname = "task1";
@@ -133,11 +134,13 @@ public class MainThread {
 		List<TileKey> candidates = all_models[0].getCandidates(neighborhood);
 		
 		for(int m = 0; m < modellabels.length; m++) { // for each model
-			//Model label = modellabels[m];
+			Model label = modellabels[m];
 			BasicModel mod = all_models[m];
+			boolean doShift = shiftby4 && (Model.SIFT == label);
 			List<TileKey> orderedCandidates = mod.orderCandidates(candidates);
 			int count = 0;
 			for(int i = 0; i < orderedCandidates.size(); i++) {
+				if(doShift && (i < 4)) continue;
 				if(count == allocatedStorage[m]) break;
 				TileKey key = orderedCandidates.get(i);
 				if(!toInsert.containsKey(key) // not already slated to be inserted
@@ -386,7 +389,17 @@ public class MainThread {
 			if (phase.equals("Sensemaking")) {
 				idx = indexOf(modellabels,Model.SIFT);
 			} else {
-				idx = indexOf(modellabels,Model.NGRAM);
+				if(total > 4){
+					idx = indexOf(modellabels,Model.NGRAM);
+					if(idx >= 0) allocatedStorage[idx] = 4;
+					idx = indexOf(modellabels,Model.SIFT);
+					if(idx >= 0) {
+						allocatedStorage[idx] = total-4;
+						shiftby4 = true;
+					}
+				} else {
+					idx = indexOf(modellabels,Model.NGRAM);
+				}
 			}
 			if(idx >= 0) allocatedStorage[idx] = total;
 		}
