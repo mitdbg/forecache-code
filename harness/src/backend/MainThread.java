@@ -388,20 +388,16 @@ public class MainThread {
 			System.out.println("predicted phase: "+phase);
 			if (phase.equals("Sensemaking")) {
 				idx = indexOf(modellabels,Model.SIFT);
-			} else {
-				if(total > 4){
+				if(idx >= 0) allocatedStorage[idx] = total;
+			} else if(total > 4){
 					idx = indexOf(modellabels,Model.NGRAM);
 					if(idx >= 0) allocatedStorage[idx] = 4;
 					idx = indexOf(modellabels,Model.SIFT);
-					if(idx >= 0) {
-						allocatedStorage[idx] = total-4;
-						shiftby4 = true;
-					}
-				} else {
-					idx = indexOf(modellabels,Model.NGRAM);
-				}
+					if(idx >= 0) allocatedStorage[idx] = total-4;
+			} else {
+				idx = indexOf(modellabels,Model.NGRAM);
+				if(idx >= 0) allocatedStorage[idx] = total;
 			}
-			if(idx >= 0) allocatedStorage[idx] = total;
 		}
 	}
 	
