@@ -67,6 +67,7 @@ public class MainThread {
 	public static int defaulthistorylength = 4;
 	public static int defaultport = 8080;
 	public static int[] allocatedStorage; // storage per model
+	public static int totalStorage = 0;
 	public static int defaultstorage = 1; // default storage per model
 	public static int neighborhood = 1; // default neighborhood from which to pick candidates
 	
@@ -134,7 +135,7 @@ public class MainThread {
 		List<TileKey> candidates = all_models[0].getCandidates(neighborhood);
 		
 		for(int m = 0; m < modellabels.length; m++) { // for each model
-			Model label = modellabels[m];
+			//Model label = modellabels[m];
 			BasicModel mod = all_models[m];
 			//boolean doShift = shiftby4 && (Model.SIFT == label);
 			List<TileKey> orderedCandidates = mod.orderCandidates(candidates);
@@ -375,12 +376,8 @@ public class MainThread {
 	
 	public static void update_allocations() {
 		if(usePclas) {
-			int total = 0;
-			for(int i = 0; i < allocatedStorage.length; i++) {
-				total += allocatedStorage[i];
-			}
 			membuf.clear();
-			membuf.setStorageMax(total);
+			membuf.setStorageMax(totalStorage);
 			
 			String phase = pclas.predictLabel(hist.getHistoryTrace(2)); // only need last 2 tile requests
 			allocatedStorage = new int[allocatedStorage.length]; // clear previous allocations
@@ -388,15 +385,15 @@ public class MainThread {
 			System.out.println("predicted phase: "+phase);
 			if (phase.equals("Sensemaking")) {
 				idx = indexOf(modellabels,Model.SIFT);
-				if(idx >= 0) allocatedStorage[idx] = total;
-			} else if(total > 4){
+				if(idx >= 0) allocatedStorage[idx] = totalStorage;
+			} else if(totalStorage > 4){
 					idx = indexOf(modellabels,Model.NGRAM);
 					if(idx >= 0) allocatedStorage[idx] = 4;
-					idx = indexOf(modellabels,Model.SIFT);
-					if(idx >= 0) allocatedStorage[idx] = total-4;
+					//idx = indexOf(modellabels,Model.SIFT);
+					//if(idx >= 0) allocatedStorage[idx] = totalStorage-4;
 			} else {
 				idx = indexOf(modellabels,Model.NGRAM);
-				if(idx >= 0) allocatedStorage[idx] = total;
+				if(idx >= 0) allocatedStorage[idx] = totalStorage;
 			}
 		}
 	}
@@ -418,6 +415,7 @@ public class MainThread {
 		}
 		membuf.clear();
 		membuf.setStorageMax(required);
+		totalStorage = required;
 	}
 	
 	public static void reset(String[] userstrs, String[] modelstrs, String[] predictions,boolean usePhases) throws Exception {
