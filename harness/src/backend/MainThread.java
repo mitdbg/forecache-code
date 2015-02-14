@@ -389,8 +389,8 @@ public class MainThread {
 			} else if(totalStorage > 4){
 					idx = indexOf(modellabels,Model.NGRAM);
 					if(idx >= 0) allocatedStorage[idx] = 4;
-					//idx = indexOf(modellabels,Model.SIFT);
-					//if(idx >= 0) allocatedStorage[idx] = totalStorage-4;
+					idx = indexOf(modellabels,Model.SIFT);
+					if(idx >= 0) allocatedStorage[idx] = totalStorage-4;
 			} else {
 				idx = indexOf(modellabels,Model.NGRAM);
 				if(idx >= 0) allocatedStorage[idx] = totalStorage;
