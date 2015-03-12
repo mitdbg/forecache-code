@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- WARNING: Eclipse auto-generated file.
+              Any modifications will be overwritten.
+              To include a user specific buildfile here, simply create one in the same
+              directory with the processing instruction <?eclipse.ant.import?>
+              as the first entry and export the buildfile again. -->
+<project basedir="." default="build" name="ScalarPrefetch">
+    <property environment="env"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+    <path id="OpenCV-2.4.9.userclasspath">
+        <pathelement location="../../../../../usr/local/share/OpenCV/java/opencv-249.jar"/>
+    </path>
+    <path id="ScalarPrefetch.classpath">
+        <pathelement location="bin"/>
+        <pathelement location="lib/commons-lang3-3.3.jar"/>
+        <pathelement location="lib/commons-lang3-3.3-javadoc.jar"/>
+        <pathelement location="lib/fst-2.12.jar"/>
+        <pathelement location="lib/postgresql-9.3-1101.jdbc4.jar"/>
+        <pathelement location="lib/javax.servlet-api-3.1.0.jar"/>
+        <pathelement location="lib/jetty-all-9.1.3.v20140225.jar"/>
+        <pathelement location="lib/berkeleylm.jar"/>
+        <path refid="OpenCV-2.4.9.userclasspath"/>
+        <pathelement location="lib/imgscalr-lib-4.2.jar"/>
+        <pathelement location="lib/kd.jar"/>
+        <pathelement location="lib/gson-2.3.jar"/>
+        <pathelement location="lib/guava-16.0.1.jar"/>
+    </path>
+    <target name="init">
+        <mkdir dir="bin"/>
+        <copy includeemptydirs="false" todir="bin">
+            <fileset dir="src">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete dir="bin"/>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}">
+            <src path="src"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target name="ScidbTileInterface">
+        <java classname="backend.disk.ScidbTileInterface" failonerror="true" fork="yes">
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram1p1">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram1 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram1p3">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9000 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram1 3"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram1p5">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9090 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram1 5"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="ngram2p1">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram2 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram2p3">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9000 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram2 3"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram2p5">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9090 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram2 5"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="ngram3p1">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram3 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram3p3">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9000 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram3 3"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram3p5">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9090 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram3 5"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="ngram4p1">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram4 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram4p3">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9000 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram4 3"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram4p5">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9090 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram4 5"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="ngram5p1">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram5 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram5p3">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9000 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram5 3"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram5p5">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9090 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram5 5"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="ngram6p1">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram6 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram6p3">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9000 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram6 3"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram6p5">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9090 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram6 5"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="ngram7p1">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram7 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram7p3">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9000 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram7 3"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram7p5">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9090 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram7 5"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="ngram8p1">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram8 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram8p3">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9000 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram8 3"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram8p5">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9090 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram8 5"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="ngram9p1">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram9 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram9p3">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9000 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram9 3"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram9p5">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9090 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram9 5"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="ngram10p1">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram10 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram10p3">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9000 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram10 3"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ngram10p5">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9090 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram10 5"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="siftdsiftp1">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="8888 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 sift-dsift 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="siftdsiftp3">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9999 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 sift-dsift 3"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="siftdsiftp5">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="10000 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 sift-dsift 5"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="normalhistp1">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="8888 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 normal-histogram-fhistogram 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="normalhistp3">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="9999 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 normal-histogram-fhistogram 3"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="normalhistp5">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <arg line="10000 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 normal-histogram-fhistogram 5"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="Client">
+        <java classname="frontend.Client" failonerror="true" fork="yes">
+            <!--<arg line="8080 130 task1 normal 1"/>-->
+            <arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150,130 task1,task2,task3 ngram5,sift 2,2"/>
+            <!--<arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150,130 task1,task2,task3 sift,ngram5-sift,ngram5-sift,ngram5 1,2-1,3-2,2"/>-->
+            <!--<arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150,130 task1,task2,task3 ngram,normal 3"/>-->
+            <!--<arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 random 1"/>-->
+            <!--<arg line="8080 151 task1 sift 3"/>-->
+            <!--<arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 sift 1"/>-->
+            <!--<arg line="8080 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 markov,markov4,ngram 3"/>-->
+            <!--<arg line="8080 130,144 task1 normal 1"/>-->
+            <!--<arg line="8080 135,135 task1 momentum,normal 3"/>-->
+            <!--<arg line="all"/>-->
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="MainThread">
+        <java classname="backend.MainThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="8080"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="MainThread9000">
+        <java classname="backend.MainThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="9000"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="MainThread9090">
+        <java classname="backend.MainThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="9090"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="MainThread8888">
+        <java classname="backend.MainThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="8888"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="MainThread9999">
+        <java classname="backend.MainThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="9999"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="MainThread10000">
+        <java classname="backend.MainThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="10000"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+</project>
