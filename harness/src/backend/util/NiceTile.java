@@ -81,6 +81,7 @@ public class NiceTile implements java.io.Serializable {
 	
 	// total rows
 	public int getSize() {
+		if(data.length == 0) return 0;
 		return data.length / attributes.length;
 	}
 	

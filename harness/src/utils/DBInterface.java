@@ -31,7 +31,8 @@ public class DBInterface {
 	public static final String groundTruth = "/home/leilani/scalar-prefetch/gt_updated.csv";
 */	
 
-	public static String nice_tile_cache_dir = "/home/leibatt/projects/user_study/scalar_backend/nice_tile_cache";
+	//public static String nice_tile_cache_dir = "/home/leibatt/projects/user_study/scalar_backend/nice_tile_cache";
+	public static String nice_tile_cache_dir = "/home/leibatt/projects/user_study/scalar_backend/vertica_nice_tile_cache";
 	public static String defaultparamsfile = "/home/leibatt/projects/user_study/scalar_backend/thesis2_params.tsv";
 	public static final String cache_root_dir = "/home/leibatt/projects/user_study/scalar_backend/test_cache";
 	//public static final String cache_root_dir = "/home/leibatt/projects/user_study/scalar_backend/test_cache2";
@@ -61,6 +62,13 @@ public class DBInterface {
 	public static final String port = "5432";
 	public static final String attr1  = "attrs.avg_ndsi";
 	public static final String attr2  = "attrs.max_land_sea_mask";
+	
+	
+	public static final String vertica_host = "vertica-vm";
+	public static final String vertica_port = "5433";
+	public static final String vertica_dbname = "test";
+	public static final String vertica_user = "dbadmin";
+	public static final String vertica_password = "password";
 
 	public static final double [] distance_threshold = {0,1,1,2,2,3,3,4,4};
 
@@ -112,7 +120,7 @@ public class DBInterface {
 	//get all user id's from database
 	public static List<Integer> getUsers() {
 		List<Integer> myresult = new ArrayList<Integer>();
-		Connection conn = getConnection();
+		Connection conn = getDefaultPostgresqlConnection();
 		if(conn == null) {
 			return myresult;
 		}
@@ -145,7 +153,7 @@ public class DBInterface {
 	
 	public static List<Integer> getUsersFromTraces() {
 		List<Integer> myresult = new ArrayList<Integer>();
-		Connection conn = getConnection();
+		Connection conn = getDefaultPostgresqlConnection();
 		if(conn == null) {
 			return myresult;
 		}
@@ -178,7 +186,7 @@ public class DBInterface {
 	
 	public static List<String> getTasksFromTraces() {
 		List<String> myresult = new ArrayList<String>();
-		Connection conn = getConnection();
+		Connection conn = getDefaultPostgresqlConnection();
 		if(conn == null) {
 			return myresult;
 		}
@@ -211,7 +219,7 @@ public class DBInterface {
 
 	public static List<UserRequest> getUserTraces(int user_id, String taskname) {
 		List<UserRequest> myresult = new ArrayList<UserRequest>();
-		Connection conn = getConnection();
+		Connection conn = getDefaultPostgresqlConnection();
 		if(conn == null) {
 			return myresult;
 		}
@@ -248,7 +256,7 @@ public class DBInterface {
 	
 	public static boolean checkTask(int user_id, String taskname) {
 		boolean myresult = false;
-		Connection conn = getConnection();
+		Connection conn = getDefaultPostgresqlConnection();
 		if(conn == null) {
 			return myresult;
 		}
@@ -284,7 +292,7 @@ public class DBInterface {
 	
 	public static List<UserRequest> getHashedTraces(int user_id, String taskname) {
 		List<UserRequest> myresult = new ArrayList<UserRequest>();
-		Connection conn = getConnection();
+		Connection conn = getDefaultPostgresqlConnection();
 		if(conn == null) {
 			return myresult;
 		}
@@ -322,7 +330,7 @@ public class DBInterface {
 	
 	public static String getTileHash(String tile_id) {
 		String myresult = "";
-		Connection conn = getConnection();
+		Connection conn = getDefaultPostgresqlConnection();
 		if(conn == null) {
 			return myresult;
 		}
@@ -355,7 +363,7 @@ public class DBInterface {
 	
 	public static String getTileId(String tile_hash) {
 		String myresult = "";
-		Connection conn = getConnection();
+		Connection conn = getDefaultPostgresqlConnection();
 		if(conn == null) {
 			return myresult;
 		}
@@ -391,8 +399,34 @@ public class DBInterface {
 		List<Double> myresult = UtilityFunctions.parseTileIdDouble(tile_id);
 		return myresult;
 	}
-
-	public static Connection getConnection() {
+	
+	public static Connection getVerticaConnection(String host, String port, String dbname, String user, String password) {
+		Connection conn = null;
+		try {
+			//Class.forName("com.vertica.Driver");
+			conn = DriverManager.getConnection(
+					"jdbc:vertica://" + host + ":" + port + "/" + dbname,
+					user,
+					password
+					);
+		} catch (SQLException e) {
+			System.out.println("error opening connection to database '" + dbname + "' as user '" + user + "'");
+			e.printStackTrace();
+		}/* catch (ClassNotFoundException e) {
+			// Could not find the driver class. Likely an issue
+			// with finding the .jar file.
+			System.err.println("Could not find the JDBC driver class.");
+			e.printStackTrace();
+			return null;
+		}*/
+		return conn;
+	}
+	
+	public static Connection getDefaultVerticaConnection() {
+		return getVerticaConnection(vertica_host,vertica_port,vertica_dbname,vertica_user,vertica_password);
+	}
+	
+	public static Connection getPostgresqlConnection(String host, String port, String dbname, String user, String password) {
 		Connection conn = null;
 		try {
 			conn = DriverManager.getConnection(
@@ -405,6 +439,10 @@ public class DBInterface {
 			e.printStackTrace();
 		}
 		return conn;
+	}
+
+	public static Connection getDefaultPostgresqlConnection() {
+		return getPostgresqlConnection(host,port,dbname,user,password);
 	}
 
 }

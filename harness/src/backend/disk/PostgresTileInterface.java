@@ -109,7 +109,7 @@ public class PostgresTileInterface {
 	
 	public List<Double> getTileFromDatabase(TileKey id) {
 		List<Double> myresult = new ArrayList<Double>();
-		Connection conn = DBInterface.getConnection();
+		Connection conn = DBInterface.getDefaultPostgresqlConnection();
 		if(conn == null) {
 			return myresult;
 		}
