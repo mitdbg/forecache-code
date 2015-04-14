@@ -559,7 +559,7 @@ public class MainThread {
 					t = diskbuf.getTile(key);
 					if(t == null) { // not in memory
 						//System.out.println("tile is not in disk-based cache. computing...");
-						t = scidbapi.getNiceTile(key); 
+						t = scidbapi.getNiceTile(key);
 						diskbuf.insertTile(t);
 					} else { // found on disk
 						//System.out.println("found tile in disk-based cache");
