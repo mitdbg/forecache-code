@@ -85,6 +85,12 @@
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>
+    <target name="BuildSignaturesOffline">
+        <java classname="backend.BuildSignaturesOffline" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
 
     <target name="Client">
         <java classname="frontend.Client" failonerror="true" fork="yes">

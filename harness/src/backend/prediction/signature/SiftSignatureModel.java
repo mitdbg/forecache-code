@@ -17,6 +17,7 @@ import edu.wlu.cs.levy.CG.KeySizeException;
 import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
+import backend.BuildSignaturesOffline;
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
@@ -27,14 +28,16 @@ import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
+import backend.util.Model;
 import backend.util.NiceTile;
 import backend.util.Params;
 import backend.util.ParamsMap;
+import backend.util.SignatureMap;
 import backend.util.Signatures;
 import backend.util.Tile;
 import backend.util.TileKey;
 
-public class SiftSignatureModel extends BasicModel {
+public class SiftSignatureModel extends BasicSignatureModel {
 	
 	public static int defaultVocabSize = 100;
 	public int vocabSize;
@@ -42,30 +45,30 @@ public class SiftSignatureModel extends BasicModel {
 	KDTree<Integer> vocab = null;
 	protected Map<TileKey,double[]> histograms;
 
-	public SiftSignatureModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
-		super(ref,membuf,diskbuf,api,len);
+	public SiftSignatureModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, 
+			DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len,
+			SignatureMap sigMap) {
+		super(ref,membuf,diskbuf,api,len,sigMap);
 		this.histograms = new HashMap<TileKey,double[]>();
 		this.vocabSize = defaultVocabSize;
 	}
 	
 	@Override
 	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
-		updateRoi(scidbapi); // make sure we're using the most recent ROI
+		//updateRoi(scidbapi); // make sure we're using the most recent ROI
 		return super.predictOrder(htrace,false); // don't reverse the order here
 	}
 	
 	@Override
 	public double computeConfidence(Direction d, List<TileKey> trace) {
+		double confidence = 0.0;
 		TileKey prev = trace.get(trace.size() - 1);
 		TileKey ckey = this.DirectionToTile(prev, d);
-		if(ckey == null) {
-			return defaultprob;
-		}
-		double confidence = 0.0;
-		double[] vocabhist = buildSignature(ckey);
+		//double[] vocabhist = buildSignature(ckey);
 		for(TileKey roiKey : roi) {
-			double[] roihist = histograms.get(roiKey);
-			confidence += Signatures.chiSquaredDistance(vocabhist, roihist);
+			//double[] roihist = histograms.get(roiKey);
+			//confidence += Signatures.chiSquaredDistance(vocabhist, roihist);
+			confidence += Signatures.chiSquaredDistance(getSignature(ckey), getSignature(roiKey));
 		}
 
 		if(confidence < defaultprob) {
@@ -82,16 +85,33 @@ public class SiftSignatureModel extends BasicModel {
 	@Override
 	public Double computeDistance(TileKey id, List<TileKey> htrace) {
 		double distance = 0.0;
-		double[] vocabhist = buildSignature(id);
+		//double[] vocabhist = buildSignature(id);
 		for(TileKey roiKey : roi) {
-			double[] roihist = histograms.get(roiKey);
-			distance += Signatures.chiSquaredDistance(vocabhist, roihist);
+			//double[] roihist = histograms.get(roiKey);
+			//distance += Signatures.chiSquaredDistance(vocabhist, roihist);
+			distance += Signatures.chiSquaredDistance(getSignature(id), getSignature(roiKey));
 		}
 
 		if(distance < defaultprob) {
 			distance = defaultprob;
 		}
 		return distance;
+	}
+	
+	public double[] getSignature(TileKey id) {
+		double[] sig = this.sigMap.getSignature(id, Model.SIFT);
+		/*
+		// just don't use this for now
+		if(sig == null) {
+			NiceTile tile = getTile(id);
+			sig = Signatures.getNormalSignature(tile);
+			this.sigMap.updateSignature(id, Model.SIFT, sig); // add to signature map
+			
+			// TODO: might be too slow to always write the whole structure to disk
+			this.sigMap.save(BuildSignaturesOffline.defaultFilename); // save changes to disk
+		}
+		*/
+		return sig;
 	}
 	
 	// stores the histograms
@@ -114,11 +134,14 @@ public class SiftSignatureModel extends BasicModel {
 		return Signatures.buildSiftSignature(tile, vocab, vocabSize);
 	}
 	
+	/*
 	@Override
 	public void updateRoi() {
 		updateRoi(scidbapi);
 	}
+	*/
 	
+	// don't use for now
 	public void updateRoi(ScidbTileInterface scidbapi) {
 		if(haveRealRoi && !history.newRoi()) return; // nothing to update
 		else if (!haveRealRoi && history.newRoi()) haveRealRoi = true; // now we have a real ROI

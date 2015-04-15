@@ -115,7 +115,7 @@ public class TileHistoryQueue {
 	}
 	
 	// find the user's last region of interest!
-	protected void updateROI() {
+	protected synchronized void updateROI() {
 		int lastZoomOut = -1;
 		int lastZoomIn = -1;
 		int i = trueHistory.size() - 2;

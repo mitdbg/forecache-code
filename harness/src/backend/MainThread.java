@@ -39,6 +39,7 @@ import backend.prediction.signature.NormalSignatureModel;
 import backend.prediction.signature.SiftSignatureModel;
 import backend.util.Model;
 import backend.util.NiceTile;
+import backend.util.SignatureMap;
 import backend.util.TileKey;
 import utils.DBInterface;
 import utils.UtilityFunctions;
@@ -52,6 +53,7 @@ public class MainThread {
 	public static NiceTileLruBuffer lmbuf;
 	public static TestSVM.SvmWrapper pclas;
 	public static boolean usePclas = false;
+	public static SignatureMap sigMap;
 	
 	//server
 	public static Server server;
@@ -93,15 +95,15 @@ public class MainThread {
 				break;
 				case MOMENTUM: all_models[i] = new MomentumDirectionalModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
 				break;
-				case NORMAL: all_models[i] = new NormalSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
+				case NORMAL: all_models[i] = new NormalSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i],sigMap);
 				break;
-				case HISTOGRAM: all_models[i] = new HistogramSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
+				case HISTOGRAM: all_models[i] = new HistogramSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i],sigMap);
 				break;
-				case FHISTOGRAM: all_models[i] = new FilteredHistogramSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
+				case FHISTOGRAM: all_models[i] = new FilteredHistogramSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i],sigMap);
 				break;
-				case SIFT: all_models[i] = new SiftSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
+				case SIFT: all_models[i] = new SiftSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i],sigMap);
 				break;
-				case DSIFT: all_models[i] = new DenseSiftSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i]);
+				case DSIFT: all_models[i] = new DenseSiftSignatureModel(hist,membuf,diskbuf,scidbapi,historylengths[i],sigMap);
 				default://do nothing, will fail if we get here
 			}
 		}
@@ -298,6 +300,8 @@ public class MainThread {
 		scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		lmbuf = new NiceTileLruBuffer(lmbuflen); // tracks the user's last x moves
 		hist = new TileHistoryQueue(histmax);
+		// load pre-computed signature map
+		sigMap = SignatureMap.getFromFile(BuildSignaturesOffline.defaultFilename);
 		
 		//setup models for prediction
 		setupModels();

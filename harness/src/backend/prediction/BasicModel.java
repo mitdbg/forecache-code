@@ -19,6 +19,7 @@ import backend.util.Direction;
 import backend.util.NiceTile;
 import backend.util.Params;
 import backend.util.ParamsMap;
+import backend.util.SignatureMap;
 import backend.util.Tile;
 import backend.util.TileKey;
 
@@ -35,7 +36,8 @@ public class BasicModel {
 	public List<TileKey> roi = null;
 	
 
-	public BasicModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
+	public BasicModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, 
+			DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
 		this.history = ref; // reference to (syncrhonized) global history object
 		this.membuf = membuf;
 		this.diskbuf = diskbuf;

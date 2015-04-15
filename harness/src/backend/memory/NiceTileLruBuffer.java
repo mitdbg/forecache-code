@@ -22,23 +22,23 @@ public class NiceTileLruBuffer {
 	}
 	
 	// check if in buffer
-	public boolean peek(TileKey id) {
+	public synchronized boolean peek(TileKey id) {
 		return qMap.containsKey(id);
 	}
 	
 	// get tile but don't remove from queue
-	public NiceTile getTile(TileKey id) {
+	public synchronized NiceTile getTile(TileKey id) {
 		return qMap.get(id);
 	}
 	
 	// remove first item from queue
-	protected NiceTile dequeue() {
+	protected synchronized NiceTile dequeue() {
 		TileKey toRemove = q.remove();
 		return qMap.remove(toRemove);
 	}
 
 	// add tile to queue
-	public void insertTile(NiceTile tile) {
+	public synchronized void insertTile(NiceTile tile) {
 		q.add(tile.id);
 		if(!peek(tile.id)) qMap.put(tile.id, tile);
 		if(q.size() > bufferSize) {
@@ -46,11 +46,11 @@ public class NiceTileLruBuffer {
 		}
 	}
 
-	public int tileCount() {
+	public synchronized int tileCount() {
 		return q.size();
 	}
 
-	public void clear() {
+	public synchronized void clear() {
 		q.clear();
 		qMap.clear();
 	}

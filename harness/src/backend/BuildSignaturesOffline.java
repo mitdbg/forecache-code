@@ -22,11 +22,12 @@ public class BuildSignaturesOffline {
 	public static String defaultFilename = "sigMap_k100.ser";
 	public static void main(String[] args) throws Exception {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-		DiskNiceTileBuffer diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
-		SignatureMap map = buildSignatures(new Model[]{Model.HISTOGRAM,Model.NORMAL,Model.SIFT,Model.DSIFT,Model.FHISTOGRAM}, diskbuf);
+		//DiskNiceTileBuffer diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
+		//SignatureMap map = buildSignatures(new Model[]{Model.HISTOGRAM,Model.NORMAL,Model.SIFT,Model.DSIFT,Model.FHISTOGRAM}, diskbuf);
 		//map.save(defaultFilename);
-		//map = SignatureMap.getFromFile(defaultFilename);
-
+		SignatureMap map = SignatureMap.getFromFile(defaultFilename);
+		System.out.println(map.size());
+/*
 		 List<TileKey> keys = new ArrayList<TileKey>(diskbuf.getAllTileKeys());
 		for(int i = 0; i < 10; i++) {
 			double[] sig = map.getSignature(keys.get(i), Model.SIFT);
@@ -35,6 +36,7 @@ public class BuildSignaturesOffline {
 			}
 			System.out.println();
 		}
+		*/
 	}
 	
 	public static SignatureMap buildSignatures(Model[] models, DiskNiceTileBuffer buffer) {

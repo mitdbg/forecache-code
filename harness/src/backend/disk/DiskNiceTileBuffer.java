@@ -206,7 +206,7 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 		}
 	}
 	
-	private String build_start_path() {
+	private synchronized String build_start_path() {
 		StringBuilder path = new StringBuilder();
 		path.append(cache_root_dir).append("/").append(hashed_query).append("/")
 		.append(threshold);
@@ -214,7 +214,7 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 		return path.toString();
 	}
 	
-	private String build_tile_filepath(TileKey id) {
+	private synchronized String build_tile_filepath(TileKey id) {
 		StringBuilder path = new StringBuilder();
 		String tile_hash = get_tile_hash(id);
 		if(tile_hash.length() == 0) {
@@ -228,7 +228,7 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 		return path.toString();
 	}
 	
-	private String get_tile_hash(TileKey id) {
+	private synchronized String get_tile_hash(TileKey id) {
 		String tile_id = id.buildTileString();
 		if(tile_id == null) {
 			return null;

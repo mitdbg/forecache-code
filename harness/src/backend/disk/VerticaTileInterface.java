@@ -70,7 +70,7 @@ public class VerticaTileInterface {
 		return vertica_tile_templateA + tablename + vertica_tile_templateB;
 	}
 	
-	public NiceTile getNiceTile(TileKey id) {
+	public synchronized NiceTile getNiceTile(TileKey id) {
 		NiceTile tile = NiceTilePacker.readNiceTile(id);
 		if(tile != null) return tile;
 		
@@ -96,7 +96,7 @@ public class VerticaTileInterface {
 		return tile;
 	}
 	
-	public void executeQuery(String tablename, Params p, NiceTile tile) {
+	public synchronized void executeQuery(String tablename, Params p, NiceTile tile) {
 		List<Double> temp = new ArrayList<Double>();
 		String[] labels = new String[0];
 		//long start = System.currentTimeMillis();

@@ -9,13 +9,16 @@ import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.TileHistoryQueue;
 import backend.util.NiceTile;
+import backend.util.SignatureMap;
 import backend.util.Signatures;
 import backend.util.TileKey;
 
 public class DenseSiftSignatureModel extends SiftSignatureModel{
 	
-	public DenseSiftSignatureModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
-		super(ref,membuf,diskbuf,api,len);
+	public DenseSiftSignatureModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, 
+			DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len,
+			SignatureMap sigMap) {
+		super(ref,membuf,diskbuf,api,len, sigMap);
 	}
 	
 	@Override

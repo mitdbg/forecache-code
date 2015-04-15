@@ -51,7 +51,7 @@ public class PostgresTileInterface {
 		parseParamsFile();
 	}
 	
-	public void parseParamsFile() {
+	public synchronized void parseParamsFile() {
 		File pf = new File(this.paramsfile);
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(pf));
@@ -102,12 +102,12 @@ public class PostgresTileInterface {
 		}
 	}
 	
-	public byte[] getTile(TileKey id) {
+	public synchronized byte[] getTile(TileKey id) {
 		List<Double> data = getTileFromDatabase(id);
 		return getBytes(data);
 	}
 	
-	public List<Double> getTileFromDatabase(TileKey id) {
+	public synchronized List<Double> getTileFromDatabase(TileKey id) {
 		List<Double> myresult = new ArrayList<Double>();
 		Connection conn = DBInterface.getDefaultPostgresqlConnection();
 		if(conn == null) {
@@ -150,7 +150,7 @@ public class PostgresTileInterface {
 		return myresult;
 	}
 	
-	public byte[] getBytes(List<Double> data) {
+	public synchronized byte[] getBytes(List<Double> data) {
 		byte [] result = new byte[8*data.size()];
 		ByteBuffer buffer = ByteBuffer.wrap(result);
 		for(int i = 0; i < data.size(); i++) {

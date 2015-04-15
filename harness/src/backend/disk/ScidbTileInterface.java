@@ -46,14 +46,14 @@ public class ScidbTileInterface {
 	}
 	
 	// inserts parameters into aggregation query
-	public String buildQuery(String arrayname,Params p) {
+	public synchronized String buildQuery(String arrayname,Params p) {
 		String query = "regrid(subarray("+arrayname+","+p.xmin+","+p.ymin+","+p.xmax+","+p.ymax+"),"+p.width+","+p.width+
 				",avg(ndsi) as avg_ndsi,min(ndsi) as min_ndsi,max(ndsi) as max_ndsi,max(land_sea_mask) as max_land_sea_mask)";
 		//System.out.println("query: "+query);
 		return query;
 	}
 	
-	public String[] buildCmd(String arrayname, Params p) {
+	public synchronized String[] buildCmd(String arrayname, Params p) {
 		String[] myresult = new String[3];
 		myresult[0] = "bash";
 		myresult[1] = "-c";
@@ -65,7 +65,7 @@ public class ScidbTileInterface {
 	}
 	
 	// uses default array name
-	public List<Double> executeQuery(Params p) {
+	public synchronized List<Double> executeQuery(Params p) {
 		List<Double> myresult = new ArrayList<Double>();
 		try {
 			myresult = executeQuery(DBInterface.arrayname,p);
@@ -76,7 +76,7 @@ public class ScidbTileInterface {
 		return myresult;
 	}
 	
-	public NiceTile getNiceTile(TileKey id) {
+	public synchronized NiceTile getNiceTile(TileKey id) {
 		NiceTile tile = NiceTilePacker.readNiceTile(id);
 		if(tile != null) return tile;
 		
@@ -106,7 +106,7 @@ public class ScidbTileInterface {
 		return tile;
 	}
 	
-	public void executeQuery(String arrayname, Params p, NiceTile tile) throws IOException {
+	public synchronized void executeQuery(String arrayname, Params p, NiceTile tile) throws IOException {
 		String[] cmd = buildCmd(arrayname, p);
 		
 		// print command
@@ -156,7 +156,7 @@ public class ScidbTileInterface {
 		//System.out.println("time to build: "+(end - start) +"ms");
 	}
 	
-	public List<Double> executeQuery(String arrayname, Params p) throws IOException {
+	public synchronized List<Double> executeQuery(String arrayname, Params p) throws IOException {
 		List<Double> myresult = new ArrayList<Double>();
 		String[] cmd = buildCmd(arrayname, p);
 		
@@ -195,13 +195,13 @@ public class ScidbTileInterface {
 		return myresult;
 	}
 	
-	public Tile getTile(TileKey id) {
+	public synchronized Tile getTile(TileKey id) {
 		List<Double> input = this.getTileFromDatabase(id);
 		double[] data = getArray(input);
 		return new Tile(id,data);
 	}
 	
-	public List<Double> getTileFromDatabase(TileKey id) {
+	public synchronized List<Double> getTileFromDatabase(TileKey id) {
 		List<Double> myresult = new ArrayList<Double>();
 		String tile_id = id.buildTileString();
 		if(tile_id == null) {
@@ -222,7 +222,7 @@ public class ScidbTileInterface {
 		return myresult;
 	}
 	
-	public static double[] getArray(List<Double> data) {
+	public synchronized static double[] getArray(List<Double> data) {
 		double[] result = new double[data.size()];
 		for (int i = 0; i < result.length; i++) {
 			result[i] = data.get(i);

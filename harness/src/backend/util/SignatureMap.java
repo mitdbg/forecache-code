@@ -22,8 +22,8 @@ public class SignatureMap implements Serializable {
 	 * 
 	 */
 	private static final long serialVersionUID = 4935333808629094022L;
-	Map<Model,Integer> sigTypes;
-	HashMap<String,List<double[]> > sigMap; // <id,histograms>
+	private Map<Model,Integer> sigTypes;
+	private HashMap<String,List<double[]> > sigMap; // <id,histograms>
 	
 	// setup a new map from scratch
 	public SignatureMap(Model[] sigTypes) {
@@ -34,12 +34,23 @@ public class SignatureMap implements Serializable {
 		}
 	}
 	
-	public double[] getSignature(TileKey id, Model label) {
-		return sigMap.get(id.buildTileStringForFile()).get(sigTypes.get(label));
+	public synchronized int size() {
+		return this.sigMap.size();
+	}
+	
+	public synchronized double[] getSignature(TileKey id, Model label) {
+		double[] result = null;
+		try {
+			result = sigMap.get(id.buildTileStringForFile()).get(sigTypes.get(label));
+		} catch (Exception e) {
+			System.out.println("Could not retrieve signature for tile '"+id.buildTileStringForFile()+"'");
+			e.printStackTrace();
+		}
+		return result;
 	}
 	
 	// insert/update a given signature into the map
-	public void updateSignature(TileKey id, Model label, double[] sig) {
+	public synchronized void updateSignature(TileKey id, Model label, double[] sig) {
 		String key = id.buildTileStringForFile();
 		List<double[]> newEntry = null;
 		if(sigMap.containsKey(key)) {
@@ -48,7 +59,7 @@ public class SignatureMap implements Serializable {
 			newEntry = new ArrayList<double[]>(this.sigTypes.size());
 			this.sigMap.put(key, newEntry);
 			for(int i = 0; i < this.sigTypes.size(); i++) {
-				newEntry.add(new double[1]);
+				newEntry.add(null);
 			}
 		}
 		if((newEntry != null) && (sig != null)) {
@@ -58,7 +69,7 @@ public class SignatureMap implements Serializable {
 	
 	
 	// write this signature map to disk
-	public boolean save(String filename) {
+	public synchronized boolean save(String filename) {
 		File file = new File("sigMap.ser");
 		if (filename != null) {
 			file = new File(filename);
