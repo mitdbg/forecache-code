@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import utils.DBInterface;
 
 public class SignatureMap implements Serializable {
 	/**
@@ -28,10 +27,15 @@ public class SignatureMap implements Serializable {
 	
 	// setup a new map from scratch
 	public SignatureMap(Model[] sigTypes) {
+		this.sigMap = new HashMap<String,List<double[]>>();
 		this.sigTypes = new HashMap<Model,Integer>();
 		for(int i = 0; i < sigTypes.length; i++) {
 			this.sigTypes.put(sigTypes[i],i);
 		}
+	}
+	
+	public double[] getSignature(TileKey id, Model label) {
+		return sigMap.get(id.buildTileStringForFile()).get(sigTypes.get(label));
 	}
 	
 	// insert/update a given signature into the map
@@ -43,6 +47,9 @@ public class SignatureMap implements Serializable {
 		} else {
 			newEntry = new ArrayList<double[]>(this.sigTypes.size());
 			this.sigMap.put(key, newEntry);
+			for(int i = 0; i < this.sigTypes.size(); i++) {
+				newEntry.add(new double[1]);
+			}
 		}
 		if((newEntry != null) && (sig != null)) {
 			newEntry.set(this.sigTypes.get(label), Arrays.copyOf(sig,sig.length));

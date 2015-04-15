@@ -3,7 +3,10 @@ package backend;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
+
+import utils.DBInterface;
 
 import edu.wlu.cs.levy.CG.KDTree;
 
@@ -16,6 +19,24 @@ import backend.util.Signatures;
 import backend.util.TileKey;
 
 public class BuildSignaturesOffline {
+	public static String defaultFilename = "sigMap_k100.ser";
+	public static void main(String[] args) throws Exception {
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+		DiskNiceTileBuffer diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
+		SignatureMap map = buildSignatures(new Model[]{Model.HISTOGRAM,Model.NORMAL,Model.SIFT,Model.DSIFT,Model.FHISTOGRAM}, diskbuf);
+		//map.save(defaultFilename);
+		//map = SignatureMap.getFromFile(defaultFilename);
+
+		 List<TileKey> keys = new ArrayList<TileKey>(diskbuf.getAllTileKeys());
+		for(int i = 0; i < 10; i++) {
+			double[] sig = map.getSignature(keys.get(i), Model.SIFT);
+			for(int j = 0; j < 10; j++) {
+				System.out.print(sig[j]+" ");
+			}
+			System.out.println();
+		}
+	}
+	
 	public static SignatureMap buildSignatures(Model[] models, DiskNiceTileBuffer buffer) {
 		SignatureMap mp = new SignatureMap(models);
 		
@@ -70,7 +91,7 @@ public class BuildSignaturesOffline {
 		}
 
 		buildSiftSignatures(mp, keys,siftDescriptors,sift_rows,buffer, false); // SIFT
-		buildSiftSignatures(mp, keys,siftDescriptors,dsift_rows,buffer, true); // denseSIFT
+		buildSiftSignatures(mp, keys,denseSiftDescriptors,dsift_rows,buffer, true); // denseSIFT
 
 		return mp;
 	}

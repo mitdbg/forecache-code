@@ -3,3 +3,7 @@
 gt_updated.csv
 harness/lib/libsvm-master/
 harness/bin
+harness/images
+harness/forecache_metadata
+harness/.settings
+harness/sigMap_k100.ser
