@@ -130,18 +130,22 @@ public class Client {
 			int user_id = testusers.get(u1);
 			List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
 			long start = System.currentTimeMillis();
+			double[] durations = new double[trace.size()];
+			double avg_duration = 0;
 			for(int r = 0; r < trace.size(); r++) {
 				UserRequest ur = trace.get(r);
 				String tile_id = ur.tile_id;
 				String tile_hash = ur.tile_hash;
 				int zoom = ur.zoom;
 				//System.out.println("tile id: '" +tile_id+ "'");
-				sendRequest(tile_id,zoom,tile_hash);
+				durations[r] = sendRequest(tile_id,zoom,tile_hash);
+				avg_duration += durations[r];
 			}
 			long end = System.currentTimeMillis();
 			System.out.println("duration: "+(1.0*(end-start)/1000)+" secs");
 			//get accuracy for this user
 			double accuracy = getAccuracy();
+			avg_duration /= trace.size();
 			String[] fullAccuracy = getFullAccuracy();
 			if(ma != null) {
 				// assumes this is only for individual models, and not combinations
@@ -158,7 +162,9 @@ public class Client {
 			UtilityFunctions.printStringArray(fullAccuracy);
 			overall_accuracy += accuracy;
 			System.out.print("\t");
-			System.out.println(accuracy);
+			System.out.print(accuracy);
+			System.out.print("\t");
+			System.out.println(avg_duration);
 			*/
 			
 			// new printed content
@@ -174,11 +180,14 @@ public class Client {
 				System.out.print("\t");
 				UtilityFunctions.printIntArray(predictions);
 				System.out.print("\t");
-				System.out.println(request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
+				System.out.print(request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
 						"\t"+fullAccuracy[i]);
 				//System.out.println("\t"+predictions+"\t"+request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
 				//		"\t"+fullAccuracy[i]);
+				System.out.print("\t");
+				System.out.println(durations[i]);
 			}
+			
 		}
 		overall_accuracy /= testusers.size();
 		//System.out.println("overall\t"+overall_accuracy);
@@ -479,7 +488,7 @@ public class Client {
 		return false;
 	}
 
-	public static void sendRequest(String tile_id, int zoom, String hashed_query) throws Exception {
+	public static long sendRequest(String tile_id, int zoom, String hashed_query) throws Exception {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
 				+ "?" + buildUrlParams(hashed_query, tile_id, zoom);
 		URL geturl = null;
@@ -488,6 +497,7 @@ public class Client {
 		StringBuffer sbuffer = new StringBuffer();
 		String line;
 		String result = null;
+		long diff = 0;
 		try {
 			geturl = new URL(urlstring);
 		} catch (MalformedURLException e) {
@@ -495,25 +505,18 @@ public class Client {
 			e.printStackTrace();
 		}
 		if(geturl == null) {
-			return;
+			return diff;
 		}
 
 		try {
+			diff = System.currentTimeMillis();
 			connection = (HttpURLConnection) geturl.openConnection();
-		} catch (IOException e) {
-			System.out.println("error occured while opening connection to url: '"+urlstring+"'");
-			e.printStackTrace();
-		}
-		if(connection == null) {
-			return;
-		}
-
-		try {
 			reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 			while((line = reader.readLine()) != null) {
 				sbuffer.append(line);
 			}
 			reader.close();
+			diff = System.currentTimeMillis() - diff;
 			result = sbuffer.toString();
 			//System.out.println("tile ("+tile_id+", "+zoom+") result length: " + result.length());
 			if(result.equals("error")) {
@@ -535,7 +538,7 @@ public class Client {
 				e.printStackTrace();
 			}
 		}
-
+		return diff;
 	}
 
 	public static String buildUrlParams(String hashed_query, String tile_id, int zoom) {
