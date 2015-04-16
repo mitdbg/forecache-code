@@ -201,6 +201,7 @@ public class Signatures {
 		extractor.compute(image, keypoints, descriptors);
 		
 		//System.out.println("file: "+t);
+		System.out.println(tile.id.buildTileStringForFile());
 		writeMat(siftString,descriptors,tile.id); // save the descriptors we just computed for this tile
 		return descriptors;
 	}
