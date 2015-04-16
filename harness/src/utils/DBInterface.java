@@ -13,7 +13,7 @@ public class DBInterface {
 	/*
 	public static String nice_tile_cache_dir = "/home/leilani/nice_tile_cache";
 	//public static String nice_tile_cache_dir = "/home/leilani/vertica_nice_tile_cache";
-	public static String defaultparamsfile = "/home/leilani/csv/ndsi_agg_7_18_2013_params.tsv";
+	public static String defaultparamsfile = "/data/scidb/000/1/leilani/csv/ndsi_agg_7_18_2013_params.tsv";
 	public static final String cache_root_dir = "/home/leilani/test_cache";
 	public static final String sig_root_dir = "/home/leilani/_scalar_sig_dir2";
 	public static final String csv_root_dir = "/home/leilani/_scalar_csv_dir2";
