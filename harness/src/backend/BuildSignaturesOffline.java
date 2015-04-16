@@ -98,6 +98,7 @@ public class BuildSignaturesOffline {
 
 		System.out.println("building SIFT signatures");
 		buildSiftSignatures(mp, keys,siftDescriptors,sift_rows,buffer, false); // SIFT
+		System.out.println("building denseSIFT signatures");
 		buildSiftSignatures(mp, keys,denseSiftDescriptors,dsift_rows,buffer, true); // denseSIFT
 
 		return mp;
@@ -112,6 +113,7 @@ public class BuildSignaturesOffline {
 			Mat finalMatrix = Mat.zeros(rows,cols, siftDescriptors.get(0).type());
 			//System.out.println("finalMatrix=("+rows+","+cols+")");
 			int curr = 0;
+			System.out.println("consolidating keypoints");
 			for(int i = 0; i < siftDescriptors.size(); i++) {
 				Mat d = siftDescriptors.get(i);
 				int r = d.rows();
@@ -120,7 +122,9 @@ public class BuildSignaturesOffline {
 			}
 			// these clusters are our visual words
 			// each center represents the center of a word
+			System.out.println("running k-means with k="+SiftSignatureModel.defaultVocabSize);
 			Mat centers = Signatures.getKmeansCenters(finalMatrix, SiftSignatureModel.defaultVocabSize);
+			System.out.println("building KD-tree");
 			KDTree<Integer> vocab = Signatures.buildKDTree(centers); // used to find nearest neighbor fast
 			int vocabSize = centers.rows();
 /*
@@ -135,6 +139,7 @@ public class BuildSignaturesOffline {
 */
 
 			// now go back through and build the final histograms for each ROI
+			System.out.println("building final histograms");
 			if(useDenseSift) {
 				for(int i = 0; i < siftDescriptors.size(); i++) {
 					Mat d = siftDescriptors.get(i);
