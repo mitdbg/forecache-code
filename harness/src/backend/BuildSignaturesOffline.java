@@ -22,11 +22,15 @@ public class BuildSignaturesOffline {
 	public static String defaultFilename = "sigMap_k100.ser";
 	public static void main(String[] args) throws Exception {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-		//DiskNiceTileBuffer diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
-		//SignatureMap map = buildSignatures(new Model[]{Model.HISTOGRAM,Model.NORMAL,Model.SIFT,Model.DSIFT,Model.FHISTOGRAM}, diskbuf);
-		//map.save(defaultFilename);
-		SignatureMap map = SignatureMap.getFromFile(defaultFilename);
-		System.out.println(map.size());
+		System.out.println("populating disk buffer");
+		DiskNiceTileBuffer diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
+		System.out.println("done populating buffer... building signatures");
+		SignatureMap map = buildSignatures(new Model[]{Model.HISTOGRAM,Model.NORMAL,Model.SIFT,Model.DSIFT,Model.FHISTOGRAM}, diskbuf);
+		System.out.println("done building signatures... saving to disk");
+		map.save(defaultFilename);
+		System.out.println("done saving to disk... reading from disk");
+		map = SignatureMap.getFromFile(defaultFilename);
+		System.out.println("Map size: "+map.size());
 /*
 		 List<TileKey> keys = new ArrayList<TileKey>(diskbuf.getAllTileKeys());
 		for(int i = 0; i < 10; i++) {
@@ -92,6 +96,7 @@ public class BuildSignaturesOffline {
 			}
 		}
 
+		System.out.println("building SIFT signatures");
 		buildSiftSignatures(mp, keys,siftDescriptors,sift_rows,buffer, false); // SIFT
 		buildSiftSignatures(mp, keys,denseSiftDescriptors,dsift_rows,buffer, true); // denseSIFT
 
