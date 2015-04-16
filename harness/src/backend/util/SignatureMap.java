@@ -56,13 +56,13 @@ public class SignatureMap implements Serializable {
 		if(sigMap.containsKey(key)) {
 			newEntry = this.sigMap.get(key);
 		} else {
-			newEntry = new ArrayList<double[]>(this.sigTypes.size());
-			this.sigMap.put(key, newEntry);
+			newEntry = new ArrayList<double[]>();
 			for(int i = 0; i < this.sigTypes.size(); i++) {
 				newEntry.add(null);
 			}
+			this.sigMap.put(key, newEntry);
 		}
-		if((newEntry != null) && (sig != null)) {
+		if(sig != null) {
 			newEntry.set(this.sigTypes.get(label), Arrays.copyOf(sig,sig.length));
 		}
 	}

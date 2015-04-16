@@ -8,6 +8,7 @@ import backend.disk.ScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.TileHistoryQueue;
+import backend.util.Model;
 import backend.util.NiceTile;
 import backend.util.SignatureMap;
 import backend.util.Signatures;
@@ -19,6 +20,12 @@ public class DenseSiftSignatureModel extends SiftSignatureModel{
 			DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len,
 			SignatureMap sigMap) {
 		super(ref,membuf,diskbuf,api,len, sigMap);
+	}
+	
+	@Override
+	public double[] getSignature(TileKey id) {
+		double[] sig = this.sigMap.getSignature(id, Model.DSIFT);
+		return sig;
 	}
 	
 	@Override

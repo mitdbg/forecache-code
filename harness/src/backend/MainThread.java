@@ -133,7 +133,7 @@ public class MainThread {
 		Map<TileKey,Boolean> toInsert = new HashMap<TileKey,Boolean>();
 		
 		// get the current list of candidates
-		System.out.println("neighborhood: "+neighborhood);
+		//System.out.println("neighborhood: "+neighborhood);
 		List<TileKey> candidates = all_models[0].getCandidates(neighborhood);
 		
 		for(int m = 0; m < modellabels.length; m++) { // for each model
@@ -159,11 +159,13 @@ public class MainThread {
 			//}
 			//System.out.println();
 		}
+		/*
 		System.out.print("predictions:");
 		for(TileKey k : toInsert.keySet()) {
 			System.out.print(k+" ");
 		}
 		System.out.println();
+		*/
 		Set<TileKey> oldKeys = new HashSet<TileKey>();
 		for(TileKey k : membuf.getAllTileKeys()) {
 			oldKeys.add(k);
@@ -187,6 +189,7 @@ public class MainThread {
 			Double basevote = 1.0; // value of a vote from this model
 			List<TileKey> toadd = mod.predictTiles(defaultpredictions);
 			
+			/*
 			if(toadd != null){
 				System.out.print("predictions for model "+label+": ");
 				for(TileKey k : toadd) {
@@ -194,7 +197,7 @@ public class MainThread {
 				}
 				System.out.println();
 			}
-			
+			*/
 			// count votes per prediction scheme
 			if((toadd != null) && (toadd.size() > 0)) {
 				// weight votes by ordering
@@ -386,7 +389,7 @@ public class MainThread {
 			String phase = pclas.predictLabel(hist.getHistoryTrace(2)); // only need last 2 tile requests
 			allocatedStorage = new int[allocatedStorage.length]; // clear previous allocations
 			int idx = -1;
-			System.out.println("predicted phase: "+phase);
+			//System.out.println("predicted phase: "+phase);
 			if (phase.equals("Sensemaking")) {
 				idx = indexOf(modellabels,Model.SIFT);
 				if(idx >= 0) allocatedStorage[idx] = totalStorage;
@@ -413,7 +416,7 @@ public class MainThread {
 		int required = 0;
 		allocatedStorage = new int[allocations.length];
 		for(int i = 0; i < allocations.length; i++) {
-			System.out.println("allocations["+i+"] = '"+allocations[i]+"'");
+			//System.out.println("allocations["+i+"] = '"+allocations[i]+"'");
 			allocatedStorage[i] = Integer.parseInt(allocations[i]);
 			required += allocatedStorage[i];
 		}
@@ -538,8 +541,8 @@ public class MainThread {
 			TileKey key = new TileKey(id,z);
 			//List<TileKey> predictions = null;
 			
-			System.out.println("last key: "+hist.getLast());
-			System.out.println("key to predict: "+key);
+			//System.out.println("last key: "+hist.getLast());
+			//System.out.println("key to predict: "+key);
 			//System.out.println("history length: " + hist.getHistoryLength());
 			//System.out.println("history:");
 			//System.out.println(hist);
@@ -582,7 +585,7 @@ public class MainThread {
 					found = true;
 				}
 			} else { // found in lru cache
-				System.out.println("found in lru cache");
+				//System.out.println("found in lru cache");
 				cache_hits++;
 				found = true;
 			}
