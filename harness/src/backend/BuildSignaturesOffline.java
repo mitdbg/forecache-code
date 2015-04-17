@@ -31,16 +31,6 @@ public class BuildSignaturesOffline {
 		System.out.println("done saving to disk... reading from disk");
 		map = SignatureMap.getFromFile(defaultFilename);
 		System.out.println("Map size: "+map.size());
-/*
-		 List<TileKey> keys = new ArrayList<TileKey>(diskbuf.getAllTileKeys());
-		for(int i = 0; i < 10; i++) {
-			double[] sig = map.getSignature(keys.get(i), Model.SIFT);
-			for(int j = 0; j < 10; j++) {
-				System.out.print(sig[j]+" ");
-			}
-			System.out.println();
-		}
-		*/
 	}
 	
 	public static SignatureMap buildSignatures(Model[] models, DiskNiceTileBuffer buffer) {
@@ -90,7 +80,6 @@ public class BuildSignaturesOffline {
 							dsift_rows += d.rows();
 							denseSiftDescriptors.add(d); // better have the same number of cols!
 						}
-					default://do nothing, will fail if we get here
 				}
 				mp.updateSignature(id, label, sig);
 			}
