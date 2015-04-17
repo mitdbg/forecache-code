@@ -1,40 +1,27 @@
 package backend.prediction.signature;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
-import org.opencv.core.Rect;
 
 import edu.wlu.cs.levy.CG.KDTree;
-import edu.wlu.cs.levy.CG.KeyDuplicateException;
-import edu.wlu.cs.levy.CG.KeySizeException;
 
 import utils.DBInterface;
-import utils.UserRequest;
 import utils.UtilityFunctions;
-import backend.BuildSignaturesOffline;
 import backend.disk.DiskNiceTileBuffer;
-import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
-import backend.memory.MemoryTileBuffer;
-import backend.prediction.BasicModel;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
-import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
 import backend.util.Model;
 import backend.util.NiceTile;
-import backend.util.Params;
-import backend.util.ParamsMap;
 import backend.util.SignatureMap;
 import backend.util.Signatures;
-import backend.util.Tile;
 import backend.util.TileKey;
 
 public class SiftSignatureModel extends BasicSignatureModel {
@@ -100,6 +87,7 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	
 	public double[] getSignature(TileKey id) {
 		double[] sig = this.sigMap.getSignature(id, Model.SIFT);
+		if (sig == null) sig = new double[defaultVocabSize];
 		/*
 		// just don't use this for now
 		if(sig == null) {

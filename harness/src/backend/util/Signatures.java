@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Scanner;
 
 import org.opencv.core.Core;
@@ -23,9 +22,6 @@ import com.google.gson.Gson;
 import edu.wlu.cs.levy.CG.KDTree;
 import edu.wlu.cs.levy.CG.KeyDuplicateException;
 import edu.wlu.cs.levy.CG.KeySizeException;
-
-import backend.MainThread;
-import backend.disk.ScidbTileInterface;
 
 public class Signatures {
 	public static double[] globalmin = {0,0,-1,-1,-1,0};

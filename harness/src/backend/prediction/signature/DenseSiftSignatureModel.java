@@ -3,10 +3,8 @@ package backend.prediction.signature;
 import org.opencv.core.Mat;
 
 import backend.disk.DiskNiceTileBuffer;
-import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
-import backend.memory.MemoryTileBuffer;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Model;
 import backend.util.NiceTile;
@@ -25,6 +23,7 @@ public class DenseSiftSignatureModel extends SiftSignatureModel{
 	@Override
 	public double[] getSignature(TileKey id) {
 		double[] sig = this.sigMap.getSignature(id, Model.DSIFT);
+		if (sig == null) sig = new double[defaultVocabSize];
 		return sig;
 	}
 	

@@ -102,14 +102,16 @@ public class BuildSignaturesOffline {
 		buildSiftSignatures(mp, keys,denseSiftDescriptors,dsift_rows,buffer, true); // denseSIFT
 
 		System.out.println("done building SIFT/denseSIFT signatures... checking for null signatures");
+		int count = 0;
 		for(TileKey id : buffer.getAllTileKeys()) {
 			for(int i = 0; i < models.length; i++) {
 				if(mp.getSignature(id, models[i]) == null) {
+					count++;
 					System.out.println(models[i]+" signature for tile "+id.buildTileStringForFile()+" is null.");
 				}
 			}
 		}
-		System.out.println("done checking for null signatures...");
+		System.out.println("done checking for null signatures... found "+count+" null singatures.");
 		return mp;
 	}
 	

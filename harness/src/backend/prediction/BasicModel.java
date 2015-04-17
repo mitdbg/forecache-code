@@ -2,25 +2,17 @@ package backend.prediction;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
 import backend.disk.DiskNiceTileBuffer;
-import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
-import backend.memory.MemoryTileBuffer;
-import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
 import backend.util.NiceTile;
-import backend.util.Params;
 import backend.util.ParamsMap;
-import backend.util.SignatureMap;
-import backend.util.Tile;
 import backend.util.TileKey;
 
 public class BasicModel {

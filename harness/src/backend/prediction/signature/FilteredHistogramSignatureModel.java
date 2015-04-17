@@ -1,31 +1,15 @@
 package backend.prediction.signature;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
-import utils.DBInterface;
-import utils.UserRequest;
-import utils.UtilityFunctions;
-import backend.BuildSignaturesOffline;
 import backend.disk.DiskNiceTileBuffer;
-import backend.disk.DiskTileBuffer;
 import backend.disk.ScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
-import backend.memory.MemoryTileBuffer;
-import backend.prediction.BasicModel;
-import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
-import backend.prediction.directional.MarkovDirectionalModel;
 import backend.util.Direction;
 import backend.util.Model;
-import backend.util.NiceTile;
-import backend.util.Params;
-import backend.util.ParamsMap;
 import backend.util.SignatureMap;
 import backend.util.Signatures;
-import backend.util.Tile;
 import backend.util.TileKey;
 
 public class FilteredHistogramSignatureModel extends HistogramSignatureModel {
@@ -38,14 +22,7 @@ public class FilteredHistogramSignatureModel extends HistogramSignatureModel {
 	@Override
 	public double[] getSignature(TileKey id) {
 		double[] sig = this.sigMap.getSignature(id, Model.FHISTOGRAM);
-		if(sig == null) {
-			NiceTile tile = getTile(id);
-			sig = Signatures.getFilteredHistogramSignature(tile);
-			this.sigMap.updateSignature(id, Model.FHISTOGRAM, sig); // add to signature map
-			
-			// TODO: might be too slow to always write the whole structure to disk
-			this.sigMap.save(BuildSignaturesOffline.defaultFilename); // save changes to disk
-		}
+		if(sig == null) sig = new double[Signatures.defaultbins];
 		return sig;
 	}
 	

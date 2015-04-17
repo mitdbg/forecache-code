@@ -5,13 +5,10 @@ import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import javax.imageio.ImageIO;
 
 import org.imgscalr.Scalr;
-
-import com.google.gson.Gson;
 
 import utils.ColorBrewer;
 import utils.DBInterface;
@@ -54,11 +51,11 @@ public class DrawHeatmap {
 	}
 	
 	public static BufferedImage getBufferedImage(NiceTile tile, int x, int y) {
-		System.out.println(x+","+y);
-		System.out.println(tile.extrema.length);
+		//System.out.println(x+","+y);
+		//System.out.println(tile.extrema.length);
 		double[] xrange = tile.extrema[x];
 		double[] yrange = tile.extrema[y];
-		System.out.println(xrange[1]+","+xrange[0]+","+yrange[1]+","+yrange[0]);
+		//System.out.println(xrange[1]+","+xrange[0]+","+yrange[1]+","+yrange[0]);
 		int w = (int) (xrange[1] - xrange[0]);
 		int h = (int) (yrange[1] - yrange[0]);
 		BufferedImage bi = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
@@ -73,7 +70,7 @@ public class DrawHeatmap {
 		
 		int w = 1;
 		int h = 1;
-		System.out.println(xrange[1]+","+xrange[0]+","+yrange[1]+","+yrange[0]);
+		//System.out.println(xrange[1]+","+xrange[0]+","+yrange[1]+","+yrange[0]);
 		for(int i = 0; i < tile.getSize(); i++) {
 			int xpixel = (int) tile.get(x,i);
 			int ypixel = (int) tile.get(y,i);
