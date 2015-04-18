@@ -29,25 +29,15 @@ public abstract class TileInterface {
 		if(tile != null) return tile;
 		
 		tile = new NiceTile(id);
-		String tile_id = id.buildTileString();
-		if(tile_id == null) {
-			System.out.println("could not build tile_id");
-			return null;
-		}
-		Map<Integer,Params> map1 = this.paramsMap.get(id.buildTileString());
-		if(map1 == null) {
-			System.out.println("map1 is null");
-			return null;
-		}
-		Params p = map1.get(id.zoom);
-		if(p == null) {
-			System.out.println("params is null");
-			return null;
-		}
+		Params p = this.paramsMap.getParams(id);
 		executeQuery(DBInterface.arrayname,p,tile);
 
 		NiceTilePacker.writeNiceTile(tile);
 		return tile;
+	}
+	
+	public synchronized String getStoredTileName(String arrayname, TileKey id) {
+		return arrayname+"_"+id.buildTileStringForFile();
 	}
 	
 	public abstract void executeQuery(String tablename, Params p, NiceTile tile);

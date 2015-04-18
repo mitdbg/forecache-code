@@ -28,10 +28,11 @@ class JDBCExample
     try
     {
       Connection conn = DBInterface.getDefaultScidbConnection();
+      conn.setAutoCommit(false);
       Statement st = conn.createStatement();
       IStatementWrapper stWrapper = st.unwrap(IStatementWrapper.class);
       stWrapper.setAfl(true);
-      ResultSet res = st.executeQuery("build(<a:double>[x=0:2,3,0,y=0:2,3,0],10)");
+      ResultSet res = st.executeQuery("store(build(<a:double>[x=0:2,3,0,y=0:2,3,0],10),test)");
       ResultSetMetaData meta = res.getMetaData();
 
       System.out.println("Source array name: " + meta.getTableName(0));
@@ -54,6 +55,7 @@ class JDBCExample
            + res.getDouble("a"));
         res.next();
       }
+      conn.commit();
     }
     catch (SQLException e)
     {

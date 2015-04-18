@@ -55,6 +55,10 @@ public class VerticaTileInterface extends TileInterface {
 		return vertica_tile_templateA + tablename + vertica_tile_templateB;
 	}
 	
+	public synchronized String buildSavedTileQuery(String arrayname) {
+		return "select * from "+arrayname;
+	}
+	
 	public synchronized void executeQuery(String tablename, Params p, NiceTile tile) {
 		List<Double> temp = new ArrayList<Double>();
 		String[] labels = new String[0];

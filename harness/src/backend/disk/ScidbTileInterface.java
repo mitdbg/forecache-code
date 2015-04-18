@@ -1,5 +1,8 @@
 package backend.disk;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -21,21 +24,23 @@ import utils.UtilityFunctions;
 
 public class ScidbTileInterface extends TileInterface {
 	
-	/*
-	 * A
-	 * 1 - xmin
-	 * 2 - width
-	 * 3 - ymin
-	 * 4 - width
-	 * 
-	 * "5" - arrayname
-	 * 
-	 * B
-	 * 6 - xmax
-	 * 7 - xmin
-	 * 8 - ymax
-	 * 9 - ymin
-	 */
+	public ScidbTileInterface() {
+		super();
+	}
+	
+	public ScidbTileInterface(String paramsfile, String delim) {
+		super(paramsfile,delim);
+	}
+	
+	public synchronized String buildGetStoredTileQuery(String arrayname) {
+		return "scan("+arrayname+")";
+	}
+	
+	public synchronized String buildStoreTileQuery(String arrayname, Params p, TileKey id) {
+		String tile_name = super.getStoredTileName(arrayname, id);
+		return "store("+buildQuery(arrayname,p)+","+tile_name+")";
+	}
+	
 	// inserts parameters into aggregation query
 	public synchronized String buildQuery(String arrayname,Params p) {
 		String query = "regrid(subarray("+arrayname+","+p.xmin+","+p.ymin+","+p.xmax+","+p.ymax+"),"+p.width+","+p.width+
@@ -44,12 +49,98 @@ public class ScidbTileInterface extends TileInterface {
 		return query;
 	}
 	
-	public ScidbTileInterface() {
-		super();
+	public synchronized String[] buildCmd(String query) {
+		String[] myresult = new String[3];
+		myresult[0] = "bash";
+		myresult[1] = "-c";
+		myresult[2] = "export SCIDB_VER=13.3 ; " +
+				"export PATH=/opt/scidb/$SCIDB_VER/bin:/opt/scidb/$SCIDB_VER/share/scidb:$PATH ; " +
+				"export LD_LIBRARY_PATH=/opt/scidb/$SCIDB_VER/lib:$LD_LIBRARY_PATH ; " +
+				"source ~/.bashrc ; iquery -anq \"" + query + "\"";
+		return myresult;
 	}
 	
-	public ScidbTileInterface(String paramsfile, String delim) {
-		super(paramsfile,delim);
+	public synchronized long removeStoredTile(String arrayname, TileKey id) {
+		long start = System.currentTimeMillis();
+		Connection conn = DBInterface.getDefaultScidbConnection();
+		if(conn != null) {
+			try {
+				conn.setAutoCommit(false);
+				Statement st = conn.createStatement();
+				IStatementWrapper stWrapper = st.unwrap(IStatementWrapper.class);
+				stWrapper.setAfl(true);
+				st.executeQuery("remove("+super.getStoredTileName(arrayname, id)+")");
+				conn.commit();
+				st.close();
+				conn.close();
+			} catch (SQLException e) {
+				System.out.println("error occured while removing tile: "+id.buildTileStringForFile());
+				e.printStackTrace();
+			}
+		}
+		long end = System.currentTimeMillis();
+		return end - start;
+	}
+	
+	public synchronized long buildAndStoreTile(String arrayname, TileKey id) {
+		long start = System.currentTimeMillis();
+		Params p = paramsMap.getParams(id);
+		String query = buildStoreTileQuery(arrayname,p,id);
+		String[] cmd = buildCmd(query);
+			try {
+				System.out.println("query: \""+query+"\"");
+				Process proc = Runtime.getRuntime().exec(cmd);
+				
+				// only uncomment this if things aren't working
+				BufferedReader ebr = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+				for (String line; (line = ebr.readLine()) != null;) {
+					System.out.println(line);
+				}
+				ebr.close();
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		long end = System.currentTimeMillis();
+		return end - start;
+	}
+	
+	public synchronized long getStoredTile(String arrayname, NiceTile tile) {
+		List<Double> temp = new ArrayList<Double>();
+		String[] labels = new String[0];
+		long start = System.currentTimeMillis();
+
+		Connection conn = DBInterface.getDefaultScidbConnection();
+		if(conn != null) {
+			try {
+				Statement st = conn.createStatement();
+				IStatementWrapper stWrapper = st.unwrap(IStatementWrapper.class);
+				stWrapper.setAfl(true);
+				ResultSet rs = st.executeQuery(
+						buildGetStoredTileQuery(super.getStoredTileName(arrayname, tile.id)));
+				//IResultSetWrapper resWrapper = rs.unwrap(IResultSetWrapper.class);
+				ResultSetMetaData rsmd = rs.getMetaData();
+				labels = new String[rsmd.getColumnCount()];
+				for(int i = 0; i < labels.length; i++) {
+					labels[i] = rsmd.getColumnName(i+1);
+				}
+				while(rs.next()) {
+					for(int i = 0; i < labels.length; i++) {
+						temp.add(rs.getDouble(i+1));
+					}
+				}
+
+				rs.close();
+				st.close();
+			} catch (SQLException e) {
+				System.out.println("error occured while executing SciDB query");
+				e.printStackTrace();
+			}
+			tile.initializeData(temp, labels);
+		}
+		long end = System.currentTimeMillis();
+		return end - start;
 	}
 	
 	public synchronized void executeQuery(String arrayname, Params p, NiceTile tile) {
@@ -83,7 +174,7 @@ public class ScidbTileInterface extends TileInterface {
 			rs.close();
 			st.close();
 		} catch (SQLException e) {
-			System.out.println("error occured while executing vertica query");
+			System.out.println("error occured while executing SciDB query");
 			e.printStackTrace();
 		}
 		tile.initializeData(temp, labels);

@@ -407,6 +407,15 @@ public class DBInterface {
 	}
 	
 	public static Connection getSciDBConnection(String host, String port, String user, String password) {
+	    try
+	    {
+	      Class.forName("org.scidb.jdbc.Driver");
+	    }
+	    catch (ClassNotFoundException e)
+	    {
+	      System.out.println("Driver is not in the CLASSPATH -> " + e);
+	    }
+	    
 		Connection conn = null;
 		try {
 			//Class.forName("com.vertica.Driver");

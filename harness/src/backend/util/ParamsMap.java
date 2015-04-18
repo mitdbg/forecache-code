@@ -27,6 +27,25 @@ public class ParamsMap {
 		parseParamsFile();
 	}
 	
+	public Params getParams(TileKey id) {
+		Params p = null;
+		String tile_id = id.buildTileString();
+		if(tile_id == null) {
+			System.out.println("could not build tile_id");
+			return p;
+		}
+		Map<Integer,Params> map1 = get(tile_id);
+		if(map1 == null) {
+			System.out.println("map1 is null");
+			return p;
+		}
+		p = map1.get(id.zoom);
+		if(p == null) {
+			System.out.println("params is null");
+		}
+		return p;
+	}
+	
 	public Map<Integer,Params> get(String tileidstring) {
 		return this.paramsMap.get(tileidstring);
 	}
