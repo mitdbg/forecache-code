@@ -70,6 +70,11 @@ public class DBInterface {
 	public static final String vertica_dbname = "test";
 	public static final String vertica_user = "dbadmin";
 	public static final String vertica_password = "password";
+	
+	public static final String scidb_host = "localhost";
+	public static final String scidb_port = "1239";
+	public static final String scidb_user = "scidb";
+	public static final String scidb_password = "scidb";
 
 	public static final double [] distance_threshold = {0,1,1,2,2,3,3,4,4};
 
@@ -401,6 +406,28 @@ public class DBInterface {
 		return myresult;
 	}
 	
+	public static Connection getSciDBConnection(String host, String port, String user, String password) {
+		Connection conn = null;
+		try {
+			//Class.forName("com.vertica.Driver");
+			conn = DriverManager.getConnection(
+					"jdbc:scidb://" + host + ":" + port + "/",
+					user,
+					password
+					);
+		} catch (SQLException e) {
+			System.out.println("error opening connection to database '" + dbname + "' as user '" + user + "'");
+			e.printStackTrace();
+		}/* catch (ClassNotFoundException e) {
+			// Could not find the driver class. Likely an issue
+			// with finding the .jar file.
+			System.err.println("Could not find the JDBC driver class.");
+			e.printStackTrace();
+			return null;
+		}*/
+		return conn;
+	}
+	
 	public static Connection getVerticaConnection(String host, String port, String dbname, String user, String password) {
 		Connection conn = null;
 		try {
@@ -421,6 +448,10 @@ public class DBInterface {
 			return null;
 		}*/
 		return conn;
+	}
+	
+	public static Connection getDefaultScidbConnection() {
+		return getSciDBConnection(scidb_host,scidb_port,scidb_user,scidb_password);
 	}
 	
 	public static Connection getDefaultVerticaConnection() {

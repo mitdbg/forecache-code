@@ -2,7 +2,7 @@ package backend.prediction.signature;
 
 import java.util.List;
 import backend.disk.DiskNiceTileBuffer;
-import backend.disk.ScidbTileInterface;
+import backend.disk.OldScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
@@ -15,7 +15,7 @@ import backend.util.TileKey;
 public class NormalSignatureModel extends BasicSignatureModel {
 
 	public NormalSignatureModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf,
-			DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len,
+			DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len,
 			SignatureMap sigMap) {
 		super(ref,membuf,diskbuf,api,len,sigMap);
 	}

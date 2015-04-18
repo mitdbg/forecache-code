@@ -21,7 +21,7 @@ import org.opencv.core.Core;
 
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.NiceTilePacker;
-import backend.disk.ScidbTileInterface;
+import backend.disk.OldScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.NiceTileLruBuffer;
 import backend.prediction.BasicModel;
@@ -47,7 +47,7 @@ import utils.UtilityFunctions;
 public class MainThread {
 	public static MemoryNiceTileBuffer membuf;
 	public static DiskNiceTileBuffer diskbuf;
-	public static ScidbTileInterface scidbapi;
+	public static OldScidbTileInterface scidbapi;
 	public static int histmax = 10;
 	public static TileHistoryQueue hist;
 	public static NiceTileLruBuffer lmbuf;
@@ -300,7 +300,7 @@ public class MainThread {
 		membuf = new MemoryNiceTileBuffer();
 		//diskbuf = new DiskNiceTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
 		diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
-		scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+		scidbapi = new OldScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		lmbuf = new NiceTileLruBuffer(lmbuflen); // tracks the user's last x moves
 		hist = new TileHistoryQueue(histmax);
 		// load pre-computed signature map
@@ -516,16 +516,13 @@ public class MainThread {
 			NiceTile t = null;
 			try {
 				t = fetchTile(tile_id,zoom,threshold);
+				response.getWriter().println(NiceTilePacker.packData(t.data));
+				doPredictions();
 			} catch (Exception e) {
-				System.out.println("error occured while fetching tile");
 				response.getWriter().println(error);
+				System.out.println("error occured while fetching tile");
 				e.printStackTrace();
 				return;
-			}
-			if(t == null) {
-				response.getWriter().println(greeting);
-			} else {
-				response.getWriter().println(NiceTilePacker.packData(t.data));
 			}
 		}
 		
@@ -551,7 +548,7 @@ public class MainThread {
 			//long pstart = System.currentTimeMillis();
 			//predictions = getPredictions();
 			//insertPredictions(predictions);
-			doPredictions();
+			//doPredictions();
 			//long pend = System.currentTimeMillis();
 			//System.out.println("time to insert predictions: " + ((pend - pstart)/1000)+"s");
 			

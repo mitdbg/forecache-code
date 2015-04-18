@@ -152,7 +152,7 @@ public class Client {
 				ma[u1].addModel(UtilityFunctions.getModelFromString(models[0]), fullAccuracy);
 			}
 			
-			/*
+			
 			//original printed content
 			System.out.print(user_id+"\t");
 			System.out.print(taskname+"\t");
@@ -165,10 +165,10 @@ public class Client {
 			System.out.print(accuracy);
 			System.out.print("\t");
 			System.out.println(avg_duration);
-			*/
+			
 			
 			// new printed content
-			
+			/*
 			TraceMetadata metadata = RequestLabeler.getLabels(trace);
 			List<DirectionClass> dirs = metadata.directionClasses;
 			List<ExplorationPhase> phases = metadata.explorationPhases;
@@ -187,7 +187,7 @@ public class Client {
 				System.out.print("\t");
 				System.out.println(durations[i]);
 			}
-			
+			*/
 		}
 		overall_accuracy /= testusers.size();
 		//System.out.println("overall\t"+overall_accuracy);
@@ -509,14 +509,14 @@ public class Client {
 		}
 
 		try {
-			diff = System.currentTimeMillis();
 			connection = (HttpURLConnection) geturl.openConnection();
+			diff = System.currentTimeMillis();
 			reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 			while((line = reader.readLine()) != null) {
 				sbuffer.append(line);
 			}
-			reader.close();
 			diff = System.currentTimeMillis() - diff;
+			reader.close();
 			result = sbuffer.toString();
 			//System.out.println("tile ("+tile_id+", "+zoom+") result length: " + result.length());
 			if(result.equals("error")) {

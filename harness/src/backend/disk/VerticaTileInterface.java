@@ -1,34 +1,21 @@
 package backend.disk;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 
 import backend.util.NiceTile;
 import backend.util.Params;
-import backend.util.ParamsMap;
 import backend.util.TileKey;
 import utils.DBInterface;
 import utils.UtilityFunctions;
 
-public class VerticaTileInterface {
-	private ParamsMap paramsMap;
-	private String paramsfile;
-	private String delim;
+public class VerticaTileInterface extends TileInterface {
 	
 	/*
 	 * A
@@ -57,43 +44,15 @@ public class VerticaTileInterface {
 				"order by xbin, ybin;";
 	
 	public VerticaTileInterface() {
-		this(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+		super();
 	}
 	
 	public VerticaTileInterface(String paramsfile, String delim) {
-		this.paramsfile = paramsfile;
-		this.delim = delim;
-		this.paramsMap = new ParamsMap(this.paramsfile,this.delim);
+		super(paramsfile,delim);
 	}
 	
 	public static String insertTableName(String tablename) {
 		return vertica_tile_templateA + tablename + vertica_tile_templateB;
-	}
-	
-	public synchronized NiceTile getNiceTile(TileKey id) {
-		NiceTile tile = NiceTilePacker.readNiceTile(id);
-		if(tile != null) return tile;
-		
-		tile = new NiceTile(id);
-		String tile_id = id.buildTileString();
-		if(tile_id == null) {
-			System.out.println("could not build tile_id");
-			return null;
-		}
-		Map<Integer,Params> map1 = this.paramsMap.get(id.buildTileString());
-		if(map1 == null) {
-			System.out.println("map1 is null");
-			return null;
-		}
-		Params p = map1.get(id.zoom);
-		if(p == null) {
-			System.out.println("params is null");
-			return null;
-		}
-		executeQuery(DBInterface.arrayname,p,tile);
-
-		NiceTilePacker.writeNiceTile(tile);
-		return tile;
 	}
 	
 	public synchronized void executeQuery(String tablename, Params p, NiceTile tile) {
@@ -140,25 +99,6 @@ public class VerticaTileInterface {
 	}
 	
 	public static void main(String[] args) {
-		/*
-		Connection conn = DBInterface.getVerticaConnection("vertica-vm", "5433", "test", "dbadmin", "password");
-		if(conn == null) {
-			System.out.println("could not open connection.");
-		} else {
-			System.out.println("successfully retrieved connection!");
-			try {
-				Statement st = conn.createStatement();
-				ResultSet rs = st.executeQuery("select count(*) from earthquake");
-				if(rs.next()) {
-					System.out.println("count of records in earthquake table: "+rs.getInt(1));
-				}
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		*/
-		
 		boolean tiletest = true;
 		Params p = new Params();
 		p.xmin = 0;
@@ -167,7 +107,7 @@ public class VerticaTileInterface {
 		p.ymax = 1800;//1697;
 		p.width = 9;
 		VerticaTileInterface vti = new VerticaTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
-		ScidbTileInterface sti = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+		OldScidbTileInterface sti = new OldScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		String idstr = "[0, 0]";
 		int zoom = 0;
 		int[] tile_id = UtilityFunctions.parseTileIdInteger(idstr);

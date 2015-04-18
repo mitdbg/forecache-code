@@ -14,7 +14,7 @@ import utils.ColorBrewer;
 import utils.DBInterface;
 import utils.UtilityFunctions;
 
-import backend.disk.ScidbTileInterface;
+import backend.disk.OldScidbTileInterface;
 import backend.util.NiceTile;
 
 public class DrawHeatmap {
@@ -115,7 +115,7 @@ public class DrawHeatmap {
 		p.xmax = 3600;
 		p.ymax = 1800;//1697;
 		p.width = 9;
-		ScidbTileInterface sti = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+		OldScidbTileInterface sti = new OldScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		String idstr = "[1, 3]";
 		int zoom = 4;
 		int[] tile_id = UtilityFunctions.parseTileIdInteger(idstr);

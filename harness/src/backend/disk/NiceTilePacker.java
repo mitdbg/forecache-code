@@ -426,7 +426,7 @@ public class NiceTilePacker {
 		boolean fst = false;
 		boolean custom = false;
 		boolean baseline = false;
-		ScidbTileInterface sti = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+		OldScidbTileInterface sti = new OldScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		String idstr = "[0, 0]";
 		int zoom = 0;
 		int[] tile_id = UtilityFunctions.parseTileIdInteger(idstr);
@@ -452,7 +452,7 @@ public class NiceTilePacker {
 				System.out.println("could not retrieve tile from disk buffer");
 				e.printStackTrace();
 			}
-			sti.getTile(id);
+			sti.getNiceTile(id);
 		}
 		
 		if(def) {

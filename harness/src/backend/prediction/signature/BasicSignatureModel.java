@@ -1,7 +1,7 @@
 package backend.prediction.signature;
 
 import backend.disk.DiskNiceTileBuffer;
-import backend.disk.ScidbTileInterface;
+import backend.disk.OldScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.prediction.BasicModel;
 import backend.prediction.TileHistoryQueue;
@@ -13,7 +13,7 @@ public abstract class BasicSignatureModel extends BasicModel {
 	protected SignatureMap sigMap;
 	
 	public BasicSignatureModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, 
-			DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len,
+			DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len,
 			SignatureMap sigMap) {
 		super(ref,membuf,diskbuf,api,len);
 		this.sigMap = sigMap;

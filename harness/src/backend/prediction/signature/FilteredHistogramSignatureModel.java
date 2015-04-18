@@ -3,7 +3,7 @@ package backend.prediction.signature;
 import java.util.List;
 
 import backend.disk.DiskNiceTileBuffer;
-import backend.disk.ScidbTileInterface;
+import backend.disk.OldScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
@@ -15,7 +15,7 @@ import backend.util.TileKey;
 public class FilteredHistogramSignatureModel extends HistogramSignatureModel {
 
 	public FilteredHistogramSignatureModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, 
-			DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len, SignatureMap sigMap) {
+			DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len, SignatureMap sigMap) {
 		super(ref,membuf,diskbuf,api,len, sigMap);
 	}
 	

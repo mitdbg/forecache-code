@@ -8,7 +8,7 @@ import utils.DBInterface;
 import utils.UserRequest;
 import utils.UtilityFunctions;
 import backend.disk.DiskNiceTileBuffer;
-import backend.disk.ScidbTileInterface;
+import backend.disk.OldScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.util.Direction;
 import backend.util.NiceTile;
@@ -21,7 +21,7 @@ public class BasicModel {
 	protected ParamsMap paramsMap; // for checking if predictions are actual tiles
 	protected MemoryNiceTileBuffer membuf;
 	protected DiskNiceTileBuffer diskbuf;
-	protected ScidbTileInterface scidbapi;
+	protected OldScidbTileInterface scidbapi;
 	protected boolean useDistanceCorrection = true;
 	public static final double defaultprob = .00000000001; // default assigned confidence value
 	public static final int defaultlen = 4; // default history length
@@ -29,7 +29,7 @@ public class BasicModel {
 	
 
 	public BasicModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, 
-			DiskNiceTileBuffer diskbuf,ScidbTileInterface api, int len) {
+			DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len) {
 		this.history = ref; // reference to (syncrhonized) global history object
 		this.membuf = membuf;
 		this.diskbuf = diskbuf;
