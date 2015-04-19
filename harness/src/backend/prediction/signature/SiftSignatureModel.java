@@ -42,7 +42,7 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	
 	@Override
 	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
-		//updateRoi(scidbapi); // make sure we're using the most recent ROI
+		updateRoi(scidbapi); // make sure we're using the most recent ROI
 		return super.predictOrder(htrace,false); // don't reverse the order here
 	}
 	
@@ -86,19 +86,9 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	}
 	
 	public double[] getSignature(TileKey id) {
-		double[] sig = this.sigMap.getSignature(id, Model.SIFT);
+		//double[] sig = this.sigMap.getSignature(id, Model.SIFT);
+		double[] sig = this.buildSignatureFromKey(id);
 		if (sig == null) sig = new double[defaultVocabSize];
-		/*
-		// just don't use this for now
-		if(sig == null) {
-			NiceTile tile = getTile(id);
-			sig = Signatures.getNormalSignature(tile);
-			this.sigMap.updateSignature(id, Model.SIFT, sig); // add to signature map
-			
-			// TODO: might be too slow to always write the whole structure to disk
-			this.sigMap.save(BuildSignaturesOffline.defaultFilename); // save changes to disk
-		}
-		*/
 		return sig;
 	}
 	
@@ -122,12 +112,12 @@ public class SiftSignatureModel extends BasicSignatureModel {
 		return Signatures.buildSiftSignature(tile, vocab, vocabSize);
 	}
 	
-	/*
+	
 	@Override
 	public void updateRoi() {
 		updateRoi(scidbapi);
 	}
-	*/
+	
 	
 	// don't use for now
 	public void updateRoi(OldScidbTileInterface scidbapi) {

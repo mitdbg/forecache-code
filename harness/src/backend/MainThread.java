@@ -8,7 +8,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -61,6 +67,7 @@ public class MainThread {
 	
 	//server
 	public static Server server;
+	private static boolean readyflag = true;
 	
 	//accuracy
 	public static int total_requests = 0;
@@ -85,6 +92,14 @@ public class MainThread {
 	
 	// global model objects	
 	public static BasicModel[] all_models;
+	
+	public static synchronized boolean checkReady() {
+		return readyflag;
+	}
+	
+	public static synchronized void setReady(boolean readyflag) {
+		MainThread.readyflag = readyflag;
+	}
 	
 	public static void setupModels() {
 		all_models = new BasicModel[modellabels.length];
@@ -455,6 +470,14 @@ public class MainThread {
 		trainModels();
 	}
 	
+	/*this thread is used to populate the main memory cache. It is triggered after each request*/
+	public static class PredictionTask implements Runnable {
+		
+		public synchronized void run() {
+				doPredictions();
+		}
+	}
+	
 	/**
 	 * Java requires a serial version ID for the class.
 	 */
@@ -464,14 +487,29 @@ public class MainThread {
 		private static final String greeting = "Hello World";
 		private static final String done = "done";
 		private static final String error = "error";
-
+		private static  RunnableFuture<?> predictor = null; // instance if the PredictionThread class
+		private static ExecutorService executorService;
+		
+		public void init() {
+			executorService = (ExecutorService) Executors.newCachedThreadPool();
+		}
+				
+		protected boolean isReady() {
+			return predictor == null || predictor.isDone();
+		}
+		
 		protected void doGet(HttpServletRequest request,
 				HttpServletResponse response) throws ServletException, IOException {
 			
 			response.setContentType("text/html");
 			response.setStatus(HttpServletResponse.SC_OK);
-			// get fetch parameters
-			//String hashed_query = request.getParameter("hashed_query");
+			
+			String ready = request.getParameter("ready");
+			if(ready != null) {
+				response.getWriter().println(isReady());
+				return;
+			}
+			
 			String reset = request.getParameter("reset");
 			if(reset != null) {
 				System.out.println("reset");
@@ -523,13 +561,15 @@ public class MainThread {
 			try {
 				//t = fetchTile(tile_id,zoom,threshold);
 				t = newFetchTile(tile_id,zoom,threshold);
+				predictor = new FutureTask<Object>(new PredictionTask(),null);
+				executorService.submit(predictor);
+				// send the response
 				response.getWriter().println(NiceTilePacker.packData(t.data));
-				doPredictions();
+				
 			} catch (Exception e) {
 				response.getWriter().println(error);
 				System.out.println("error occured while fetching tile");
 				e.printStackTrace();
-				return;
 			}
 		}
 		
@@ -550,10 +590,10 @@ public class MainThread {
 				if(t == null) { // not cached, get it from disk in DBMS
 					t = new NiceTile();
 					t.id = key;
-					//newScidbapi.getStoredTile(DBInterface.arrayname, t);
-					verticaapi.getStoredTile(DBInterface.arrayname, t);
+					newScidbapi.getStoredTile(DBInterface.arrayname, t);
+					//verticaapi.getStoredTile(DBInterface.arrayname, t);
 					
-					membuf.insertTile(t);
+					//membuf.insertTile(t);
 				} else { // found in memory
 					cache_hits++;
 					membuf.touchTile(key); // update timestamp
@@ -649,6 +689,10 @@ public class MainThread {
 			//System.out.println("current accuracy: "+ (1.0 * cache_hits / total_requests));
 			//System.out.println("cache size: "+membuf.tileCount()+" tiles");
 			return t;
+		}
+		
+		public void destroy() {
+			executorService.shutdown();
 		}
 
 	}

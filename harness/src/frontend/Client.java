@@ -139,6 +139,15 @@ public class Client {
 				int zoom = ur.zoom;
 				//System.out.println("tile id: '" +tile_id+ "'");
 				//Thread.sleep(100);
+				for(int i = 0; i < 10000; i++) {
+					if(!checkReady()) {
+						//System.out.println("not ready... waiting 100ms");
+						Thread.sleep(100);
+					} else {
+						//System.out.println("continuing on...");
+						break;
+					}
+				}
 				durations[r] = sendRequest(tile_id,zoom,tile_hash);
 				avg_duration += durations[r];
 			}
@@ -488,6 +497,58 @@ public class Client {
 		}
 		return false;
 	}
+	
+	public static boolean checkReady() throws Exception {
+		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
+				+ "?ready";
+		URL geturl = null;
+		HttpURLConnection connection = null;
+		BufferedReader reader = null;
+		StringBuffer sbuffer = new StringBuffer();
+		String line;
+		String result = null;
+		boolean ready = false;
+		try {
+			geturl = new URL(urlstring);
+		} catch (MalformedURLException e) {
+			System.out.println("error occurred while retrieving url object for: '"+urlstring+"'");
+			e.printStackTrace();
+		}
+		if(geturl == null) {
+			return ready;
+		}
+
+		try {
+			connection = (HttpURLConnection) geturl.openConnection();
+			reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			while((line = reader.readLine()) != null) {
+				sbuffer.append(line);
+			}
+			reader.close();
+			result = sbuffer.toString();
+			ready = Boolean.parseBoolean(result);
+			//System.out.println("tile ("+tile_id+", "+zoom+") result length: " + result.length());
+			if(result.equals("error")) {
+				throw new Exception("serious error occurred on backend while retrieving tile");
+			}
+		} catch (IOException e) {
+			System.out.println("Error retrieving response from url: '"+urlstring+"'");
+			e.printStackTrace();
+		}
+
+		if(connection != null) {
+			connection.disconnect();
+		}
+		if(reader != null) {
+			try {
+				reader.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return ready;
+	}
 
 	public static long sendRequest(String tile_id, int zoom, String hashed_query) throws Exception {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
@@ -640,7 +701,6 @@ public class Client {
 				}
 				
 				if(prevzoom > -1) {
-					//System.out.println("here");
 					int zoomdiff = currzoom - prevzoom;
 					//System.out.println("zoomdiff: "+zoomdiff);
 					if(zoomdiff == 0) { // pan
@@ -655,7 +715,6 @@ public class Client {
 					}
 					
 					if(hist.size() > cmax) {
-						//System.out.println("here");
 						DirectionClass toRemove = hist.remove(0);
 						if(toRemove == DirectionClass.IN) {
 							incount--;

@@ -20,13 +20,14 @@ public class DenseSiftSignatureModel extends SiftSignatureModel{
 		super(ref,membuf,diskbuf,api,len, sigMap);
 	}
 	
+	/*
 	@Override
 	public double[] getSignature(TileKey id) {
 		double[] sig = this.sigMap.getSignature(id, Model.DSIFT);
 		if (sig == null) sig = new double[defaultVocabSize];
 		return sig;
 	}
-	
+	*/
 	@Override
 	public double[] buildSignatureFromMat(Mat d) {
 		return Signatures.buildDenseSiftSignature(d, vocab, defaultVocabSize);
