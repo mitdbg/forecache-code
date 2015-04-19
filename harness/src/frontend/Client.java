@@ -138,6 +138,7 @@ public class Client {
 				String tile_hash = ur.tile_hash;
 				int zoom = ur.zoom;
 				//System.out.println("tile id: '" +tile_id+ "'");
+				Thread.sleep(500);
 				durations[r] = sendRequest(tile_id,zoom,tile_hash);
 				avg_duration += durations[r];
 			}
@@ -152,7 +153,7 @@ public class Client {
 				ma[u1].addModel(UtilityFunctions.getModelFromString(models[0]), fullAccuracy);
 			}
 			
-			
+			/*
 			//original printed content
 			System.out.print(user_id+"\t");
 			System.out.print(taskname+"\t");
@@ -165,10 +166,10 @@ public class Client {
 			System.out.print(accuracy);
 			System.out.print("\t");
 			System.out.println(avg_duration);
-			
+			*/
 			
 			// new printed content
-			/*
+			
 			TraceMetadata metadata = RequestLabeler.getLabels(trace);
 			List<DirectionClass> dirs = metadata.directionClasses;
 			List<ExplorationPhase> phases = metadata.explorationPhases;
@@ -187,7 +188,7 @@ public class Client {
 				System.out.print("\t");
 				System.out.println(durations[i]);
 			}
-			*/
+			
 		}
 		overall_accuracy /= testusers.size();
 		//System.out.println("overall\t"+overall_accuracy);

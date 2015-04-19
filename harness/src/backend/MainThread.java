@@ -22,6 +22,7 @@ import org.opencv.core.Core;
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.NiceTilePacker;
 import backend.disk.OldScidbTileInterface;
+import backend.disk.ScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.NiceTileLruBuffer;
 import backend.prediction.BasicModel;
@@ -48,6 +49,7 @@ public class MainThread {
 	public static MemoryNiceTileBuffer membuf;
 	public static DiskNiceTileBuffer diskbuf;
 	public static OldScidbTileInterface scidbapi;
+	public static ScidbTileInterface newScidbapi;
 	public static int histmax = 10;
 	public static TileHistoryQueue hist;
 	public static NiceTileLruBuffer lmbuf;
@@ -301,6 +303,7 @@ public class MainThread {
 		//diskbuf = new DiskNiceTileBuffer(DBInterface.cache_root_dir,DBInterface.hashed_query,DBInterface.threshold);
 		diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
 		scidbapi = new OldScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+		newScidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		lmbuf = new NiceTileLruBuffer(lmbuflen); // tracks the user's last x moves
 		hist = new TileHistoryQueue(histmax);
 		// load pre-computed signature map
@@ -515,7 +518,8 @@ public class MainThread {
 			//System.out.println("threshold: " + threshold);
 			NiceTile t = null;
 			try {
-				t = fetchTile(tile_id,zoom,threshold);
+				//t = fetchTile(tile_id,zoom,threshold);
+				t = newFetchTile(tile_id,zoom,threshold);
 				response.getWriter().println(NiceTilePacker.packData(t.data));
 				doPredictions();
 			} catch (Exception e) {
@@ -528,6 +532,45 @@ public class MainThread {
 		
 		protected double getAccuracy() {
 			return (1.0 * cache_hits / total_requests);
+		}
+		
+		protected NiceTile newFetchTile(String tile_id, String zoom, String threshold) {
+			String reverse = UtilityFunctions.unurlify(tile_id); // undo urlify
+			int[] id = UtilityFunctions.parseTileIdInteger(reverse);
+			int z = Integer.parseInt(zoom);
+			TileKey key = new TileKey(id,z);
+			
+			boolean found = false;
+			NiceTile t = lmbuf.getTile(key); // check lru cache
+			if(t == null) { // not in user's last x moves. check mem cache
+				t = membuf.getTile(key);
+				if(t == null) { // not cached, get it from disk in DBMS
+					t = new NiceTile();
+					t.id = key;
+					newScidbapi.getStoredTile(DBInterface.arrayname, t);
+					membuf.insertTile(t);
+				} else { // found in memory
+					cache_hits++;
+					membuf.touchTile(key); // update timestamp
+					found = true;
+				}
+			} else { // found in lru cache
+				cache_hits++;
+				found = true;
+			}
+			total_requests++;
+			hist.addRecord(t);
+			lmbuf.insertTile(t);
+			if(found) {
+				//System.out.println("hit in cache for tile "+key);
+				hitslist.add("hit");
+			} else {
+				//System.out.println("miss in cache for tile "+key);
+				hitslist.add("miss");
+			}
+			//System.out.println("current accuracy: "+ (1.0 * cache_hits / total_requests));
+			//System.out.println("cache size: "+membuf.tileCount()+" tiles");
+			return t;
 		}
 		
 		// fetches tiles from
