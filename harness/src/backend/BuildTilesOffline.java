@@ -4,6 +4,7 @@ import utils.DBInterface;
 
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.ScidbTileInterface;
+import backend.util.NiceTile;
 import backend.util.TileKey;
 
 /*
@@ -22,8 +23,12 @@ public class BuildTilesOffline {
 	public static void buildTiles(DiskNiceTileBuffer buffer, ScidbTileInterface sti) {
 		// build every tile in SciDB and save it
 		for(TileKey id : buffer.getAllTileKeys()) {
-			//sti.removeStoredTile(DBInterface.arrayname, id);
+			sti.removeStoredTile(DBInterface.arrayname, id);
+			NiceTile t = new NiceTile();
+			t.id = id;
 			sti.buildAndStoreTile(DBInterface.arrayname, id);
+			sti.getStoredTile(DBInterface.arrayname, t);
+			System.out.println("size: "+t.getSize());
 		}
 	}
 }

@@ -49,7 +49,7 @@ public class ScidbTileInterface extends TileInterface {
 		return query;
 	}
 	
-	public synchronized String[] buildCmd(String query) {
+	public synchronized String[] buildCmdNoOutput(String query) {
 		String[] myresult = new String[3];
 		myresult[0] = "bash";
 		myresult[1] = "-c";
@@ -60,24 +60,36 @@ public class ScidbTileInterface extends TileInterface {
 		return myresult;
 	}
 	
+	public synchronized String[] buildCmd(String query) {
+		String[] myresult = new String[3];
+		myresult[0] = "bash";
+		myresult[1] = "-c";
+		myresult[2] = "export SCIDB_VER=13.3 ; " +
+				"export PATH=/opt/scidb/$SCIDB_VER/bin:/opt/scidb/$SCIDB_VER/share/scidb:$PATH ; " +
+				"export LD_LIBRARY_PATH=/opt/scidb/$SCIDB_VER/lib:$LD_LIBRARY_PATH ; " +
+				"source ~/.bashrc ; iquery -o csv+ -aq \"" + query + "\"";
+		return myresult;
+	}
+	
 	public synchronized long removeStoredTile(String arrayname, TileKey id) {
 		long start = System.currentTimeMillis();
-		Connection conn = DBInterface.getDefaultScidbConnection();
-		if(conn != null) {
+		String query = "remove("+super.getStoredTileName(arrayname, id)+")";
+		String[] cmd = buildCmdNoOutput(query);
 			try {
-				conn.setAutoCommit(false);
-				Statement st = conn.createStatement();
-				IStatementWrapper stWrapper = st.unwrap(IStatementWrapper.class);
-				stWrapper.setAfl(true);
-				st.executeQuery("remove("+super.getStoredTileName(arrayname, id)+")");
-				conn.commit();
-				st.close();
-				conn.close();
-			} catch (SQLException e) {
-				System.out.println("error occured while removing tile: "+id.buildTileStringForFile());
+				System.out.println("query: \""+query+"\"");
+				Process proc = Runtime.getRuntime().exec(cmd);
+				
+				// only uncomment this if things aren't working
+				BufferedReader ebr = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+				for (String line; (line = ebr.readLine()) != null;) {
+					System.out.println(line);
+				}
+				ebr.close();
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		}
 		long end = System.currentTimeMillis();
 		return end - start;
 	}
@@ -86,7 +98,7 @@ public class ScidbTileInterface extends TileInterface {
 		long start = System.currentTimeMillis();
 		Params p = paramsMap.getParams(id);
 		String query = buildStoreTileQuery(arrayname,p,id);
-		String[] cmd = buildCmd(query);
+		String[] cmd = buildCmdNoOutput(query);
 			try {
 				System.out.println("query: \""+query+"\"");
 				Process proc = Runtime.getRuntime().exec(cmd);
@@ -110,35 +122,46 @@ public class ScidbTileInterface extends TileInterface {
 		List<Double> temp = new ArrayList<Double>();
 		String[] labels = new String[0];
 		long start = System.currentTimeMillis();
-
-		Connection conn = DBInterface.getDefaultScidbConnection();
-		if(conn != null) {
+		String query = buildGetStoredTileQuery(super.getStoredTileName(arrayname, tile.id));
+		String[] cmd = buildCmd(query);
+		Process proc = null;
+		try {
+			System.out.println("query: \""+query+"\"");
+			proc = Runtime.getRuntime().exec(cmd);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if(proc != null) {
 			try {
-				Statement st = conn.createStatement();
-				IStatementWrapper stWrapper = st.unwrap(IStatementWrapper.class);
-				stWrapper.setAfl(true);
-				ResultSet rs = st.executeQuery(
-						buildGetStoredTileQuery(super.getStoredTileName(arrayname, tile.id)));
-				//IResultSetWrapper resWrapper = rs.unwrap(IResultSetWrapper.class);
-				ResultSetMetaData rsmd = rs.getMetaData();
-				labels = new String[rsmd.getColumnCount()];
-				for(int i = 0; i < labels.length; i++) {
-					labels[i] = rsmd.getColumnName(i+1);
-				}
-				while(rs.next()) {
-					for(int i = 0; i < labels.length; i++) {
-						temp.add(rs.getDouble(i+1));
+				BufferedReader br = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+				boolean first = true;
+				for (String line; (line = br.readLine()) != null;) {
+					//System.out.println("line: "+line);
+					String[] tokens = line.split(",");
+					if(!first) { // ignore first line
+						for(int i = 0; i < tokens.length; i++) {
+							Double next = 0.0;
+							try {
+								next = Double.parseDouble(tokens[i]);
+							} catch (NumberFormatException e) {
+								System.out.println("could not parse SciDB result, skipping...");
+								e.printStackTrace();
+							}
+							temp.add(next); // just add 0.0 if we can't parse it
+						}
+					} else {
+						first = false;
+						labels = tokens;
 					}
 				}
-
-				rs.close();
-				st.close();
-			} catch (SQLException e) {
-				System.out.println("error occured while executing SciDB query");
+				tile.initializeData(temp, labels);
+			} catch (IOException e) {
+				System.out.println("Error occurred while reading query output.");
 				e.printStackTrace();
 			}
-			tile.initializeData(temp, labels);
 		}
+
 		long end = System.currentTimeMillis();
 		return end - start;
 	}
@@ -154,9 +177,11 @@ public class ScidbTileInterface extends TileInterface {
 		}
 	      
 		try {
+			conn.setAutoCommit(false);
 			Statement st = conn.createStatement();
 		      IStatementWrapper stWrapper = st.unwrap(IStatementWrapper.class);
 		      stWrapper.setAfl(true);
+		      System.out.println(buildQuery(arrayname,p));
 			ResultSet rs = st.executeQuery(buildQuery(arrayname,p));
 		    //IResultSetWrapper resWrapper = rs.unwrap(IResultSetWrapper.class);
 		    ResultSetMetaData rsmd = rs.getMetaData();
