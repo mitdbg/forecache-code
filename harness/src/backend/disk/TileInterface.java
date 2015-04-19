@@ -36,7 +36,7 @@ public abstract class TileInterface {
 		return tile;
 	}
 	
-	public synchronized String getStoredTileName(String arrayname, TileKey id) {
+	public static String getStoredTileName(String arrayname, TileKey id) {
 		return arrayname+"_"+id.buildTileStringForFile();
 	}
 	

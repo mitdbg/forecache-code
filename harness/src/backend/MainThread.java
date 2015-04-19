@@ -23,6 +23,7 @@ import backend.disk.DiskNiceTileBuffer;
 import backend.disk.NiceTilePacker;
 import backend.disk.OldScidbTileInterface;
 import backend.disk.ScidbTileInterface;
+import backend.disk.VerticaTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.NiceTileLruBuffer;
 import backend.prediction.BasicModel;
@@ -50,6 +51,7 @@ public class MainThread {
 	public static DiskNiceTileBuffer diskbuf;
 	public static OldScidbTileInterface scidbapi;
 	public static ScidbTileInterface newScidbapi;
+	public static VerticaTileInterface verticaapi;
 	public static int histmax = 10;
 	public static TileHistoryQueue hist;
 	public static NiceTileLruBuffer lmbuf;
@@ -304,6 +306,7 @@ public class MainThread {
 		diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
 		scidbapi = new OldScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		newScidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+		verticaapi = new VerticaTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		lmbuf = new NiceTileLruBuffer(lmbuflen); // tracks the user's last x moves
 		hist = new TileHistoryQueue(histmax);
 		// load pre-computed signature map
@@ -547,7 +550,9 @@ public class MainThread {
 				if(t == null) { // not cached, get it from disk in DBMS
 					t = new NiceTile();
 					t.id = key;
-					newScidbapi.getStoredTile(DBInterface.arrayname, t);
+					//newScidbapi.getStoredTile(DBInterface.arrayname, t);
+					verticaapi.getStoredTile(DBInterface.arrayname, t);
+					
 					membuf.insertTile(t);
 				} else { // found in memory
 					cache_hits++;

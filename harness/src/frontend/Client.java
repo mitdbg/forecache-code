@@ -138,7 +138,7 @@ public class Client {
 				String tile_hash = ur.tile_hash;
 				int zoom = ur.zoom;
 				//System.out.println("tile id: '" +tile_id+ "'");
-				Thread.sleep(500);
+				//Thread.sleep(100);
 				durations[r] = sendRequest(tile_id,zoom,tile_hash);
 				avg_duration += durations[r];
 			}

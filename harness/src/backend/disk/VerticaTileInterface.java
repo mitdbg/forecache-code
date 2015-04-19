@@ -5,8 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+
 
 
 import backend.util.NiceTile;
@@ -38,7 +40,16 @@ public class VerticaTileInterface extends TileInterface {
 				"max(ndsi) as max_ndsi, max(land_sea_mask) as max_land_sea_mask " +
 				//"count(*) as count " +
 				"from "/* table name goes here */;
-	public static final String vertica_tile_templateB =
+	
+	public static final String vertica_stored_tile_templateA = 
+			"select floor((x-?)/?) as xbin, floor((y-?)/?) as ybin, " +
+				"avg(ndsi) as avg_ndsi, min(ndsi) as min_ndsi, " +
+				"max(ndsi) as max_ndsi, max(land_sea_mask) as max_land_sea_mask " +
+				"into " /* tile name goes here */;
+	
+	public static final String vertica_stored_tile_templateB = " from "/* table name goes here */;
+	
+	public static final String vertica_tile_templateC =
 				" where x <= ? and x >= ? and y <= ? and y >= ? " +
 				"group by xbin, ybin " +
 				"order by xbin, ybin;";
@@ -51,12 +62,103 @@ public class VerticaTileInterface extends TileInterface {
 		super(paramsfile,delim);
 	}
 	
-	public static String insertTableName(String tablename) {
-		return vertica_tile_templateA + tablename + vertica_tile_templateB;
+	public static String buildStoredTileQuery(String tablename, TileKey id) {
+		return vertica_stored_tile_templateA +
+				TileInterface.getStoredTileName(tablename, id) +
+				vertica_stored_tile_templateB
+				+ tablename + vertica_tile_templateC;
 	}
 	
-	public synchronized String buildSavedTileQuery(String arrayname) {
-		return "select * from "+arrayname;
+	public static String insertTableName(String tablename) {
+		return vertica_tile_templateA + tablename + vertica_tile_templateC;
+	}
+	
+	public synchronized String buildGetStoredTileQuery(String tablename) {
+		return "select * from "+tablename;
+	}
+	
+	public synchronized void removeStoredTile(String tablename, TileKey id) {
+		String query = "drop table if exists " + TileInterface.getStoredTileName(tablename, id);
+		Connection conn = DBInterface.getDefaultVerticaConnection();
+		if(conn != null) {
+			try {
+				Statement st = conn.createStatement();
+				st.execute(query);
+				st.close();
+				conn.close();
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public synchronized long buildAndStoreTile(String tablename, TileKey id) {
+		long start = System.currentTimeMillis();
+		Params p = paramsMap.getParams(id);
+		String template = buildStoredTileQuery(tablename, id);
+
+		Connection conn = DBInterface.getDefaultVerticaConnection();
+		if(conn != null) {
+			PreparedStatement ps;
+			try {
+				ps = conn.prepareStatement(template);
+				ps.setInt(1, p.xmin);
+				ps.setInt(2, p.width);
+				ps.setInt(3, p.ymin);
+				ps.setInt(4, p.width);
+				ps.setInt(5, p.xmax);
+				ps.setInt(6, p.xmin);
+				ps.setInt(7, p.ymax);
+				ps.setInt(8, p.ymin);
+				ps.execute();
+				ps.close();
+				conn.close();
+			} catch (SQLException e) {
+				System.out.println("error occured while executing vertica query");
+				e.printStackTrace();
+			}
+		}
+		long end = System.currentTimeMillis();
+		return end-start;
+	}
+	
+	public synchronized long getStoredTile(String tablename, NiceTile tile) {
+		long start = System.currentTimeMillis();
+		String query = this.buildGetStoredTileQuery(
+				TileInterface.getStoredTileName(tablename, tile.id));
+		
+		List<Double> temp = new ArrayList<Double>();
+		String[] labels = new String[0];
+		//long start = System.currentTimeMillis();
+		
+		Connection conn = DBInterface.getDefaultVerticaConnection();
+		if(conn != null) {
+			try {
+				Statement st = conn.createStatement();
+				ResultSet rs = st.executeQuery(query);
+				ResultSetMetaData rsmd = rs.getMetaData();
+				labels = new String[rsmd.getColumnCount()];
+				for(int i = 0; i < labels.length; i++) {
+					labels[i] = rsmd.getColumnName(i+1);
+				}
+				while(rs.next()) {
+					//System.out.println("here");
+					for(int i = 0; i < labels.length; i++) {
+						temp.add(rs.getDouble(i+1));
+					}
+				}
+				rs.close();
+				st.close();
+				conn.close();
+				tile.initializeData(temp, labels);
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		long end = System.currentTimeMillis();
+		return end-start;
 	}
 	
 	public synchronized void executeQuery(String tablename, Params p, NiceTile tile) {
@@ -94,6 +196,7 @@ public class VerticaTileInterface extends TileInterface {
 			}
 			rs.close();
 			ps.close();
+			conn.close();
 		} catch (SQLException e) {
 			System.out.println("error occured while executing vertica query");
 			e.printStackTrace();

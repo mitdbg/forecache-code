@@ -116,7 +116,7 @@ public class TileKey implements java.io.Serializable {
 		return tile_id.toString();
 	}
 	
-	public String buildTileStringForFile() {
+	public synchronized String buildTileStringForFile() {
 		StringBuilder tile_id = new StringBuilder();
 		if(this.id == null) {
 			return null;
