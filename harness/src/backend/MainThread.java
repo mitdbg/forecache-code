@@ -178,13 +178,13 @@ public class MainThread {
 			//}
 			//System.out.println();
 		}
-		/*
+		
 		System.out.print("predictions:");
 		for(TileKey k : toInsert.keySet()) {
 			System.out.print(k+" ");
 		}
 		System.out.println();
-		*/
+		
 		Set<TileKey> oldKeys = new HashSet<TileKey>();
 		for(TileKey k : membuf.getAllTileKeys()) {
 			oldKeys.add(k);

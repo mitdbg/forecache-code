@@ -126,7 +126,7 @@ public class ScidbTileInterface extends TileInterface {
 		String[] cmd = buildCmd(query);
 		Process proc = null;
 		try {
-			System.out.println("query: \""+query+"\"");
+			//System.out.println("query: \""+query+"\"");
 			proc = Runtime.getRuntime().exec(cmd);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
