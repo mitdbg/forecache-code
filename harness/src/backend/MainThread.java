@@ -4,17 +4,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
 
-import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -178,7 +174,7 @@ public class MainThread {
 			//}
 			//System.out.println();
 		}
-		
+		/*
 		System.out.print("predictions:");
 		for(TileKey k : toInsert.keySet()) {
 			System.out.print(k+" ");
@@ -189,6 +185,7 @@ public class MainThread {
 		for(TileKey k : membuf.getAllTileKeys()) {
 			oldKeys.add(k);
 		}
+		*/
 		//for(TileKey old : oldKeys) {
 		//	if (!toInsert.containsKey(old)) {
 		//		membuf.removeTile(old);

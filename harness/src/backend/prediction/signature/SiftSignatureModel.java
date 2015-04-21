@@ -51,6 +51,9 @@ public class SiftSignatureModel extends BasicSignatureModel {
 		double confidence = 0.0;
 		TileKey prev = trace.get(trace.size() - 1);
 		TileKey ckey = this.DirectionToTile(prev, d);
+		if(ckey == null) {
+			return defaultprob;
+		}
 		//double[] vocabhist = buildSignature(ckey);
 		for(TileKey roiKey : roi) {
 			//double[] roihist = histograms.get(roiKey);
@@ -87,8 +90,7 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	
 	public double[] getSignature(TileKey id) {
 		//double[] sig = this.sigMap.getSignature(id, Model.SIFT);
-		double[] sig = this.buildSignatureFromKey(id);
-		if (sig == null) sig = new double[defaultVocabSize];
+		double[] sig = buildSignature(id);
 		return sig;
 	}
 	
