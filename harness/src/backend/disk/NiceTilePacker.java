@@ -99,6 +99,24 @@ public class NiceTilePacker {
 	}
 	
 	/******* Custom Tile Serialization ******/
+	public static byte[] packNiceTile(NiceTile t) {
+		//long start = System.currentTimeMillis();
+		byte[] tileKey = packTileKey(t.id);
+		byte[] attributes = packAttributes(t.attributes);
+		byte[] extrema = packExtrema(t.extrema);
+		byte[] data = packData(t.data);
+		byte[] packedTile = new byte[tileKey.length+attributes.length+extrema.length+data.length];
+		int offset = 0;
+		System.arraycopy(tileKey, 0, packedTile, offset, tileKey.length);
+		offset+=tileKey.length;
+		System.arraycopy(attributes,0,packedTile,offset,attributes.length);
+		offset+=attributes.length;
+		System.arraycopy(extrema, 0, packedTile, offset, extrema.length);
+		offset +=extrema.length;
+		System.arraycopy(data,0,packedTile,offset,data.length);
+		return packedTile;
+	}
+	
 	//[row1col1,row1col2,row1col3,...,row2col1,row2col2,row3col3,...,row3col1,...]
 	public static byte[] packData(double[] data) {
 		//long start = System.currentTimeMillis();

@@ -1,6 +1,10 @@
 package backend;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.Writer;
+import java.io.OutputStreamWriter;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -60,6 +64,8 @@ public class MainThread {
 	public static TestSVM.SvmWrapper pclas;
 	public static boolean usePclas = false;
 	public static SignatureMap sigMap;
+	
+	public static BufferedWriter log;
 	
 	//server
 	public static Server server;
@@ -329,6 +335,15 @@ public class MainThread {
 		trainModels();
 		pclas = TestSVM.buildSvmPhaseClassifier();
 		
+		//logfile for timing results
+		try {
+			log = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("perflog.csv")));
+		} catch (IOException e) {
+		    System.out.println("Couldn't open logfile");
+		    e.printStackTrace();
+		    return;
+		}  
+		
 		//start the server
 		setupServer(port);
 	}
@@ -561,10 +576,16 @@ public class MainThread {
 				predictor = new FutureTask<Object>(new PredictionTask(),null);
 				executorService.submit(predictor);
 				// send the response
-				//System.out.println("json: "+NiceTilePacker.makeJson(t));
-				//response.getWriter().println(NiceTilePacker.packData(t.data));
-				response.getWriter().println(NiceTilePacker.makeJson(t));
-				
+				//long s = System.currentTimeMillis();
+				byte[] toSend = NiceTilePacker.packNiceTile(t);
+				//long e = System.currentTimeMillis();
+				response.getWriter().println(toSend);
+				//long e2 = System.currentTimeMillis();
+				//String report= (e-s)+","+(e2-e)+","+toSend.length;
+				//System.out.println(report);
+				//log.write(report);
+				//log.newLine();
+				//log.flush();
 			} catch (Exception e) {
 				response.getWriter().println(error);
 				System.out.println("error occured while fetching tile");
@@ -692,6 +713,12 @@ public class MainThread {
 		
 		public void destroy() {
 			executorService.shutdown();
+			try {
+				log.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 	}
