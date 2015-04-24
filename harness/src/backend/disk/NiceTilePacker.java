@@ -17,6 +17,8 @@ import java.nio.file.Paths;
 import org.nustaq.serialization.FSTObjectInput;
 import org.nustaq.serialization.FSTObjectOutput;
 
+import com.google.gson.JsonArray;
+
 import utils.DBInterface;
 import utils.UtilityFunctions;
 import backend.util.NiceTile;
@@ -38,6 +40,62 @@ public class NiceTilePacker {
 			return readNiceTileDefault(id); // default Java deserialization
 			//return = readNiceTileFST(id); // deserialization via FST
 			//return = readNiceTileCustom(id); // serialization via FST
+	}
+	
+	public static String makeJson(NiceTile tile) {
+		/*
+		public TileKey id;
+		public double[] data;
+		public double[][] extrema = null;
+		public String[] attributes = null;
+		public double[] norm = null;
+		public double[] hist = null;
+		public double[] fhist = null;
+		*/
+		String id = tile.id.buildTileStringForFile();
+		StringBuilder sb = new StringBuilder();
+		sb.append("{").append("\"id\":{")
+		.append("\"zoom\":").append(tile.id.zoom).append(",\"coords\":[").append(tile.id.id[0]);
+		for(int i = 1; i < tile.id.id.length; i++) {
+			sb.append(",").append(tile.id.id[i]);
+		}
+		sb.append("]},");
+		sb.append("\"data\":[");
+		if(tile.data.length > 0) {
+			sb.append(tile.data[0]);
+		}
+		for(int i = 1; i < tile.data.length; i++) {
+			sb.append(",").append(tile.data[i]);
+		}
+		sb.append("],");
+		
+		sb.append("\"attributes\":[");
+		if(tile.attributes.length > 0) {
+			sb.append("\"").append(tile.attributes[0]).append("\"");
+		}
+		for(int i = 1; i < tile.attributes.length; i++) {
+			sb.append(",").append("\"").append(tile.attributes[i]).append("\"");
+		}
+		sb.append("],");
+		
+		sb.append("\"extrema\":{");
+		if(tile.extrema.length > 0 && tile.extrema[0].length > 0) {
+			sb.append("\"min\":[");
+			sb.append(tile.extrema[0][0]);
+			for(int i = 1; i < tile.extrema.length; i++) {
+				sb.append(",").append(tile.extrema[i][0]);
+			}
+			sb.append("],\"max\":[");
+			sb.append(tile.extrema[0][1]);
+			for(int i = 1; i < tile.extrema.length; i++) {
+				sb.append(",").append(tile.extrema[i][1]);
+			}
+			sb.append("]");
+		}
+		sb.append("}");
+		
+		sb.append("}");
+		return sb.toString();
 	}
 	
 	/******* Custom Tile Serialization ******/

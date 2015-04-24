@@ -561,7 +561,9 @@ public class MainThread {
 				predictor = new FutureTask<Object>(new PredictionTask(),null);
 				executorService.submit(predictor);
 				// send the response
-				response.getWriter().println(NiceTilePacker.packData(t.data));
+				//System.out.println("json: "+NiceTilePacker.makeJson(t));
+				//response.getWriter().println(NiceTilePacker.packData(t.data));
+				response.getWriter().println(NiceTilePacker.makeJson(t));
 				
 			} catch (Exception e) {
 				response.getWriter().println(error);
