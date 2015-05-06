@@ -165,7 +165,9 @@ public class NiceTilePacker {
 		for(int count = 0; count< extrema.length;count++,i+=2) {
 			buffer.putDouble(i*doubleSize,extrema[count][0]);
 			buffer.putDouble((i+1)*doubleSize,extrema[count][1]);
+			//System.out.println("recording min: "+extrema[count][0]+", max: "+extrema[count][1]);
 		}
+		//System.out.println();
 		//long end = System.currentTimeMillis();
 		//totalTime += 1.0*(end- start);
 		return result;
@@ -175,14 +177,14 @@ public class NiceTilePacker {
 	public static byte[] packAttributes(String[] attributes) {
 		//long start = System.currentTimeMillis();
 		StringBuilder builder = new StringBuilder();
-		double[] lengths = new double[attributes.length];
+		int[] lengths = new int[attributes.length];
 		for(int i = 0; i < attributes.length; i++) {
 			builder.append(attributes[i]);
 			lengths[i] = attributes[i].length();
 		}
 		try {
 			String finalString = builder.toString();
-			byte[] finalBytes = finalString.getBytes("utf-8");
+			byte[] finalBytes = finalString.getBytes("ISO-8859-1");
 			byte[] result = new byte[doubleSize*(attributes.length+1)+finalBytes.length];
 			ByteBuffer buffer = ByteBuffer.wrap(result);
 			int offset = 0;
@@ -272,12 +274,14 @@ public class NiceTilePacker {
 	public static int unpackAttributes(byte[] rawdata, int offset, NiceTile t) {
 		//long start = System.currentTimeMillis();
 		ByteBuffer buffer = ByteBuffer.wrap(rawdata);
+		//System.out.println("num attrs: "+buffer.getDouble(offset)+", offset: "+offset);
 		String[] attributes = new String[(int) buffer.getDouble(offset)];
 		offset += doubleSize;
 		int[] attrlens = new int[attributes.length];
 		for(int i = 0; i < attributes.length; i++, offset+=doubleSize) {
 			//get string length in bytes
 			attrlens[i] = (int) buffer.getDouble(offset);
+			//System.out.println("attr size: "+buffer.getDouble(offset)+", offset: "+offset);
 		}
 		for(int i = 0; i < attributes.length; i++) {
 			byte[] attrdata = new byte[attrlens[i]];
@@ -288,6 +292,7 @@ public class NiceTilePacker {
 			}
 			try {
 				attributes[i] = new String(attrdata,"utf-8");
+				//System.out.println("attribute:"+attributes[i]);
 			} catch (UnsupportedEncodingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -302,6 +307,7 @@ public class NiceTilePacker {
 	public static int unpackExtrema(byte[] rawdata, int offset, NiceTile t) {
 		//long start = System.currentTimeMillis();
 		ByteBuffer buffer = ByteBuffer.wrap(rawdata);
+		//System.out.println("size: "+buffer.getDouble(offset));
 		double[][] extrema = new double [(int) buffer.getDouble(offset)][];
 		offset += doubleSize;
 		//System.out.println("extrema length: "+extrema.length);
@@ -321,6 +327,7 @@ public class NiceTilePacker {
 		//long start = System.currentTimeMillis();
 		ByteBuffer buffer = ByteBuffer.wrap(rawdata);
 		int count = (rawdata.length - offset + 1) / doubleSize;
+		//System.out.println("count: "+count);
 		if(count < 0) count = 0;
 		double[] result = new double[count];
 		int i = 0;
