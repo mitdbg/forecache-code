@@ -573,12 +573,18 @@ public class Client {
 		try {
 			connection = (HttpURLConnection) geturl.openConnection();
 			diff = System.currentTimeMillis();
-			reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			while((line = reader.readLine()) != null) {
-				sbuffer.append(line);
+			InputStream is = connection.getInputStream();
+			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+			
+			int nRead;
+			byte[] data = new byte[16384];
+
+			while ((nRead = is.read(data, 0, data.length)) != -1) {
+			  buffer.write(data, 0, nRead);
 			}
+
+			buffer.flush();
 			diff = System.currentTimeMillis() - diff;
-			reader.close();
 			result = sbuffer.toString();
 			//System.out.println("tile ("+tile_id+", "+zoom+") result length: " + result.length());
 			if(result.equals("error")) {
