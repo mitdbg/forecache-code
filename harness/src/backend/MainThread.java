@@ -579,7 +579,7 @@ public class MainThread {
 				//long s = System.currentTimeMillis();
 				byte[] toSend = NiceTilePacker.packNiceTile(t);
 				//long e = System.currentTimeMillis();
-				response.getWriter().println(toSend);
+				response.getWriter().println(new String(toSend));
 				//long e2 = System.currentTimeMillis();
 				//String report= (e-s)+","+(e2-e)+","+toSend.length;
 				//System.out.println(report);
