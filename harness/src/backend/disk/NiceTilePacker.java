@@ -137,18 +137,18 @@ public class NiceTilePacker {
 		//long start = System.currentTimeMillis();
 		byte[] result = new byte[doubleSize*(1+key.id.length+1+key.weights.length+1)];
 		ByteBuffer buffer = ByteBuffer.wrap(result);
-		int i = 0;
-		buffer.putDouble(i,key.id.length);
-		i ++;
-		for(int count = 0; count < key.id.length;count++,i++) {
-			buffer.putDouble(i*doubleSize,key.id[count]);
+		int offset = 0;
+		buffer.putDouble(offset,key.id.length);
+		offset+= doubleSize;
+		for(int count = 0; count < key.id.length;count++,offset += doubleSize) {
+			buffer.putDouble(offset,key.id[count]);
 		}
-		buffer.putDouble(i*doubleSize,key.weights.length);
-		i++;
-		for(int count = 0; count < key.weights.length;count++,i++) {
-			buffer.putDouble(i*doubleSize,key.weights[count]);
+		buffer.putDouble(offset,key.weights.length);
+		offset += doubleSize;
+		for(int count = 0; count < key.weights.length;count++,offset += doubleSize) {
+			buffer.putDouble(offset,key.weights[count]);
 		}
-		buffer.putDouble(i,key.zoom);
+		buffer.putDouble(offset,key.zoom);
 		//long end = System.currentTimeMillis();
 		//totalTime += 1.0*(end- start);
 		return result;
@@ -246,21 +246,21 @@ public class NiceTilePacker {
 		//long start = System.currentTimeMillis();
 		ByteBuffer buffer = ByteBuffer.wrap(rawdata);
 		int[] id = new int[(int) buffer.getDouble(offset)];
-		//System.out.println("id len: "+id.length);
+		//System.out.println("id len: "+buffer.getDouble(offset)+", offset: "+offset);
 		offset += doubleSize;
 		for(int i = 0; i < id.length; i++, offset += doubleSize) {
 			id[i] = (int) buffer.getDouble(offset);
-			//System.out.println("dim: "+id[i]);
+			//System.out.println("dim: "+id[i]+", offset: "+offset);
 		}
 		double[] weights = new double[(int)buffer.getDouble(offset)];
 		//System.out.println("weights len: "+weights.length);
 		offset += doubleSize;
 		for(int i = 0; i < weights.length; i++,offset += doubleSize) {
 			weights[i] = buffer.getDouble(offset);
-			//System.out.println("weight: "+weights[i]);
+			//System.out.println("weight: "+weights[i]+", offset: "+offset);
 		}
 		int zoom = (int) buffer.getDouble(offset);
-		//System.out.println("zoom: "+buffer.getDouble(offset));
+		//System.out.println("zoom: "+buffer.getDouble(offset)+", offset: "+offset);
 		offset += doubleSize; // the next item will be one double away
 		TileKey key = new TileKey(id,zoom);
 		key.weights = weights;
