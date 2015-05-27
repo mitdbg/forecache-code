@@ -17,6 +17,7 @@ public class FilteredHistogramSignatureModel extends HistogramSignatureModel {
 	public FilteredHistogramSignatureModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, 
 			DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len, SignatureMap sigMap) {
 		super(ref,membuf,diskbuf,api,len, sigMap);
+		this.m = Model.FHISTOGRAM;
 	}
 	
 	@Override

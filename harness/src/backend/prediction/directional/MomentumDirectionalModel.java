@@ -16,6 +16,7 @@ import backend.prediction.BasicModel;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
+import backend.util.Model;
 import backend.util.TileKey;
 
 public class MomentumDirectionalModel extends BasicModel {
@@ -25,6 +26,7 @@ public class MomentumDirectionalModel extends BasicModel {
 		super(ref,membuf,diskbuf,api,len);
 		this.votes = new HashMap<Character,Double>();
 		this.useDistanceCorrection = false;
+		this.m = Model.MOMENTUM;
 	}
 	
 	// computes an ordering of all directions using confidence values

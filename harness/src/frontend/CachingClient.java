@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -16,7 +15,6 @@ import utils.ExplorationPhase;
 import utils.TraceMetadata;
 import utils.UserRequest;
 import utils.UtilityFunctions;
-import backend.MainThread;
 import backend.disk.NiceTilePacker;
 import backend.memory.NiceTileLruBuffer;
 import backend.util.DirectionClass;
@@ -75,6 +73,7 @@ public class CachingClient extends Client {
 			//UtilityFunctions.printIntArray(trainlist);
 			// setup test case on backend
 			sendReset(trainlist,models,predictions,usePhases);
+			memcache.clear(); // empty out the cache
 			
 			//send requests
 			int user_id = testusers.get(u1);
@@ -97,20 +96,15 @@ public class CachingClient extends Client {
 				long e = System.currentTimeMillis();
 				if(toRetrieve == null) { // not cached on client
 					//System.out.println("tile id: '" +tile_id+ "'");
-					//Thread.sleep(100);
-					for(int i = 0; i < 10000; i++) {
-						if(!checkReady()) {
-							//System.out.println("not ready... waiting 100ms");
-							Thread.sleep(100);
-						} else {
-							//System.out.println("continuing on...");
-							break;
-						}
-					}
+					waitForServer();
 					durations[r] = sendRequest(tile_id,zoom,tile_hash);
-				} else {
+				} else { // found it on the client
 					durations[r] = e-s;
 					updatedAccuracy[r] = "client-hit";
+					
+					waitForServer();
+					// tell the server which tile the user requested
+					sendHistory(tile_id,zoom,tile_hash);
 				}
 				avg_duration += durations[r];
 			}
@@ -173,9 +167,66 @@ public class CachingClient extends Client {
 		//System.out.println("overall\t"+overall_accuracy);
 	}
 	
+	public static long sendHistory(String tile_id, int zoom, String hashed_query) throws Exception {
+		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
+				+ "?addhistory&" + buildUrlParams(hashed_query, tile_id, zoom);
+		URL geturl = null;
+		HttpURLConnection connection = null;
+		BufferedReader reader = null;
+		StringBuffer sbuffer = new StringBuffer();
+		String result = null;
+		long diff = 0;
+		try {
+			geturl = new URL(urlstring);
+		} catch (MalformedURLException e) {
+			System.out.println("error occurred while retrieving url object for: '"+urlstring+"'");
+			e.printStackTrace();
+		}
+		if(geturl == null) {
+			return diff;
+		}
+
+		try {
+			connection = (HttpURLConnection) geturl.openConnection();
+			diff = System.currentTimeMillis();
+			InputStream is = connection.getInputStream();
+			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+			
+			int nRead;
+			byte[] data = new byte[16384];
+
+			while ((nRead = is.read(data, 0, data.length)) != -1) {
+			  buffer.write(data, 0, nRead);
+			}
+
+			buffer.flush();
+			diff = System.currentTimeMillis() - diff;
+			result = sbuffer.toString();
+			if(result.equals("error")) {
+				throw new Exception("serious error occurred on backend while sending history");
+			}
+		} catch (IOException e) {
+			System.out.println("Error retrieving response from url: '"+urlstring+"'");
+			e.printStackTrace();
+		}
+
+		if(connection != null) {
+			connection.disconnect();
+		}
+		if(reader != null) {
+			try {
+				reader.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return diff;
+	}
+	
 	public static long sendRequest(String tile_id, int zoom, String hashed_query) throws Exception {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
-				+ "?" + buildUrlParams(hashed_query, tile_id, zoom);
+				+ "?fetch&" + buildUrlParams(hashed_query, tile_id, zoom);
 		URL geturl = null;
 		HttpURLConnection connection = null;
 		BufferedReader reader = null;
@@ -239,8 +290,7 @@ public class CachingClient extends Client {
 	
 	public static void main(String[] args) throws Exception {
 		// setup the cache
-		//memcache = new NiceTileLruBuffer(MainThread.deflmbuflen);
-		memcache = new NiceTileLruBuffer(2);
+		int cacheSize = 0;
 
 		//same as original Client code
 		int[] user_ids = null;
@@ -269,7 +319,7 @@ public class CachingClient extends Client {
 				newArgs.add(args[i]);
 			}
 			if(newArgs.size() > 0) {
-				if((newArgs.size() == 3) || (newArgs.size() == 4) || (newArgs.size() == 5)) {
+				if((newArgs.size() >= 3) && (newArgs.size() <= 6)) {
 					String[] useridstrs = newArgs.get(0).split(",");
 					user_ids = new int[useridstrs.length];
 					for(int i = 0; i < useridstrs.length; i++) {
@@ -319,7 +369,7 @@ public class CachingClient extends Client {
 						//predictions = Integer.parseInt(newArgs.get(3));
 					}
 					
-					if(newArgs.size() == 5) {
+					if(newArgs.size() >= 5) {
 						String[] tempflags = newArgs.get(4).split("-"); // for each model combo
 						if(tempflags.length != models.length) {
 							System.out.println("Not enough usePhase flags!");
@@ -330,6 +380,10 @@ public class CachingClient extends Client {
 							usePhases[i] = Boolean.parseBoolean(tempflags[i]);
 							System.out.println("adding phase usage: "+usePhases[i]);
 						}
+					}
+					
+					if (newArgs.size() == 6) { // how big should the client-side cache be?
+						cacheSize = Integer.parseInt(newArgs.get(5));
 					}
 					
 					test = false;
@@ -344,6 +398,15 @@ public class CachingClient extends Client {
 				}
 			}
 		}
+		
+		// just evict tiles using lru
+		if(cacheSize == 0) {
+			System.out.println("warning: cache size is zero. ignoring client-side cache...");
+		} else {
+			System.out.println("using client-side cache of size " + cacheSize+"...");
+		}
+		memcache = new NiceTileLruBuffer(cacheSize);
+		
 		if(groundtruth) {
 			for(int len = 1; len <= 10; len++) {
 				Client.printGroundTruth(gtf,"out_"+len+".tsv",true,len);

@@ -90,6 +90,22 @@
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>
+
+    <target name="cc2-sigs">
+        <java classname="frontend.CachingClient" failonerror="true" fork="yes">
+            <!-- <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram3,sift 4,4 true 2"/> -->
+            <arg line="8000 28 task1 histogram-normal 8-8 false-false 2"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="cc2-hybrid">
+        <java classname="frontend.CachingClient" failonerror="true" fork="yes">
+            <!-- <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram3,sift 4,4 true 2"/> -->
+            <arg line="8000 28 task1 ngram3,sift 4,4 true 2"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
     <target name="BuildSignaturesOffline">
         <java classname="backend.BuildSignaturesOffline" failonerror="true" fork="yes">
             <jvmarg line="-Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>

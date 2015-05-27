@@ -186,6 +186,7 @@ public class MainThread {
 			System.out.print(k+" ");
 		}
 		System.out.println();
+		System.out.println();
 		
 		Set<TileKey> oldKeys = new HashSet<TileKey>();
 		for(TileKey k : membuf.getAllTileKeys()) {
@@ -510,57 +511,39 @@ public class MainThread {
 			return predictor == null || predictor.isDone();
 		}
 		
-		protected void doGet(HttpServletRequest request,
-				HttpServletResponse response) throws ServletException, IOException {
-			
-			response.setContentType("text/html");
-			response.setStatus(HttpServletResponse.SC_OK);
-			
-			String ready = request.getParameter("ready");
-			if(ready != null) {
-				response.getWriter().println(isReady());
+		protected void doReset(HttpServletRequest request,
+				HttpServletResponse response) {
+			System.out.println("reset");
+			//reset models for prediction
+			String useridstr = request.getParameter("user_ids");
+			String modelstr = request.getParameter("models");
+			String predictions = request.getParameter("predictions");
+			String usePhases = request.getParameter("usephases");
+			try {
+				reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"), (usePhases != null) && usePhases.equals("true"));
+				response.getWriter().println(done);
+			} catch (Exception e) {
+				System.out.println("error resetting");
+				e.printStackTrace();
+			}
+			//response.getWriter().println();
+		}
+		
+		protected void doGetFullAccuracy(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			if(hitslist.size() == 0) {
+				response.getWriter().println("[]");
 				return;
 			}
-			
-			String reset = request.getParameter("reset");
-			if(reset != null) {
-				System.out.println("reset");
-				//reset models for prediction
-				String useridstr = request.getParameter("user_ids");
-				String modelstr = request.getParameter("models");
-				String predictions = request.getParameter("predictions");
-				String usePhases = request.getParameter("usephases");
-				try {
-					reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"), (usePhases != null) && usePhases.equals("true"));
-					response.getWriter().println(done);
-				} catch (Exception e) {
-					System.out.println("error resetting");
-					e.printStackTrace();
-				}
-				//response.getWriter().println();
-				return;
+			String res = hitslist.get(0);
+			for(int i = 1; i < hitslist.size(); i++) {
+				res = res + ","+hitslist.get(i);
 			}
-			
-			String getfullaccuracy = request.getParameter("fullaccuracy");
-			if(getfullaccuracy !=null) {
-				if(hitslist.size() == 0) {
-					response.getWriter().println("[]");
-					return;
-				}
-				String res = hitslist.get(0);
-				for(int i = 1; i < hitslist.size(); i++) {
-					res = res + ","+hitslist.get(i);
-				}
-				response.getWriter().println(res);
-				return;
-			}
-			
-			String getaccuracy = request.getParameter("accuracy");
-			if(getaccuracy != null) {
-				double accuracy = getAccuracy();
-				response.getWriter().println(accuracy);
-				return;
-			}
+			response.getWriter().println(res);
+		}
+		
+		protected void doFetch(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
 			
 			String zoom = request.getParameter("zoom");
 			String tile_id = request.getParameter("tile_id");
@@ -593,6 +576,82 @@ public class MainThread {
 			}
 		}
 		
+		protected void doAddHistory(HttpServletRequest request,
+				HttpServletResponse response) {
+			
+			String zoom = request.getParameter("zoom");
+			String tile_id = request.getParameter("tile_id");
+			String threshold = request.getParameter("threshold");
+			String reverse = UtilityFunctions.unurlify(tile_id); // undo urlify
+			int[] id = UtilityFunctions.parseTileIdInteger(reverse);
+			int z = Integer.parseInt(zoom);
+			TileKey key = new TileKey(id,z);
+			
+			// get the tile, so we can put it in the history
+			NiceTile t = lmbuf.getTile(key); // check lru cache
+			if(t == null) { // not in user's last x moves. check mem cache
+				t = membuf.getTile(key);
+				if(t == null) { // not cached, get it from disk in DBMS
+					t = new NiceTile();
+					t.id = key;
+					newScidbapi.getStoredTile(DBInterface.arrayname, t);
+				}
+			}
+			
+			hist.addRecord(t); // keep track
+			lmbuf.insertTile(t);
+			
+			// pre-emptively cache, just in case
+			predictor = new FutureTask<Object>(new PredictionTask(),null);
+			executorService.submit(predictor);
+		}
+		
+		protected void doGet(HttpServletRequest request,
+				HttpServletResponse response) throws ServletException, IOException {
+			
+			response.setContentType("text/html");
+			response.setStatus(HttpServletResponse.SC_OK);
+			
+			String ready = request.getParameter("ready");
+			if(ready != null) {
+				response.getWriter().println(isReady());
+				return;
+			}
+			
+			String reset = request.getParameter("reset");
+			if(reset != null) {
+				doReset(request,response);
+				return;
+			}
+			
+			String getfullaccuracy = request.getParameter("fullaccuracy");
+			if(getfullaccuracy !=null) {
+				doGetFullAccuracy(request,response);
+				return;
+			}
+			
+			String getaccuracy = request.getParameter("accuracy");
+			if(getaccuracy != null) {
+				double accuracy = getAccuracy();
+				response.getWriter().println(accuracy);
+				return;
+			}
+			
+			String fetch = request.getParameter("fetch");
+			if(fetch != null) {
+				//System.out.println("doing tile fetch.");
+				doFetch(request,response);
+				return;
+			}
+			
+			String addhistory = request.getParameter("addhistory");
+			if(addhistory != null) {
+				//System.out.println("adding to history...");
+				doAddHistory(request,response);
+				return;
+			}
+		}
+		
 		protected double getAccuracy() {
 			return (1.0 * cache_hits / total_requests);
 		}
@@ -603,6 +662,8 @@ public class MainThread {
 			int z = Integer.parseInt(zoom);
 			TileKey key = new TileKey(id,z);
 			
+			//System.out.println("tile to predict: "+key);
+			//System.out.println("last request: "+hist.getLast());
 			boolean found = false;
 			NiceTile t = lmbuf.getTile(key); // check lru cache
 			if(t == null) { // not in user's last x moves. check mem cache

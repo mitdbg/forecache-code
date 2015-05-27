@@ -19,6 +19,7 @@ import backend.prediction.BasicModel;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
+import backend.util.Model;
 import backend.util.NiceTile;
 import backend.util.Signatures;
 import backend.util.TileKey;
@@ -36,6 +37,7 @@ public class NGramDirectionalModel extends BasicModel {
 		sentences = new ArrayList<String>();
 		setupNgramModel();
 		this.useDistanceCorrection = false;
+		this.m = Model.NGRAM;
 	}
 	
 	protected void setupNgramModel() {

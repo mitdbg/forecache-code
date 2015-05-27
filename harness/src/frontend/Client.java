@@ -94,6 +94,18 @@ public class Client {
 
 	}
 	
+	public static void waitForServer() throws Exception {
+		for(int i = 0; i < 10000; i++) {
+			if(!checkReady()) {
+				//System.out.println("not ready... waiting 100ms");
+				Thread.sleep(100);
+			} else {
+				//System.out.println("continuing on...");
+				break;
+			}
+		}
+	}
+	
 	// only test specific users, but train on all users
 	public static void crossValidation(String taskname, String[] models, List<Integer> testusers, int[] predictions,
 			ModelAccuracy[] ma, boolean usePhases) throws Exception {
@@ -139,15 +151,7 @@ public class Client {
 				int zoom = ur.zoom;
 				//System.out.println("tile id: '" +tile_id+ "'");
 				//Thread.sleep(100);
-				for(int i = 0; i < 10000; i++) {
-					if(!checkReady()) {
-						//System.out.println("not ready... waiting 100ms");
-						Thread.sleep(100);
-					} else {
-						//System.out.println("continuing on...");
-						break;
-					}
-				}
+				waitForServer();
 				durations[r] = sendRequest(tile_id,zoom,tile_hash);
 				avg_duration += durations[r];
 			}
@@ -552,7 +556,7 @@ public class Client {
 
 	public static long sendRequest(String tile_id, int zoom, String hashed_query) throws Exception {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
-				+ "?" + buildUrlParams(hashed_query, tile_id, zoom);
+				+ "?fetch&" + buildUrlParams(hashed_query, tile_id, zoom);
 		URL geturl = null;
 		HttpURLConnection connection = null;
 		BufferedReader reader = null;

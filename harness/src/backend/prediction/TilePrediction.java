@@ -20,7 +20,13 @@ public class TilePrediction implements Comparable<TilePrediction> {
 	
 	@Override
 	public String toString() {
-		return id.buildTileStringForFile() + "(" + "model("+this.m+")"+","+confidence+","+distance+","+"base("+base+")"+","+(distance*Math.pow(1.0/base,(this.physicalDistance-1))) + ")";
+		if(distance != null) {
+			return id.buildTileStringForFile() + "(" + "model("+this.m+")"+","+confidence+","+distance+","+"base("+base+")"+",ndist="+(distance*Math.pow(1.0/base,(this.physicalDistance-1))) + ")";
+		} else if (confidence < 0.0) {
+			return id.buildTileStringForFile() + "(" + "model("+this.m+")"+","+confidence+","+distance+","+"base("+base+")"+",nconf="+(confidence*Math.pow(base,(this.physicalDistance-1))) + ")";
+		} else {
+			return id.buildTileStringForFile() + "(" + "model("+this.m+")"+","+confidence+","+distance+","+"base("+base+")"+",nconf="+(confidence+Math.log(Math.pow(base,(this.physicalDistance-1)))) + ")";
+		}
 	}
 	
 	public int compareConfidence(TilePrediction other) {

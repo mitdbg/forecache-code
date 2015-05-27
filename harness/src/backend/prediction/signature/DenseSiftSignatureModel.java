@@ -18,6 +18,7 @@ public class DenseSiftSignatureModel extends SiftSignatureModel{
 			DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len,
 			SignatureMap sigMap) {
 		super(ref,membuf,diskbuf,api,len, sigMap);
+		this.m = Model.DSIFT;
 	}
 	
 	/*

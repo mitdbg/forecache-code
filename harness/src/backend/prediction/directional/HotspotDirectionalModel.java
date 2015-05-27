@@ -14,6 +14,7 @@ import backend.memory.MemoryTileBuffer;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
+import backend.util.Model;
 import backend.util.TileKey;
 
 import utils.UserRequest;
@@ -28,11 +29,13 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 		super(ref,membuf,diskbuf,api,len);
 		this.hotspots = new HashMap<TileKey,Integer>();
 		this.hotspotlen = defaulthotspotlen;
+		this.m = Model.HOTSPOT;
 	}
 	
 	public HotspotDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len, int hotspotlen) {
 		this(ref,membuf,diskbuf,api,len);
 		this.hotspotlen = hotspotlen;
+		this.m = Model.HOTSPOT;
 	}
 	
 	@Override

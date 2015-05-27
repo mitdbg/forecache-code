@@ -19,6 +19,7 @@ public class HistogramSignatureModel extends BasicSignatureModel {
 			DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len,
 			SignatureMap sigMap) {
 		super(ref,membuf,diskbuf,api,len, sigMap);
+		this.m = Model.HISTOGRAM;
 	}
 	
 	public double[] getSignature(TileKey id) {
