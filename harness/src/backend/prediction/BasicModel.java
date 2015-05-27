@@ -11,6 +11,7 @@ import backend.disk.DiskNiceTileBuffer;
 import backend.disk.OldScidbTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.util.Direction;
+import backend.util.Model;
 import backend.util.NiceTile;
 import backend.util.ParamsMap;
 import backend.util.TileKey;
@@ -26,6 +27,7 @@ public class BasicModel {
 	public static final double defaultprob = .00000000001; // default assigned confidence value
 	public static final int defaultlen = 4; // default history length
 	public List<TileKey> roi = null;
+	protected Model m = null;
 	
 
 	public BasicModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, 
@@ -53,7 +55,7 @@ public class BasicModel {
 		List<TilePrediction> order = new ArrayList<TilePrediction>();
 		// for each direction, compute confidence
 		for(TileKey key : candidates) {
-			TilePrediction tp = new TilePrediction();
+			TilePrediction tp = new TilePrediction(this.m);
 			tp.id = key;
 			tp.confidence = computeConfidence(key, htrace);
 			tp.distance = computeDistance(key,htrace);
@@ -67,8 +69,8 @@ public class BasicModel {
 		for(int i = 0; i < order.size(); i++) {
 			TilePrediction tp = order.get(i);
 			myresult.add(tp.id);
-			//System.out.print(tp+" ");
-			//System.out.println(id);
+			//System.out.print(tp+" "+tp.physicalDistance+" ");
+			//System.out.println(tp.id);
 		}
 		//System.out.println();
 

@@ -38,6 +38,7 @@ public class SiftSignatureModel extends BasicSignatureModel {
 		super(ref,membuf,diskbuf,api,len,sigMap);
 		this.histograms = new HashMap<TileKey,double[]>();
 		this.vocabSize = defaultVocabSize;
+		this.m = Model.SIFT;
 	}
 	
 	@Override

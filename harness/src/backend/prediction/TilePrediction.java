@@ -1,5 +1,7 @@
 package backend.prediction;
 
+import backend.util.DistanceModifiers;
+import backend.util.Model;
 import backend.util.TileKey;
 
 public class TilePrediction implements Comparable<TilePrediction> {
@@ -8,11 +10,17 @@ public class TilePrediction implements Comparable<TilePrediction> {
 	public Double distance = null;
 	public Double physicalDistance = 1.0;
 	public boolean useDistance = false;
-	public double base = 10;
+	public double base = 0.5;
+	protected Model m;
+	
+	public TilePrediction(Model m) {
+		this.m = m;
+		this.base = DistanceModifiers.getBase(m);
+	}
 	
 	@Override
 	public String toString() {
-		return id.buildTileStringForFile() + "(" + confidence+","+distance + ")";
+		return id.buildTileStringForFile() + "(" + "model("+this.m+")"+","+confidence+","+distance+","+"base("+base+")"+","+(distance*Math.pow(1.0/base,(this.physicalDistance-1))) + ")";
 	}
 	
 	public int compareConfidence(TilePrediction other) {
@@ -22,15 +30,15 @@ public class TilePrediction implements Comparable<TilePrediction> {
 		
 		if(useDistance) {
 			if(this.confidence < 0.0) { // log
-				a -= physicalDistance-1;
+				a += Math.log(Math.pow(base,(physicalDistance-1)));
 			} else {
-				a /= Math.pow(base,(physicalDistance-1)); // worse if far away
+				a *= Math.pow(base,(physicalDistance-1)); // worse if far away
 			}
 			
 			if(this.confidence < 0.0) { // log
-				b -= other.physicalDistance-1;
+				b += Math.log(Math.pow(base,(physicalDistance-1)));
 			} else {
-				b /= Math.pow(base,(other.physicalDistance-1)); // worse if far away
+				b *= Math.pow(base,(other.physicalDistance-1)); // worse if far away
 			}
 		}
 		
@@ -51,8 +59,8 @@ public class TilePrediction implements Comparable<TilePrediction> {
 		double diff = 0;
 		
 		if(useDistance) {
-			a *= Math.pow(base,(physicalDistance-1)); // worse if far away
-			b *= Math.pow(base,(other.physicalDistance-1)); // worse if far away
+			a *= Math.pow(1.0/base,(physicalDistance-1)); // worse if far away
+			b *= Math.pow(1.0/base,(other.physicalDistance-1)); // worse if far away
 		}
 		
 		diff = a-b;

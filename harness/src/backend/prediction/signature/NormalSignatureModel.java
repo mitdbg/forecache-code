@@ -18,6 +18,7 @@ public class NormalSignatureModel extends BasicSignatureModel {
 			DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len,
 			SignatureMap sigMap) {
 		super(ref,membuf,diskbuf,api,len,sigMap);
+		this.m = Model.NORMAL;
 	}
 	
 	@Override
