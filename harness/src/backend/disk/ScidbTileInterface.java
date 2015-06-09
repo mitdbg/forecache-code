@@ -56,7 +56,7 @@ public class ScidbTileInterface extends TileInterface {
 		myresult[2] = "export SCIDB_VER=13.3 ; " +
 				"export PATH=/opt/scidb/$SCIDB_VER/bin:/opt/scidb/$SCIDB_VER/share/scidb:$PATH ; " +
 				"export LD_LIBRARY_PATH=/opt/scidb/$SCIDB_VER/lib:$LD_LIBRARY_PATH ; " +
-				"source ~/.bashrc ; iquery -anq \"" + query + "\"";
+				"source ~/.bashrc ; iquery -c " + DBInterface.scidb_host + " -anq \"" + query + "\"";
 		return myresult;
 	}
 	
@@ -67,7 +67,7 @@ public class ScidbTileInterface extends TileInterface {
 		myresult[2] = "export SCIDB_VER=13.3 ; " +
 				"export PATH=/opt/scidb/$SCIDB_VER/bin:/opt/scidb/$SCIDB_VER/share/scidb:$PATH ; " +
 				"export LD_LIBRARY_PATH=/opt/scidb/$SCIDB_VER/lib:$LD_LIBRARY_PATH ; " +
-				"source ~/.bashrc ; iquery -o csv+ -aq \"" + query + "\"";
+				"source ~/.bashrc ; iquery -c " + DBInterface.scidb_host + " -o csv+ -aq \"" + query + "\"";
 		return myresult;
 	}
 	
@@ -79,7 +79,7 @@ public class ScidbTileInterface extends TileInterface {
 				System.out.println("query: \""+query+"\"");
 				Process proc = Runtime.getRuntime().exec(cmd);
 				
-				// only uncomment this if things aren't working
+				// this forces java to wait for the process to finish
 				BufferedReader ebr = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
 				for (String line; (line = ebr.readLine()) != null;) {
 					System.out.println(line);
@@ -103,7 +103,7 @@ public class ScidbTileInterface extends TileInterface {
 				System.out.println("query: \""+query+"\"");
 				Process proc = Runtime.getRuntime().exec(cmd);
 				
-				// only uncomment this if things aren't working
+				// this forces java to wait for the process to finish
 				BufferedReader ebr = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
 				for (String line; (line = ebr.readLine()) != null;) {
 					System.out.println(line);
