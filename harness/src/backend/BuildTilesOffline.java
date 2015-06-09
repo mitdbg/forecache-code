@@ -48,7 +48,7 @@ public class BuildTilesOffline {
 		//buildAllScidbTiles(diskbuf,sti);
 		
 		System.out.println("calculating SciDB tile timings...");
-		measureScidbTimings(diskbuf,sti,10);
+		measureScidbTimings(diskbuf,sti,100,10);
 		
 		try {
 			log.close();
@@ -110,7 +110,7 @@ public class BuildTilesOffline {
 		buildSpecificScidbTiles(buffer.getAllTileKeys(),sti);
 	}
 	
-	public static void measureScidbTimings(DiskNiceTileBuffer buffer, ScidbTileInterface sti, int runs) throws IOException {
+	public static void measureScidbTimings(DiskNiceTileBuffer buffer, ScidbTileInterface sti, int runs, int maxtiles) throws IOException {
 		ParamsMap paramsMap = new ParamsMap(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		int maxzoom = -1;
 		Map<Integer,List<TileKey>> tilesPerZoom = new HashMap<Integer,List<TileKey>>();
@@ -123,7 +123,7 @@ public class BuildTilesOffline {
 				temp = new ArrayList<TileKey>();
 				tilesPerZoom.put(id.zoom,temp);
 			}
-			temp.add(id);
+			if(temp.size() < maxtiles) temp.add(id);
 		}
 		
 		// only bother if there are zoom levels to analyze
@@ -143,10 +143,12 @@ public class BuildTilesOffline {
 					if(totalRuns == null) {
 						totalRuns = 0;
 					}
-					buildScidbTile(sti,id,totalRuns);
-					totalRuns++;
+					for(int j = 0; (j < maxtiles) && (pos < runs); j++) {
+						buildScidbTile(sti,id,totalRuns);
+						totalRuns++;
+						pos++;
+					}
 					runsPerTile.put(id.buildTileStringForFile(), totalRuns);
-					pos++;
 				}
 			}
 		}
