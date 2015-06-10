@@ -83,10 +83,11 @@ public class BuildTilesOffline {
 	}
 	
 	public static void buildScidbTile(ScidbTileInterface sti, TileKey id, int run) throws IOException {
-		sti.removeStoredTile(DBInterface.arrayname, id);
+		//sti.removeStoredTile(DBInterface.arrayname, id);
 		NiceTile t = new NiceTile();
 		t.id = id;
-		long duration = sti.buildAndStoreTile(DBInterface.arrayname, id);
+		//long duration = sti.buildAndStoreTile(DBInterface.arrayname, id);
+		long duration = sti.MeasureTile(DBInterface.arrayname, id);
 		sti.getStoredTile(DBInterface.arrayname, t);
 		System.out.println("duration (ms): "+duration);
 		System.out.println("size: "+t.getSize());

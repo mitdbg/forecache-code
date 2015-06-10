@@ -92,6 +92,17 @@ public class ScidbTileInterface extends TileInterface {
 		return myresult;
 	}
 	
+	public synchronized String[] buildMeasureCmd(String query) {
+		String[] myresult = new String[3];
+		myresult[0] = "bash";
+		myresult[1] = "-c";
+		myresult[2] = "export SCIDB_VER=13.3 ; " +
+				"export PATH=/opt/scidb/$SCIDB_VER/bin:/opt/scidb/$SCIDB_VER/share/scidb:$PATH ; " +
+				"export LD_LIBRARY_PATH=/opt/scidb/$SCIDB_VER/lib:$LD_LIBRARY_PATH ; " +
+				"source ~/.bashrc ; iquery -c " + DBInterface.scidb_host + " -o csv -aq \"" + query + "\" | head -n 0";
+		return myresult;
+	}
+	
 	public synchronized List<String> getArrayNames() {
 		List<String> arrayNames = new ArrayList<String>();
 		String query = buildInitQuery();
@@ -143,6 +154,30 @@ public class ScidbTileInterface extends TileInterface {
 		return end - start;
 	}
 	
+	public synchronized long MeasureTile(String arrayname, TileKey id) {
+		long start = System.currentTimeMillis();
+		Params p = paramsMap.getParams(id);
+		String query = buildQuery(arrayname,p);
+		String[] cmd = buildMeasureCmd(query);
+			try {
+				System.out.println("query: \""+query+"\"");
+				Process proc = Runtime.getRuntime().exec(cmd);
+				
+				// this forces java to wait for the process to finish
+				BufferedReader ebr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+				for (String line; (line = ebr.readLine()) != null;) {
+					//System.out.println(line);
+				}
+				ebr.close();
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		long end = System.currentTimeMillis();
+		return end - start;
+	}
+	
 	public synchronized long buildAndStoreTile(String arrayname, TileKey id) {
 		long start = System.currentTimeMillis();
 		Params p = paramsMap.getParams(id);
@@ -170,7 +205,7 @@ public class ScidbTileInterface extends TileInterface {
 	// use this to simulate cooking the tile. Cooking should take
 	// significantly longer than fetching
 	// so this should work fine.
-	public synchronized long getSimulatedBuildile(String arrayname, NiceTile tile) throws InterruptedException {
+	public synchronized long getSimulatedBuildTile(String arrayname, NiceTile tile) throws InterruptedException {
 		long s = System.currentTimeMillis(); // start of the method
 		long delay = getStoredTile(arrayname, tile);
 		// subtract time required to retrieve from DBMS
