@@ -48,7 +48,7 @@ public class BuildTilesOffline {
 		//buildAllScidbTiles(diskbuf,sti);
 		
 		System.out.println("calculating SciDB tile timings...");
-		measureScidbTimings(diskbuf,sti,10,3);
+		measureScidbTimings(diskbuf,sti,1,1);
 		
 		try {
 			log.close();
@@ -114,7 +114,6 @@ public class BuildTilesOffline {
 		ParamsMap paramsMap = new ParamsMap(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		int maxzoom = -1;
 		Map<Integer,List<TileKey>> tilesPerZoom = new HashMap<Integer,List<TileKey>>();
-		Map<String,Integer> runsPerTile = new HashMap<String,Integer>();
 		// get all keys, partition into zoom levels
 		for(TileKey id: paramsMap.allKeysSet) {
 			if(maxzoom < id.zoom) maxzoom = id.zoom;
@@ -131,7 +130,7 @@ public class BuildTilesOffline {
 		
 		// Build X tiles at each zoom level, where X=runs
 		// only re-sample if necessary, to ensure an even distribution across X
-		for(int zoom = 0; zoom < maxzoom; zoom++) {
+		for(int zoom = 0; zoom <= maxzoom; zoom++) {
 			//System.out.println("zoom:"+zoom);
 			List<TileKey> temp = tilesPerZoom.get(zoom);
 			int count = temp.size();
