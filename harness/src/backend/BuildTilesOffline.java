@@ -48,7 +48,7 @@ public class BuildTilesOffline {
 		//buildAllScidbTiles(diskbuf,sti);
 		
 		System.out.println("calculating SciDB tile timings...");
-		measureScidbTimings(diskbuf,sti,100,10);
+		measureScidbTimings(diskbuf,sti,10,3);
 		
 		try {
 			log.close();
@@ -131,24 +131,28 @@ public class BuildTilesOffline {
 		
 		// Build X tiles at each zoom level, where X=runs
 		// only re-sample if necessary, to ensure an even distribution across X
-		int pos = 0;
 		for(int zoom = 0; zoom < maxzoom; zoom++) {
+			//System.out.println("zoom:"+zoom);
 			List<TileKey> temp = tilesPerZoom.get(zoom);
-			pos = 0;
-			while(pos < runs) {
-				Collections.shuffle(temp);
-				for(int i = 0; (i < temp.size()) && (pos < runs); i++) {
-					TileKey id = temp.get(i);
-					Integer totalRuns = runsPerTile.get(id.buildTileStringForFile());
-					if(totalRuns == null) {
-						totalRuns = 0;
-					}
-					for(int j = 0; (j < maxtiles) && (pos < runs); j++) {
-						buildScidbTile(sti,id,totalRuns);
-						totalRuns++;
-						pos++;
-					}
-					runsPerTile.put(id.buildTileStringForFile(), totalRuns);
+			int count = temp.size();
+			if(count > maxtiles) count = maxtiles;
+			int[] runspertile = new int[count];
+			int base = runs / count;
+			int total = 0;
+			for(int i = 0; i < count; i++) {
+				runspertile[i] = base;
+				total += base;
+				if((total + base*(count - i - 1)) < runs) {
+					runspertile[i]++;
+					total++;
+				}
+				//System.out.println(runspertile[i]);
+			}
+			Collections.shuffle(temp);
+			for(int i = 0; i < count; i++) {
+				TileKey id = temp.get(i);
+				for(int j = 0; j < runspertile[i]; j++) {
+					buildScidbTile(sti,id,j);
 				}
 			}
 		}
