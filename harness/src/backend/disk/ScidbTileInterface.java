@@ -23,6 +23,7 @@ import utils.DBInterface;
 import utils.UtilityFunctions;
 
 public class ScidbTileInterface extends TileInterface {
+	public static int simulation_build_delay = 30000; // in ms
 	
 	public ScidbTileInterface() {
 		super();
@@ -30,6 +31,22 @@ public class ScidbTileInterface extends TileInterface {
 	
 	public ScidbTileInterface(String paramsfile, String delim) {
 		super(paramsfile,delim);
+	}
+	
+	@Override
+	public synchronized NiceTile getNiceTile(TileKey id) {
+		NiceTile tile = new NiceTile(id);
+		getStoredTile(DBInterface.arrayname,tile);
+		if(tile.getSize() == 0) {
+			buildAndStoreTile(DBInterface.arrayname,id);
+			getStoredTile(DBInterface.arrayname,tile);
+		}
+		return tile;
+	}
+	
+	public synchronized String buildShowQuery(String arrayname, Params p, TileKey id) {
+		String tile_name = super.getStoredTileName(arrayname, id);
+		return "show("+buildQuery(arrayname,p)+","+tile_name+")";
 	}
 	
 	public synchronized String buildGetStoredTileQuery(String arrayname) {
@@ -47,6 +64,10 @@ public class ScidbTileInterface extends TileInterface {
 				",avg(ndsi) as avg_ndsi,min(ndsi) as min_ndsi,max(ndsi) as max_ndsi,max(land_sea_mask) as max_land_sea_mask)";
 		//System.out.println("query: "+query);
 		return query;
+	}
+	
+	public synchronized String buildInitQuery() {
+		return "project(list('arrays'),name)";
 	}
 	
 	public synchronized String[] buildCmdNoOutput(String query) {
@@ -69,6 +90,34 @@ public class ScidbTileInterface extends TileInterface {
 				"export LD_LIBRARY_PATH=/opt/scidb/$SCIDB_VER/lib:$LD_LIBRARY_PATH ; " +
 				"source ~/.bashrc ; iquery -c " + DBInterface.scidb_host + " -o csv+ -aq \"" + query + "\"";
 		return myresult;
+	}
+	
+	public synchronized List<String> getArrayNames() {
+		List<String> arrayNames = new ArrayList<String>();
+		String query = buildInitQuery();
+		String[] cmd = buildCmd(query);
+			try {
+				//System.out.println("query: \""+query+"\"");
+				Process proc = Runtime.getRuntime().exec(cmd);
+
+				boolean first = true;
+				BufferedReader ebr = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+				for (String line; (line = ebr.readLine()) != null;) {
+					if(first) {
+						first = false;
+					} else {
+						String[] tokens = line.split(",");
+						arrayNames.add(tokens[1]);
+					}
+					//System.out.println(line);
+				}
+				ebr.close();
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		return arrayNames;
 	}
 	
 	public synchronized long removeStoredTile(String arrayname, TileKey id) {
@@ -116,6 +165,18 @@ public class ScidbTileInterface extends TileInterface {
 			}
 		long end = System.currentTimeMillis();
 		return end - start;
+	}
+	
+	// use this to simulate cooking the tile. Cooking should take
+	// significantly longer than fetching
+	// so this should work fine.
+	public synchronized long getSimulatedBuildile(String arrayname, NiceTile tile) throws InterruptedException {
+		long s = System.currentTimeMillis(); // start of the method
+		long delay = getStoredTile(arrayname, tile);
+		// subtract time required to retrieve from DBMS
+		long finalsleep = simulation_build_delay + s - System.currentTimeMillis();
+		if(finalsleep > 0) Thread.sleep(finalsleep);
+		return delay;
 	}
 	
 	public synchronized long getStoredTile(String arrayname, NiceTile tile) {
