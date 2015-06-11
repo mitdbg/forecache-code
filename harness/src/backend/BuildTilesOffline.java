@@ -82,11 +82,9 @@ public class BuildTilesOffline {
 		buildSpecificVerticaTiles(buffer.getAllTileKeys(),vti, 1);
 	}
 	
-	public static void buildScidbTile(ScidbTileInterface sti, TileKey id, int run) throws IOException {
-		//sti.removeStoredTile(DBInterface.arrayname, id); // for building and storing the tile
+	public static void measureScidbTile(ScidbTileInterface sti, TileKey id, int run) throws IOException {
 		NiceTile t = new NiceTile();
 		t.id = id;
-		//long duration = sti.buildAndStoreTile(DBInterface.arrayname, id); // for building and storing the tile
 		long duration = sti.MeasureTile(DBInterface.arrayname, id); // for measuring execution times
 		sti.getStoredTile(DBInterface.arrayname, t);
 		System.out.println("duration (ms): "+duration);
@@ -99,9 +97,26 @@ public class BuildTilesOffline {
 		log.flush();
 	}
 	
+	public static void buildScidbTile(ScidbTileInterface sti, TileKey id, int run) throws IOException {
+		sti.removeStoredTile(DBInterface.arrayname, id); // for building and storing the tile
+		NiceTile t = new NiceTile();
+		t.id = id;
+		long duration = sti.buildAndStoreTile(DBInterface.arrayname, id); // for building and storing the tile
+		sti.getStoredTile(DBInterface.arrayname, t);
+		System.out.println("duration (ms): "+duration);
+		System.out.println("size: "+t.getSize());
+	}
+	
 	public static void buildSpecificScidbTiles(Collection<TileKey> ids, ScidbTileInterface sti) throws IOException {
 		for(TileKey id : ids) {
 			buildScidbTile(sti,id,0);
+			//return;
+		}
+	}
+	
+	public static void measureSpecificScidbTiles(Collection<TileKey> ids, ScidbTileInterface sti) throws IOException {
+		for(TileKey id : ids) {
+			measureScidbTile(sti,id,0);
 			//return;
 		}
 	}
@@ -152,7 +167,7 @@ public class BuildTilesOffline {
 			for(int i = 0; i < count; i++) {
 				TileKey id = temp.get(i);
 				for(int j = 0; j < runspertile[i]; j++) {
-					buildScidbTile(sti,id,j);
+					measureScidbTile(sti,id,j);
 				}
 			}
 		}
