@@ -10,6 +10,7 @@ import utils.UtilityFunctions;
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.OldScidbTileInterface;
+import backend.disk.TileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.BasicModel;
@@ -17,12 +18,13 @@ import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
 import backend.util.Model;
+import backend.util.NiceTileBuffer;
 import backend.util.TileKey;
 
 public class MomentumDirectionalModel extends BasicModel {
 	protected Map<Character,Double> votes;
 	
-	public MomentumDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len){
+	public MomentumDirectionalModel(TileHistoryQueue ref, NiceTileBuffer membuf, NiceTileBuffer diskbuf,TileInterface api, int len){
 		super(ref,membuf,diskbuf,api,len);
 		this.votes = new HashMap<Character,Double>();
 		this.useDistanceCorrection = false;

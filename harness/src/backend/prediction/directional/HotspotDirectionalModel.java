@@ -9,12 +9,14 @@ import java.util.Map;
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.OldScidbTileInterface;
+import backend.disk.TileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
 import backend.util.Model;
+import backend.util.NiceTileBuffer;
 import backend.util.TileKey;
 
 import utils.UserRequest;
@@ -25,14 +27,14 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 	public static final double maxdistance = 2.0;
 	protected int hotspotlen;
 	
-	public HotspotDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len) {
+	public HotspotDirectionalModel(TileHistoryQueue ref, NiceTileBuffer membuf, NiceTileBuffer diskbuf,TileInterface api, int len) {
 		super(ref,membuf,diskbuf,api,len);
 		this.hotspots = new HashMap<TileKey,Integer>();
 		this.hotspotlen = defaulthotspotlen;
 		this.m = Model.HOTSPOT;
 	}
 	
-	public HotspotDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len, int hotspotlen) {
+	public HotspotDirectionalModel(TileHistoryQueue ref, NiceTileBuffer membuf, NiceTileBuffer diskbuf,TileInterface api, int len, int hotspotlen) {
 		this(ref,membuf,diskbuf,api,len);
 		this.hotspotlen = hotspotlen;
 		this.m = Model.HOTSPOT;

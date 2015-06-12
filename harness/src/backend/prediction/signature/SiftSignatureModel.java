@@ -14,12 +14,14 @@ import utils.DBInterface;
 import utils.UtilityFunctions;
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.OldScidbTileInterface;
+import backend.disk.TileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.prediction.DirectionPrediction;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
 import backend.util.Model;
 import backend.util.NiceTile;
+import backend.util.NiceTileBuffer;
 import backend.util.SignatureMap;
 import backend.util.Signatures;
 import backend.util.TileKey;
@@ -32,8 +34,8 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	KDTree<Integer> vocab = null;
 	protected Map<TileKey,double[]> histograms;
 
-	public SiftSignatureModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, 
-			DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len,
+	public SiftSignatureModel(TileHistoryQueue ref, NiceTileBuffer membuf, 
+			NiceTileBuffer diskbuf,TileInterface api, int len,
 			SignatureMap sigMap) {
 		super(ref,membuf,diskbuf,api,len,sigMap);
 		this.histograms = new HashMap<TileKey,double[]>();
@@ -123,7 +125,7 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	
 	
 	// don't use for now
-	public void updateRoi(OldScidbTileInterface scidbapi) {
+	public void updateRoi(TileInterface scidbapi) {
 		if(haveRealRoi && !history.newRoi()) return; // nothing to update
 		else if (!haveRealRoi && history.newRoi()) haveRealRoi = true; // now we have a real ROI
 		

@@ -13,6 +13,7 @@ import edu.berkeley.nlp.lm.values.ProbBackoffPair;
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.OldScidbTileInterface;
+import backend.disk.TileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.BasicModel;
@@ -21,6 +22,7 @@ import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
 import backend.util.Model;
 import backend.util.NiceTile;
+import backend.util.NiceTileBuffer;
 import backend.util.Signatures;
 import backend.util.TileKey;
 
@@ -32,7 +34,7 @@ public class NGramDirectionalModel extends BasicModel {
 	protected static StringWordIndexer wordIndexer;
 	protected static ArrayEncodedProbBackoffLm<String> lm;
 
-	public NGramDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len) {
+	public NGramDirectionalModel(TileHistoryQueue ref, NiceTileBuffer membuf, NiceTileBuffer diskbuf,TileInterface api, int len) {
 		super(ref,membuf,diskbuf,api,len);
 		sentences = new ArrayList<String>();
 		setupNgramModel();

@@ -4,18 +4,20 @@ import java.util.List;
 
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.OldScidbTileInterface;
+import backend.disk.TileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
 import backend.util.Model;
+import backend.util.NiceTileBuffer;
 import backend.util.SignatureMap;
 import backend.util.Signatures;
 import backend.util.TileKey;
 
 public class FilteredHistogramSignatureModel extends HistogramSignatureModel {
 
-	public FilteredHistogramSignatureModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, 
-			DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len, SignatureMap sigMap) {
+	public FilteredHistogramSignatureModel(TileHistoryQueue ref, NiceTileBuffer membuf, 
+			NiceTileBuffer diskbuf,TileInterface api, int len, SignatureMap sigMap) {
 		super(ref,membuf,diskbuf,api,len, sigMap);
 		this.m = Model.FHISTOGRAM;
 	}

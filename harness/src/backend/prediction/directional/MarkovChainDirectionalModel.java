@@ -8,15 +8,17 @@ import edu.berkeley.nlp.lm.values.ProbBackoffPair;
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.DiskTileBuffer;
 import backend.disk.OldScidbTileInterface;
+import backend.disk.TileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.memory.MemoryTileBuffer;
 import backend.prediction.TileHistoryQueue;
 import backend.util.Direction;
+import backend.util.NiceTileBuffer;
 import backend.util.TileKey;
 import utils.UserRequest;
 
 public class MarkovChainDirectionalModel extends NGramDirectionalModel {
-	public MarkovChainDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len) {
+	public MarkovChainDirectionalModel(TileHistoryQueue ref, NiceTileBuffer membuf, NiceTileBuffer diskbuf,TileInterface api, int len) {
 		super(ref,membuf,diskbuf,api,len);
 	}
 	

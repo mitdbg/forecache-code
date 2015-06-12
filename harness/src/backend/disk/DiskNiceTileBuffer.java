@@ -20,7 +20,7 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 	
 	private Map<TileKey,TimePair> timeMap; // for finding things in the queue
 	private PriorityQueue<TimePair> lruQueue; // for identifying lru tiles in storage
-	private final long storagemax;
+	private long storagemax;
 	private long size;
 	private final long DEFAULTMAX = 30304315430L; // default buffer size
 	private final int initqueuesize = 50;
@@ -57,6 +57,11 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 		this.size = 0;
 		this.storagemax = storagemax;
 		init(); // check cache root for existing tiles
+	}
+	
+	public synchronized void setStorageMax(int newmax) {
+		this.clear();
+		this.storagemax = newmax;
 	}
 
 	@Override

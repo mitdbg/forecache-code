@@ -13,9 +13,15 @@ import backend.util.NiceTileBuffer;
 import backend.util.TileKey;
 import backend.util.TimePair;
 
+/**
+ * @author leibatt
+ * This tile buffer does not actually delete any cooked tiles. It simply removes the label from the
+ * cache.
+ */
 public class PreCompNiceTileBuffer implements NiceTileBuffer {
 	protected Map<TileKey,TimePair> timeMap; // for finding things in the queue
 	protected PriorityQueue<TimePair> lruQueue; // for identifying lru tiles in storage
+	protected Map<TileKey,Boolean> isBuilt;
 	protected int storagemax;
 	protected int size;
 	protected final int DEFAULTMAX = 1; // default buffer size
@@ -27,12 +33,13 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 	
 	public PreCompNiceTileBuffer(ScidbTileInterface sti) throws Exception {
 		this.sti = sti;
+		this.isBuilt = new HashMap<TileKey,Boolean>();
 		
 		this.lruQueue = new PriorityQueue<TimePair>(this.initqueuesize,new TimePair.TPSort());
 		this.timeMap = new HashMap<TileKey,TimePair>();
 		this.size = 0;
 		this.storagemax = this.DEFAULTMAX;
-		init(); // check cache root for existing tiles
+		findExistingTiles(); // check cache root for existing tiles
 	}
 	
 	public PreCompNiceTileBuffer(ScidbTileInterface sti, int storagemax) throws Exception {
@@ -41,27 +48,14 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 	}
 	
 	public PreCompNiceTileBuffer(String tileNamePrefix, String arrayname, ScidbTileInterface sti) throws Exception {
+		this(sti);
 		this.tileNamePrefix = tileNamePrefix;
 		this.arrayname = arrayname;
-		this.sti = sti;
-		
-		this.lruQueue = new PriorityQueue<TimePair>(this.initqueuesize,new TimePair.TPSort());
-		this.timeMap = new HashMap<TileKey,TimePair>();
-		this.size = 0;
-		this.storagemax = this.DEFAULTMAX;
-		init(); // check cache root for existing tiles
 	}
 	
 	public PreCompNiceTileBuffer(String tileNamePrefix, String arrayname, ScidbTileInterface sti, int storagemax) throws Exception {
-		this.tileNamePrefix = tileNamePrefix;
-		this.arrayname = arrayname;
-		this.sti = sti;
-		
-		this.lruQueue = new PriorityQueue<TimePair>(this.initqueuesize,new TimePair.TPSort());
-		timeMap = new HashMap<TileKey,TimePair>();
-		this.size = 0;
+		this(tileNamePrefix,arrayname,sti);
 		this.storagemax = storagemax;
-		init(); // check cache root for existing tiles
 	}
 	
 	public synchronized void setStorageMax(int newmax) {
@@ -112,9 +106,12 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 			while(this.size >= this.storagemax) {
 				this.remove_lru_tile();
 			}
-			// insert new tile into storage
 			insert_time_pair(tile.id);
-			//this.sti.buildAndStoreTile(this.arrayname, tile.id);
+			// insert new tile into storage
+			if(!this.isBuilt.containsKey(id)) {
+				this.sti.buildAndStoreTile(this.arrayname, tile.id);
+				this.isBuilt.put(id, true);
+			}
 		} else { // tile already exists
 			// update metadata
 			this.update_time_pair(id);
@@ -125,7 +122,6 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 	@Override
 	public synchronized void removeTile(TileKey id) {
 		if(peek(id)) {
-			timeMap.get(id);
 			this.remove_tile(id);
 		}
 
@@ -139,8 +135,8 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 		}
 	}
 	
-	// find all tiles in cache directory
-	protected synchronized void init() {
+	// find all tiles already cooked in the database
+	protected synchronized void findExistingTiles() {
 		// get the list of tiles stored in the database
 		List<String> arrayNames = sti.getArrayNames();
 		for(String arrayName : arrayNames) {
@@ -152,7 +148,8 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 				int y = Integer.parseInt(tokens[2]);
 				int x = Integer.parseInt(tokens[3]);
 				TileKey id = new TileKey(new int[]{x,y}, zoom);
-				this.insert_time_pair(id);
+				//this.insert_time_pair(id);
+				this.isBuilt.put(id, true);
 				//System.out.println(arrayName);
 			}
 		}
@@ -216,7 +213,8 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 	
 	public static void main(String[] args) throws Exception {
 		ScidbTileInterface sti = new ScidbTileInterface();
-		PreCompNiceTileBuffer buf = new PreCompNiceTileBuffer(sti);
-		
+		PreCompNiceTileBuffer buf = new PreCompNiceTileBuffer(sti); // calls init in constructor
+		System.out.println(buf.size);
+		System.out.println(buf.isBuilt.size());
 	}
 }
