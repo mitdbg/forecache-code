@@ -4,8 +4,11 @@ import java.net.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
+import backend.util.Direction;
 import backend.util.DirectionClass;
+import backend.util.History;
 import backend.util.ModelAccuracy;
 import utils.DBInterface;
 import utils.ExplorationPhase;
@@ -441,70 +444,6 @@ public class Client {
 		}
 		return -100000.0;
 	}
-	
-	// tell server what user ids and models to train on
-		public static boolean sendPredictorFlags(boolean usemem, boolean usepc) {
-			String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/";
-			if(usemem) {
-				urlstring += "?usemem";
-				if(usepc) {
-					urlstring += "&usepc";
-				}
-			} else if (usepc) {
-				urlstring += "?usepc";
-			}
-			URL geturl = null;
-			HttpURLConnection connection = null;
-			BufferedReader reader = null;
-			StringBuffer sbuffer = new StringBuffer();
-			String line;
-			String result = null;
-			try {
-				geturl = new URL(urlstring);
-			} catch (MalformedURLException e) {
-				System.out.println("error occurred while retrieving url object for: '"+urlstring+"'");
-				e.printStackTrace();
-			}
-			if(geturl == null) {
-				return false;
-			}
-
-			try {
-				connection = (HttpURLConnection) geturl.openConnection();
-			} catch (IOException e) {
-				System.out.println("error occured while opening connection to url: '"+urlstring+"'");
-				e.printStackTrace();
-			}
-			if(connection == null) {
-				return false;
-			}
-
-			try {
-				reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-				while((line = reader.readLine()) != null) {
-					sbuffer.append(line);
-				}
-				reader.close();
-				result = sbuffer.toString();
-				return result.equals("done");
-			} catch (IOException e) {
-				System.out.println("Error retrieving response from url: '"+urlstring+"'");
-				e.printStackTrace();
-			}
-
-			if(connection != null) {
-				connection.disconnect();
-			}
-			if(reader != null) {
-				try {
-					reader.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			return false;
-		}
 
 	// tell server what user ids and models to train on
 	public static boolean sendReset(int[] user_ids, String[] models, int[] predictions,boolean usePhases) {

@@ -19,6 +19,8 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.opencv.core.Core;
 
+import frontend.CacheLevel;
+
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.NiceTilePacker;
 import backend.disk.OldScidbTileInterface;
@@ -113,11 +115,12 @@ public class PreCompThread {
 			System.out.println("neighborhood: "+neighborhood);
 		}
 		
-		if(usepc) pcManager = new PredictionManager();
-		if(usemem) memManager = new PredictionManager();
+		pcManager = new PredictionManager();
+		memManager = new PredictionManager();
 		
 		// initialize cache managers
 		scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
+		membuf = new MemoryNiceTileBuffer();
 		diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
 		pcbuf = new PreCompNiceTileBuffer(scidbapi);
 		hist =new TileHistoryQueue(histmax);
@@ -125,8 +128,8 @@ public class PreCompThread {
 		
 		sigMap  = SignatureMap.getFromFile(BuildSignaturesOffline.defaultFilename);
 		
-		if(usepc) initializeCacheManagers(pcManager,pcbuf);
-		if(usemem) initializeCacheManagers(memManager,membuf);
+		initializeCacheManagers(pcManager,pcbuf);
+		initializeCacheManagers(memManager,membuf);
 		
 		//logfile for timing results
 		try {
@@ -161,6 +164,7 @@ public class PreCompThread {
 		
 		protected void doMemReset(String useridstr,String modelstr,String predictions,String usePhases) throws Exception {
 			if(usemem) {
+				System.out.println("Doing mem reset...");
 				memManager.reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"),
 						(usePhases != null) && usePhases.equals("true"));
 			}
@@ -168,17 +172,19 @@ public class PreCompThread {
 		
 		protected void doPcReset(String useridstr,String modelstr,String predictions,String usePhases) throws Exception {
 			if(usepc) {
+				System.out.println("Doing disk reset...");
 				pcManager.reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"),
 						(usePhases != null) && usePhases.equals("true"));
 			}
 		}
 		
-		protected void doSetPredictors(HttpServletRequest request,
+		protected void doSetCacheLevels(HttpServletRequest request,
 				HttpServletResponse response) {
 			String memp = request.getParameter("usemem");
 			String pcp = request.getParameter("usepc");
 			usemem = memp != null;
 			usepc = pcp != null;
+			System.out.println("setting cache levels... usemem="+usemem+", usepc="+usepc);
 			try {
 				response.getWriter().println(done);
 			} catch (IOException e) {
@@ -191,14 +197,14 @@ public class PreCompThread {
 				HttpServletResponse response) {
 			System.out.println("reset");
 			//reset models for prediction
-			String predictor = request.getParameter("predictor");
+			String level = request.getParameter("level");
 			String useridstr = request.getParameter("user_ids");
 			String modelstr = request.getParameter("models");
 			String predictions = request.getParameter("predictions");
 			String usePhases = request.getParameter("usephases");
 			try {
-				if(predictor.equals("usemem")) doMemReset(useridstr,modelstr,predictions,usePhases);
-				else if (predictor.equals("usepc")) doPcReset(useridstr,modelstr,predictions,usePhases);
+				if(level.equals(CacheLevel.SERVERMM.toString())) doMemReset(useridstr,modelstr,predictions,usePhases);
+				else if (level.equals(CacheLevel.SERVERDISK.toString())) doPcReset(useridstr,modelstr,predictions,usePhases);
 
 				response.getWriter().println(done);
 			} catch (Exception e) {
@@ -327,6 +333,12 @@ public class PreCompThread {
 			String ready = request.getParameter("ready");
 			if(ready != null) {
 				response.getWriter().println(isReady());
+				return;
+			}
+			
+			String cachelevels = request.getParameter("cachelevels");
+			if(cachelevels != null) {
+				doSetCacheLevels(request,response);
 				return;
 			}
 			

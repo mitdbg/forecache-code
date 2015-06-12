@@ -23,7 +23,7 @@ import utils.DBInterface;
 import utils.UtilityFunctions;
 
 public class ScidbTileInterface extends TileInterface {
-	public static int simulation_build_delay = 33679; // in ms, derived empirically
+	public static int simulation_build_delay = 2;//33679; // in ms, derived empirically
 	
 	public ScidbTileInterface() {
 		super();
