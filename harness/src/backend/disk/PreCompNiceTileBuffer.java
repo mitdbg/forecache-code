@@ -78,7 +78,21 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 
 	@Override
 	public synchronized NiceTile getTile(TileKey id) {
-		return sti.getNiceTile(id);
+		//return sti.getNiceTile(id);
+		NiceTile t = new NiceTile();
+		t.id = id;
+		if(peek(id)) {
+			sti.getStoredTile(arrayname, t);
+		} else {
+			try {
+				sti.getSimulatedBuildTile(arrayname, t);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				t = null;
+			}
+		}
+		return t;
 	}
 
 	@Override

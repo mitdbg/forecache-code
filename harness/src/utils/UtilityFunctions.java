@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import frontend.CacheLevel;
+
 import backend.util.Direction;
 import backend.util.DirectionClass;
 import backend.util.Model;
@@ -14,6 +16,13 @@ import backend.util.ParamsMap;
 import backend.util.TileKey;
 
 public class UtilityFunctions {
+	public static CacheLevel getCacheLevel(String level) {
+		for(CacheLevel candidate : CacheLevel.values()) {
+			if(level.equals(candidate.toString())) return candidate;
+		}
+		return null;
+	}
+	
 	public static Model getModelFromString(String modelName) {
 		if (modelName.equals("random")) {
 			return Model.RANDOM;

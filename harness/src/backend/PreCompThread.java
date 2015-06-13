@@ -59,9 +59,9 @@ public class PreCompThread {
 	public static BufferedWriter log;
 	
 	//accuracy
-	public static int total_requests = 0;
-	public static int cache_hits = 0;
-	public static List<String> hitslist = new ArrayList<String>();
+	//public static int total_requests = 0;
+	//public static int cache_hits = 0;
+	//public static List<String> hitslist = new ArrayList<String>();
 	
 	// General Model variables
 	public static int histmax = 10;
@@ -162,11 +162,18 @@ public class PreCompThread {
 			return (!usemem || memManager.isReady()) && (!usepc || pcManager.isReady());
 		}
 		
+		protected void updateAccuracy(TileKey id) {
+			memManager.updateAccuracy(id);
+			pcManager.updateAccuracy(id);
+		}
+		
 		protected void doMemReset(String useridstr,String modelstr,String predictions,String usePhases) throws Exception {
 			if(usemem) {
 				System.out.println("Doing mem reset...");
 				memManager.reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"),
 						(usePhases != null) && usePhases.equals("true"));
+			} else {
+				memManager.clear();
 			}
 		}
 		
@@ -175,6 +182,8 @@ public class PreCompThread {
 				System.out.println("Doing disk reset...");
 				pcManager.reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"),
 						(usePhases != null) && usePhases.equals("true"));
+			} else {
+				pcManager.clear();
 			}
 		}
 		
@@ -216,15 +225,29 @@ public class PreCompThread {
 		
 		protected void doGetFullAccuracy(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
-			if(hitslist.size() == 0) {
-				response.getWriter().println("[]");
-				return;
+			CacheLevel level = UtilityFunctions.getCacheLevel(request.getParameter("level"));
+			String res = null;
+			switch(level) {
+			case SERVERMM: res = memManager.getFullAccuracy();
+			break;
+			case SERVERDISK: res = pcManager.getFullAccuracy();
+			break;
 			}
-			String res = hitslist.get(0);
-			for(int i = 1; i < hitslist.size(); i++) {
-				res = res + ","+hitslist.get(i);
+			if(res != null) response.getWriter().println(res);
+		}
+		
+		protected void doGetAccuracy(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			CacheLevel level = UtilityFunctions.getCacheLevel(request.getParameter("level"));
+			double accuracy = -1;
+			switch(level) {
+			case SERVERMM: accuracy = memManager.getAccuracy();
+			break;
+			case SERVERDISK: accuracy = pcManager.getAccuracy();
+			break;
 			}
-			response.getWriter().println(res);
+			response.getWriter().println(accuracy);
+			return;
 		}
 		
 		protected void doComp(HttpServletRequest request,
@@ -272,7 +295,6 @@ public class PreCompThread {
 			//System.out.println("threshold: " + threshold);
 			NiceTile t = null;
 			try {
-				//t = fetchTile(tile_id,zoom,threshold);
 				t = newFetchTile(tile_id,zoom,threshold);
 				if(usepc) pcManager.runPredictor(executorService);
 				if(usemem) memManager.runPredictor(executorService);
@@ -356,9 +378,7 @@ public class PreCompThread {
 			
 			String getaccuracy = request.getParameter("accuracy");
 			if(getaccuracy != null) {
-				double accuracy = getAccuracy();
-				response.getWriter().println(accuracy);
-				return;
+				doGetAccuracy(request,response);
 			}
 			
 			String fetch = request.getParameter("fetch");
@@ -376,10 +396,6 @@ public class PreCompThread {
 			}
 		}
 		
-		protected double getAccuracy() {
-			return (1.0 * cache_hits / total_requests);
-		}
-		
 		protected NiceTile newFetchTile(String tile_id, String zoom, String threshold) {
 			String reverse = UtilityFunctions.unurlify(tile_id); // undo urlify
 			int[] id = UtilityFunctions.parseTileIdInteger(reverse);
@@ -388,29 +404,37 @@ public class PreCompThread {
 			
 			//System.out.println("tile to predict: "+key);
 			//System.out.println("last request: "+hist.getLast());
-			boolean found = false;
-			NiceTile t = lmbuf.getTile(key); // check lru cache
+			
+			updateAccuracy(key);
+			//boolean found = false;
+			NiceTile t = null;
+			if (usemem) t = lmbuf.getTile(key); // check lru cache
 			if(t == null) { // not in user's last x moves. check mem cache
-				t = membuf.getTile(key);
+				if(usemem) t = membuf.getTile(key);
 				if(t == null) { // not cached, get it from disk in DBMS
-					t = new NiceTile();
-					t.id = key;
-					scidbapi.getStoredTile(DBInterface.arrayname, t);
-					//verticaapi.getStoredTile(DBInterface.arrayname, t);
+					if(usepc) {
+						t = pcbuf.getTile(key);
+					} else {
+						t = new NiceTile();
+						t.id = key;
+						scidbapi.getStoredTile(DBInterface.arrayname, t);
+						//verticaapi.getStoredTile(DBInterface.arrayname, t);
+					}
 					
 					//membuf.insertTile(t);
 				} else { // found in memory
-					cache_hits++;
-					membuf.touchTile(key); // update timestamp
-					found = true;
+					//cache_hits++;
+					if(usemem) membuf.touchTile(key); // update timestamp
+					//found = true;
 				}
 			} else { // found in lru cache
-				cache_hits++;
-				found = true;
+				//cache_hits++;
+				//found = true;
 			}
-			total_requests++;
+			//total_requests++;
 			hist.addRecord(t);
 			lmbuf.insertTile(t);
+			/*
 			if(found) {
 				//System.out.println("hit in cache for tile "+key);
 				hitslist.add("hit");
@@ -418,6 +442,7 @@ public class PreCompThread {
 				//System.out.println("miss in cache for tile "+key);
 				hitslist.add("miss");
 			}
+			*/
 			//System.out.println("current accuracy: "+ (1.0 * cache_hits / total_requests));
 			//System.out.println("cache size: "+membuf.tileCount()+" tiles");
 			return t;

@@ -9,6 +9,9 @@ public class ClientParameterManager {
     public int[][] allocations = null;
     public boolean[] usePhases = null;
     
+    public double accuracy;
+    public String[] fullAccuracy;
+    
     
 	/*
 	 *      <arg line="10015 151,148 task1,task2,task3 sift-dsift/ngram3 8-8/10 [neighborhood] false/false"/>
@@ -45,16 +48,20 @@ public class ClientParameterManager {
         for(int i = 0; i < modelstrs.length; i++) {
                 String[] temp = modelstrs[i].split(",");
                 models[i] = new String[temp.length];
-                System.out.print("adding model combination:");
+                //System.out.print("adding model combination:");
                 for(int j=0; j < temp.length;j++) {
                         models[i][j] = temp[j];
-                        System.out.print(" "+models[i][j]);
+                        //System.out.print(" "+models[i][j]);
                 }
-                System.out.println();
+                //System.out.println();
         }
 	}
 	
 	public void parseAllocations(String allocationstring) throws Exception {
+		if(allocationstring.equals("")) {
+			allocations = new int [0][];
+			return;
+		}
 		String[] tempallocations = allocationstring.split("-"); // for each model combo
 		if(tempallocations.length != models.length) {
 			throw new Exception("Not enough allocations!");
@@ -63,12 +70,12 @@ public class ClientParameterManager {
 		for(int i = 0; i < tempallocations.length; i++) {
 			 String[] temp = tempallocations[i].split(",");
                 allocations[i] = new int[temp.length];
-                System.out.print("adding allocation combination:");
+                //System.out.print("adding allocation combination:");
                 for(int j=0; j < temp.length;j++) {
                         allocations[i][j] = Integer.parseInt(temp[j]);
-                        System.out.print(" "+allocations[i][j]);
+                        //System.out.print(" "+allocations[i][j]);
                 }
-                System.out.println();
+                //System.out.println();
 		}
 	}
 	
@@ -80,7 +87,7 @@ public class ClientParameterManager {
 		usePhases = new boolean[tempflags.length];
 		for(int i = 0; i < tempflags.length; i++) {
 			usePhases[i] = Boolean.parseBoolean(tempflags[i]);
-			System.out.println("adding phase usage: "+usePhases[i]);
+			//System.out.println("adding phase usage: "+usePhases[i]);
 		}
 	}
 	

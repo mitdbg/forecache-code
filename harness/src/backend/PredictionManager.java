@@ -51,12 +51,12 @@ public class PredictionManager {
 	
 	// General Model variables
 	public int deflmbuflen = 0; // default is don't use lru cache
-	public int defaultpredictions = 3;
+	public int defaultpredictions = 0;
 	public int defaulthistorylength = 4;
 	public int defaultport = 8080;
 	public int[] allocatedStorage; // storage per model
 	public int totalStorage = 0;
-	public int defaultstorage = 1; // default storage per model
+	public int defaultstorage = 0; // default storage per model
 	public int neighborhood = 1; // default neighborhood from which to pick candidates
 	
 	public Model[] modellabels = {Model.MOMENTUM};
@@ -81,6 +81,32 @@ public class PredictionManager {
 	
 	public synchronized boolean isReady() {
 		return (predictor == null) || (predictor.isDone());
+	}
+	
+	public void updateAccuracy(TileKey id) {
+		boolean found = buf.peek(id);
+		if(found) {
+			cache_hits++;
+			hitslist.add("hit");
+		} else {
+			hitslist.add("miss");
+		}
+		total_requests++;
+	}
+	
+	public double getAccuracy() {
+		return 1.0 * cache_hits / total_requests;
+	}
+	
+	public String getFullAccuracy() {
+		if(hitslist.size() == 0) {
+			return "[]";
+		}
+		String res = hitslist.get(0);
+		for(int i = 1; i < hitslist.size(); i++) {
+			res = res + ","+hitslist.get(i);
+		}
+		return res;
 	}
 	
 	public void setupModels() {
@@ -306,6 +332,27 @@ public class PredictionManager {
 		totalStorage = required;
 	}
 	
+	public void clear() {
+		update_users(new String[]{});
+		update_model_labels(new String[]{});
+		update_allocations_from_string(new String[]{});
+		all_models = null;
+		usePclas = false;
+		//defaultpredictions = Integer.parseInt(predictions);
+		//System.out.println("predictions: "+defaultpredictions);
+		
+		//reset accuracy
+		cache_hits = 0;
+		total_requests = 0;
+		hitslist.clear();
+		
+		// reinitialize caches and user history
+		totalStorage = 0;
+		buf.clear();
+		lmbuf.clear();
+		hist.clear();
+	}
+	
 	public void reset(String[] userstrs, String[] modelstrs, String[] predictions,boolean usePhases) throws Exception {
 		update_users(userstrs);
 		update_model_labels(modelstrs);
@@ -317,7 +364,7 @@ public class PredictionManager {
 		//reset accuracy
 		cache_hits = 0;
 		total_requests = 0;
-		hitslist = new ArrayList<String>();
+		hitslist.clear();
 		
 		// reinitialize caches and user history
 		buf.clear();

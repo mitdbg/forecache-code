@@ -22,7 +22,7 @@ public class PreCompClient {
 	//public static String [] tasknames = {"warmup", "task1", "task2", "task3"};
 	public static ClientParameterManager clientManager = null;
 	public static ClientParameterManager memManager = null;
-	public static ClientParameterManager diskManager = null;
+	public static ClientParameterManager pcManager = null;
 	public static boolean useclient = false;
 	public static boolean usemem = false;
 	public static boolean usepc = false;
@@ -51,9 +51,9 @@ public class PreCompClient {
 			users = memManager.user_ids;
 		}
 		if(usepc) {
-			diskmax = diskManager.usePhases.length;
-			tasknames = diskManager.tasknames;
-			users = diskManager.user_ids;
+			diskmax = pcManager.usePhases.length;
+			tasknames = pcManager.tasknames;
+			users = pcManager.user_ids;
 		}
 		if(users.length == 0) throw new Exception("List of users is empty!");
 		if(tasknames.length == 0) throw new Exception("List of tasks is empty!");
@@ -109,14 +109,12 @@ public class PreCompClient {
 			
 			// setup test case on backend
 			sendCacheLevelFlags(usemem, usepc); // are we using these?
-			if(usemem) {
-				sendReset(memManager.level,trainlist,memManager.models[memIndex],
-						memManager.allocations[memIndex],memManager.usePhases[memIndex]);
-			}
-			if(usepc) {
-				sendReset(diskManager.level,trainlist,diskManager.models[diskIndex],
-						diskManager.allocations[diskIndex],diskManager.usePhases[diskIndex]);
-			}
+			
+			if(usemem) sendReset(memManager.level,trainlist,memManager.models[memIndex],
+				memManager.allocations[memIndex],memManager.usePhases[memIndex]);
+			
+			if(usepc) sendReset(pcManager.level,trainlist,pcManager.models[diskIndex],
+				pcManager.allocations[diskIndex],pcManager.usePhases[diskIndex]);
 			
 			//send requests
 			int user_id = testusers.get(u1);
@@ -138,22 +136,56 @@ public class PreCompClient {
 			long end = System.currentTimeMillis();
 			System.out.println("duration: "+(1.0*(end-start)/1000)+" secs");
 			//get accuracy for this user
-			double accuracy = getAccuracy();
+			if(useclient) {
+				clientManager.accuracy = getAccuracy(clientManager.level);
+				clientManager.fullAccuracy = getFullAccuracy(clientManager.level);
+			}
+			
+			if(usemem) {
+				memManager.accuracy = getAccuracy(memManager.level);
+				memManager.fullAccuracy = getFullAccuracy(memManager.level);
+			}
+			
+			if(usepc) {
+				pcManager.accuracy = getAccuracy(pcManager.level);
+				pcManager.fullAccuracy = getFullAccuracy(pcManager.level);
+			}
+			
 			avg_duration /= trace.size();
-			String[] fullAccuracy = getFullAccuracy();
 			
 			/*
 			//original printed content
 			System.out.print(user_id+"\t");
 			System.out.print(taskname+"\t");
-			UtilityFunctions.printStringArray(models);
+			if(useclient) {
+				UtilityFunctions.printStringArray(clientManager.models[clientIndex]);
+				System.out.print("\t");
+				UtilityFunctions.printIntArray(clientManager.allocations[clientIndex]);
+				System.out.print("\t");
+			}
+			
+			if(usemem) {
+				UtilityFunctions.printStringArray(memManager.models[memIndex]);
+				System.out.print("\t");
+				UtilityFunctions.printIntArray(memManager.allocations[memIndex]);
+				System.out.print("\t");
+			}
+			
+			if(usepc) {
+				UtilityFunctions.printStringArray(diskManager.models[diskIndex]);
+				System.out.print("\t");
+				UtilityFunctions.printIntArray(diskManager.allocations[diskIndex]);
+				System.out.print("\t");
+			}
+			UtilityFunctions.printStringArray(clientManager.fullAccuracy);
 			System.out.print("\t");
-			System.out.print(predictions+"\t");
-			UtilityFunctions.printStringArray(fullAccuracy);
-			overall_accuracy += accuracy;
+			UtilityFunctions.printStringArray(memManager.fullAccuracy);
 			System.out.print("\t");
-			System.out.print(accuracy);
+			UtilityFunctions.printStringArray(diskManager.fullAccuracy);
 			System.out.print("\t");
+			System.out.print(clientManager.accuracy+"\t");
+			System.out.print(memManager.accuracy+"\t");
+			System.out.print(diskManager.accuracy+"\t");
 			System.out.println(avg_duration);
 			*/
 			
@@ -177,34 +209,26 @@ public class PreCompClient {
 				if(usemem) UtilityFunctions.printIntArray(memManager.allocations[memIndex]);
 				System.out.print("\t");
 				
-				if(usepc) UtilityFunctions.printStringArray(diskManager.models[diskIndex]);
+				if(usepc) UtilityFunctions.printStringArray(pcManager.models[diskIndex]);
 				System.out.print("\t");
-				if(usepc) UtilityFunctions.printIntArray(diskManager.allocations[diskIndex]);
+				if(usepc) UtilityFunctions.printIntArray(pcManager.allocations[diskIndex]);
 				System.out.print("\t");
 				
 				System.out.print(request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
-						"\t"+fullAccuracy[i]);
+						"\t");
+				
+				if(useclient) System.out.print(clientManager.fullAccuracy[i]);
+				System.out.print("\t");
+				if(usemem) System.out.print(memManager.fullAccuracy[i]);
+				System.out.print("\t");
+				if(usepc) System.out.print(pcManager.fullAccuracy[i]);
+				System.out.print("\t");
 				//System.out.println("\t"+predictions+"\t"+request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
 				//		"\t"+fullAccuracy[i]);
 				System.out.print("\t");
 				System.out.println(durations[i]);
 			}
 			
-		}
-		overall_accuracy /= testusers.size();
-		//System.out.println("overall\t"+overall_accuracy);
-	}
-	
-	public static void crossValidationModelSpecific(int[] users, String[] tasknames, String[][] models, int[][] allocations, boolean[] usePhases) throws Exception {
-		List<Integer> testusers = new ArrayList<Integer>();
-		for(int i = 0; i < users.length; i++) {
-			testusers.add(users[i]);
-		}
-		
-		for(String taskname : tasknames) {
-			for(int allc = 0; allc < allocations.length; allc++) {
-				crossValidation(taskname,models[allc],testusers,allocations[allc],usePhases[allc]);
-			}
 		}
 	}
 	
@@ -220,106 +244,10 @@ public class PreCompClient {
 		}
 	}
 	
-	// only test specific users, but train on all users
-	public static void crossValidation(String taskname, String[] models, List<Integer> testusers, int[] predictions,
-			boolean usePhases) throws Exception {
-		List<Integer> users = DBInterface.getUsers();
-		List<Integer> finalusers = new ArrayList<Integer>();
-		
-		for(int u = 0; u < users.size(); u++) {
-			if(DBInterface.checkTask(users.get(u),taskname)) {
-				finalusers.add(users.get(u));
-			}
-		}
-		
-		double overall_accuracy = 0;
-		// u1 = position of user we are testing
-		for(int u1 = 0; u1 < testusers.size(); u1++) {
-			// get training list
-			int[] trainlist = new int[finalusers.size() - 1];
-			//System.out.print("train list: ");
-			int index = 0;
-			for(int u2 = 0; u2 < finalusers.size(); u2++) {
-				if(!finalusers.get(u2).equals(testusers.get(u1))) {
-					trainlist[index] = finalusers.get(u2);
-					//System.out.print(trainlist[index]+" ");
-					index++;
-				}
-			}
-			//System.out.println();
-			//System.out.print("train list: ");
-			//UtilityFunctions.printIntArray(trainlist);
-			// setup test case on backend
-			sendReset(null,trainlist,models,predictions,usePhases);
-			
-			//send requests
-			int user_id = testusers.get(u1);
-			List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
-			long start = System.currentTimeMillis();
-			double[] durations = new double[trace.size()];
-			double avg_duration = 0;
-			for(int r = 0; r < trace.size(); r++) {
-				UserRequest ur = trace.get(r);
-				String tile_id = ur.tile_id;
-				String tile_hash = ur.tile_hash;
-				int zoom = ur.zoom;
-				//System.out.println("tile id: '" +tile_id+ "'");
-				//Thread.sleep(100);
-				waitForServer();
-				durations[r] = sendRequest(tile_id,zoom,tile_hash);
-				avg_duration += durations[r];
-			}
-			long end = System.currentTimeMillis();
-			System.out.println("duration: "+(1.0*(end-start)/1000)+" secs");
-			//get accuracy for this user
-			double accuracy = getAccuracy();
-			avg_duration /= trace.size();
-			String[] fullAccuracy = getFullAccuracy();
-			
-			/*
-			//original printed content
-			System.out.print(user_id+"\t");
-			System.out.print(taskname+"\t");
-			UtilityFunctions.printStringArray(models);
-			System.out.print("\t");
-			System.out.print(predictions+"\t");
-			UtilityFunctions.printStringArray(fullAccuracy);
-			overall_accuracy += accuracy;
-			System.out.print("\t");
-			System.out.print(accuracy);
-			System.out.print("\t");
-			System.out.println(avg_duration);
-			*/
-			
-			// new printed content
-			TraceMetadata metadata = RequestLabeler.getLabels(trace);
-			List<DirectionClass> dirs = metadata.directionClasses;
-			List<ExplorationPhase> phases = metadata.explorationPhases;
-			for(int i = 0; i < trace.size(); i++) {
-				UserRequest request = trace.get(i);
-				int[] id = UtilityFunctions.parseTileIdInteger(request.tile_id);
-				System.out.print(user_id+"\t"+taskname+"\t");
-				UtilityFunctions.printStringArray(models);
-				System.out.print("\t");
-				UtilityFunctions.printIntArray(predictions);
-				System.out.print("\t");
-				System.out.print(request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
-						"\t"+fullAccuracy[i]);
-				//System.out.println("\t"+predictions+"\t"+request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
-				//		"\t"+fullAccuracy[i]);
-				System.out.print("\t");
-				System.out.println(durations[i]);
-			}
-			
-		}
-		overall_accuracy /= testusers.size();
-		//System.out.println("overall\t"+overall_accuracy);
-	}
-	
 	// tell server what user ids and models to train on
-	public static String[] getFullAccuracy() {
+	public static String[] getFullAccuracy(CacheLevel level) {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
-				+ "?fullaccuracy";
+				+ "?fullaccuracy&level="+level;
 		URL geturl = null;
 		HttpURLConnection connection = null;
 		BufferedReader reader = null;
@@ -374,9 +302,9 @@ public class PreCompClient {
 	}
 	
 	// tell server what user ids and models to train on
-	public static double getAccuracy() {
+	public static double getAccuracy(CacheLevel level) {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
-				+ "?accuracy";
+				+ "?accuracy&level="+level;
 		URL geturl = null;
 		HttpURLConnection connection = null;
 		BufferedReader reader = null;
@@ -707,13 +635,6 @@ public class PreCompClient {
 		//sendRequest("[0, 2]", 3, "123");
 	}
 	
-	public static CacheLevel getCacheLevel(String level) {
-		for(CacheLevel candidate : CacheLevel.values()) {
-			if(level.equals(candidate.toString())) return candidate;
-		}
-		return null;
-	}
-	
 	public static void main(String[] args) throws Exception {
 		if(args.length < 1) throw new Exception("No parameters passed!"); // nothing to do!
 		
@@ -736,7 +657,7 @@ public class PreCompClient {
 		}
 		Map<CacheLevel,Boolean> alreadySpecified = new HashMap<CacheLevel,Boolean>();
 		for(int i = 0; i < levels.length; i++) {
-			CacheLevel l = getCacheLevel(levels[i]);
+			CacheLevel l = UtilityFunctions.getCacheLevel(levels[i]);
 			if(alreadySpecified.containsKey(l)) {
 				throw new Exception("Duplicate set of parameters specified for caching level '"+l+"'!");
 			}
@@ -750,13 +671,18 @@ public class PreCompClient {
 				usemem = true;
 				break;
 			case SERVERDISK:
-				diskManager = new ClientParameterManager(userstring,taskstring,l,models[i],allocations[i],phases[i]);
+				pcManager = new ClientParameterManager(userstring,taskstring,l,models[i],allocations[i],phases[i]);
 				usepc = true;
 				break;
 			}
 			alreadySpecified.put(l, true);
 		}
-
+		
+		//default settings
+		//if(!useclient) clientManager = new ClientParameterManager(userstring,taskstring,CacheLevel.CLIENT,"","","");
+		//if(!usemem) memManager = new ClientParameterManager(userstring,taskstring,CacheLevel.SERVERMM,"","","");
+		//if(!usepc) pcManager = new ClientParameterManager(userstring,taskstring,CacheLevel.SERVERDISK,"","","");
+		
 		if(!useclient && !usemem && !usepc) throw new Exception("no caching flags set!");
 		PreCompClient.crossValidationMultiLevel();
 	}
