@@ -65,8 +65,8 @@ public class PreCompClient {
 		
 		for(String taskname : tasknames) {
 			for(clientIndex = 0; clientIndex < clientmax; clientIndex++) {
-				for(int memIndex = 0; memIndex < memmax; memIndex++) {
-					for(int diskIndex = 0; diskIndex < diskmax; diskIndex++) {
+				for(memIndex = 0; memIndex < memmax; memIndex++) {
+					for(diskIndex = 0; diskIndex < diskmax; diskIndex++) {
 						doMultiLevelValidation(testusers,taskname);
 					}
 				}
@@ -111,10 +111,12 @@ public class PreCompClient {
 			sendCacheLevelFlags(usemem, usepc); // are we using these?
 			
 			if(usemem) sendReset(memManager.level,trainlist,memManager.models[memIndex],
-				memManager.allocations[memIndex],memManager.usePhases[memIndex]);
+				memManager.allocations[memIndex],memManager.neighborhoods[memIndex],
+				memManager.usePhases[memIndex]);
 			
 			if(usepc) sendReset(pcManager.level,trainlist,pcManager.models[diskIndex],
-				pcManager.allocations[diskIndex],pcManager.usePhases[diskIndex]);
+				pcManager.allocations[diskIndex],pcManager.neighborhoods[diskIndex],
+				pcManager.usePhases[diskIndex]);
 			
 			//send requests
 			int user_id = testusers.get(u1);
@@ -418,9 +420,9 @@ public class PreCompClient {
 		}
 
 	// tell server what user ids and models to train on
-	public static boolean sendReset(CacheLevel level, int[] user_ids, String[] models, int[] predictions,boolean usePhases) {
+	public static boolean sendReset(CacheLevel level, int[] user_ids, String[] models, int[] predictions, int neighborhood,boolean usePhases) {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
-				+ "?"+buildResetParams(level,user_ids,models, predictions,usePhases);
+				+ "?"+buildResetParams(level,user_ids,models, predictions, neighborhood,usePhases);
 		URL geturl = null;
 		HttpURLConnection connection = null;
 		BufferedReader reader = null;
@@ -596,7 +598,8 @@ public class PreCompClient {
 		return params;
 	}
 	
-	public static String buildResetParams(CacheLevel level, int[] user_ids, String[] models, int[] predictions, boolean usePhases) {
+	public static String buildResetParams(CacheLevel level, int[] user_ids, String[] models,
+			int[] predictions, int neighborhood, boolean usePhases) {
 		String params = "reset&user_ids=";
 		if(level != null) {
 			params = "level="+level+"&"+params;
@@ -621,6 +624,7 @@ public class PreCompClient {
 		for(int i = 1; i < predictions.length; i++) {
 			params += "_" + predictions[i];
 		}
+		params +="&neighborhood="+neighborhood;
 		if(usePhases) {
 			params += "&usephases=true";
 		}
@@ -637,6 +641,7 @@ public class PreCompClient {
 	
 	public static void main(String[] args) throws Exception {
 		if(args.length < 1) throw new Exception("No parameters passed!"); // nothing to do!
+		if(args.length != 8) throw new Exception("Only "+args.length+" parameters passed! Need 8.");
 		
 		backend_port = Integer.parseInt(args[0]);
 		String userstring = args[1];
@@ -644,17 +649,32 @@ public class PreCompClient {
 		String raw_levelstring = args[3];
 		String raw_modelstring = args[4];
 		String raw_allocationstring = args[5];
-		String raw_phasestring = args[6];
+		String raw_neighborhoodstring = args[6];
+		String raw_phasestring = args[7];
 		
 		String[] levels = raw_levelstring.split("/");
 		String[] models = raw_modelstring.split("/");
 		String[] allocations = raw_allocationstring.split("/");
+		String[] neighborhoods = raw_neighborhoodstring.split("/");
 		String[] phases = raw_phasestring.split("/");
+		String message = null;
+		if(allocations.length != phases.length) {
+			message = "Mismatched number of multi-level parameters: check allocations vs. phases";
+		} else if (phases.length != models.length) {
+			message = "Mismatched number of multi-level parameters: check phases vs. models";
+		} else if(models.length != levels.length) {
+			message = "Mismatched number of multi-level parameters: check models vs. levels";
+		} else if(levels.length != neighborhoods.length) {
+			message = "Mismatched number of multi-level parameters: check levels vs. neighborhoods";
+		}
+		if(message != null) throw new ClientParameterManager.ClientInputException(message);
+		/*
 		if((allocations.length != phases.length) ||
 				(phases.length != models.length) ||
-				(levels.length != models.length)) {
+				(models.length != levels.length) ||
+				(levels.length != neighborhoods.length)) {
 			throw new Exception("Mismatched number of multi-level parameters passed!");
-		}
+		}*/
 		Map<CacheLevel,Boolean> alreadySpecified = new HashMap<CacheLevel,Boolean>();
 		for(int i = 0; i < levels.length; i++) {
 			CacheLevel l = UtilityFunctions.getCacheLevel(levels[i]);
@@ -663,15 +683,15 @@ public class PreCompClient {
 			}
 			switch(l) {
 			case CLIENT:
-				clientManager = new ClientParameterManager(userstring,taskstring,l,models[i],allocations[i],phases[i]);
+				clientManager = new ClientParameterManager(userstring,taskstring,l,models[i],allocations[i],neighborhoods[i],phases[i]);
 				useclient = true;
 				break;
 			case SERVERMM:
-				memManager = new ClientParameterManager(userstring,taskstring,l,models[i],allocations[i],phases[i]);
+				memManager = new ClientParameterManager(userstring,taskstring,l,models[i],allocations[i],neighborhoods[i],phases[i]);
 				usemem = true;
 				break;
 			case SERVERDISK:
-				pcManager = new ClientParameterManager(userstring,taskstring,l,models[i],allocations[i],phases[i]);
+				pcManager = new ClientParameterManager(userstring,taskstring,l,models[i],allocations[i],neighborhoods[i],phases[i]);
 				usepc = true;
 				break;
 			}

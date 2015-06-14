@@ -167,20 +167,20 @@ public class PreCompThread {
 			pcManager.updateAccuracy(id);
 		}
 		
-		protected void doMemReset(String useridstr,String modelstr,String predictions,String usePhases) throws Exception {
+		protected void doMemReset(String useridstr,String modelstr,String predictions, String nstr,String usePhases) throws Exception {
 			if(usemem) {
 				System.out.println("Doing mem reset...");
-				memManager.reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"),
+				memManager.reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"), nstr,
 						(usePhases != null) && usePhases.equals("true"));
 			} else {
 				memManager.clear();
 			}
 		}
 		
-		protected void doPcReset(String useridstr,String modelstr,String predictions,String usePhases) throws Exception {
+		protected void doPcReset(String useridstr,String modelstr,String predictions, String nstr,String usePhases) throws Exception {
 			if(usepc) {
 				System.out.println("Doing disk reset...");
-				pcManager.reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"),
+				pcManager.reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"), nstr,
 						(usePhases != null) && usePhases.equals("true"));
 			} else {
 				pcManager.clear();
@@ -211,9 +211,10 @@ public class PreCompThread {
 			String modelstr = request.getParameter("models");
 			String predictions = request.getParameter("predictions");
 			String usePhases = request.getParameter("usephases");
+			String nstr = request.getParameter("neighborhood");
 			try {
-				if(level.equals(CacheLevel.SERVERMM.toString())) doMemReset(useridstr,modelstr,predictions,usePhases);
-				else if (level.equals(CacheLevel.SERVERDISK.toString())) doPcReset(useridstr,modelstr,predictions,usePhases);
+				if(level.equals(CacheLevel.SERVERMM.toString())) doMemReset(useridstr,modelstr,predictions, nstr,usePhases);
+				else if (level.equals(CacheLevel.SERVERDISK.toString())) doPcReset(useridstr,modelstr,predictions, nstr,usePhases);
 
 				response.getWriter().println(done);
 			} catch (Exception e) {

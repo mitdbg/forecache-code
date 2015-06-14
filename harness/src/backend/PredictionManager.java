@@ -338,6 +338,7 @@ public class PredictionManager {
 		update_allocations_from_string(new String[]{});
 		all_models = null;
 		usePclas = false;
+		neighborhood = 1;
 		//defaultpredictions = Integer.parseInt(predictions);
 		//System.out.println("predictions: "+defaultpredictions);
 		
@@ -353,11 +354,12 @@ public class PredictionManager {
 		hist.clear();
 	}
 	
-	public void reset(String[] userstrs, String[] modelstrs, String[] predictions,boolean usePhases) throws Exception {
+	public void reset(String[] userstrs, String[] modelstrs, String[] predictions, String nstr,boolean usePhases) throws Exception {
 		update_users(userstrs);
 		update_model_labels(modelstrs);
 		update_allocations_from_string(predictions);
 		usePclas = usePhases;
+		neighborhood = Integer.parseInt(nstr);
 		//defaultpredictions = Integer.parseInt(predictions);
 		//System.out.println("predictions: "+defaultpredictions);
 		

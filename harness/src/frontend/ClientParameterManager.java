@@ -8,20 +8,33 @@ public class ClientParameterManager {
     public String[][] models = null;
     public int[][] allocations = null;
     public boolean[] usePhases = null;
+    public int[] neighborhoods = null;
     
     public double accuracy;
     public String[] fullAccuracy;
     
     
 	/*
-	 *      <arg line="10015 151,148 task1,task2,task3 sift-dsift/ngram3 8-8/10 [neighborhood] false/false"/>
-     *      <arg line="10015 151,148 task1,task2,task3 ngram3,sift/sift 4,4/8 [neighborhood] true/false"/>
+	 *      <arg line="10015 151,148 task1,task2,task3 sift-dsift/ngram3 8-8/10 [neighborhood/...] false/false"/>
+     *      <arg line="10015 151,148 task1,task2,task3 ngram3,sift/sift 4,4/8 [neighborhood/...] true/false"/>
 	 */
 	
     public ClientParameterManager(String userstring, String taskstring, CacheLevel level, String modelstring,
-			String allocationstring, String phasestring) throws Exception {
+			String allocationstring, String neighborhoodstring, String phasestring) throws ClientInputException {
     	this.level = level;
-    	parseInputs(userstring, taskstring, modelstring, allocationstring, phasestring);
+    	parseInputs(userstring, taskstring, modelstring, allocationstring, neighborhoodstring, phasestring);
+    }
+    
+    public void parseNeighborhoods(String neighborhoodstring) throws ClientInputException {
+    	String[] tempflags = neighborhoodstring.split("-"); // for each model combo
+		if(tempflags.length != models.length) {
+			throw new ClientInputException("incorrect number of neighborhoods passed for cache level "+level);
+		}
+		neighborhoods = new int[tempflags.length];
+		for(int i = 0; i < tempflags.length; i++) {
+			neighborhoods[i] = Integer.parseInt(tempflags[i]);
+			//System.out.println("adding neighborhood: "+neighborhoods[i]);
+		}
     }
     
 	public void parseUsers(String userstring) {
@@ -57,14 +70,14 @@ public class ClientParameterManager {
         }
 	}
 	
-	public void parseAllocations(String allocationstring) throws Exception {
+	public void parseAllocations(String allocationstring) throws ClientInputException {
 		if(allocationstring.equals("")) {
 			allocations = new int [0][];
 			return;
 		}
 		String[] tempallocations = allocationstring.split("-"); // for each model combo
 		if(tempallocations.length != models.length) {
-			throw new Exception("Not enough allocations!");
+			throw new ClientInputException("incorrect number of allocations for cache level "+level);
 		}
 		allocations = new int[tempallocations.length][];
 		for(int i = 0; i < tempallocations.length; i++) {
@@ -79,10 +92,10 @@ public class ClientParameterManager {
 		}
 	}
 	
-	public void parsePhases(String phasestring) throws Exception {
+	public void parsePhases(String phasestring) throws ClientInputException {
 		String[] tempflags = phasestring.split("-"); // for each model combo
 		if(tempflags.length != models.length) {
-			throw new Exception("Not enough usePhase flags!");
+			throw new ClientInputException("incorrect number of usePhase flags for cache level "+level);
 		}
 		usePhases = new boolean[tempflags.length];
 		for(int i = 0; i < tempflags.length; i++) {
@@ -92,11 +105,23 @@ public class ClientParameterManager {
 	}
 	
 	public void parseInputs(String userstring, String taskstring, String modelstring,
-			String allocationstring, String phasestring) throws Exception {
+			String allocationstring, String neighborhoodstring, String phasestring) throws ClientInputException {
 		parseUsers(userstring);
 		parseTasks(taskstring);
 		parseModels(modelstring);
 		parseAllocations(allocationstring);
 		parsePhases(phasestring);
+		parseNeighborhoods(neighborhoodstring);
+	}
+	
+	public static class ClientInputException extends Exception {
+		/**
+		 * auto-generated id
+		 */
+		private static final long serialVersionUID = -7763527640960704614L;
+
+		public ClientInputException(String message) {
+			super(message);
+		}
 	}
 }

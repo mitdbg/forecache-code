@@ -159,8 +159,8 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 				arrayName.substring(0,this.tileNamePrefix.length()).equals(this.tileNamePrefix)) {
 				String[] tokens = arrayName.split("_");
 				int zoom = Integer.parseInt(tokens[1]);
-				int y = Integer.parseInt(tokens[2]);
-				int x = Integer.parseInt(tokens[3]);
+				int x = Integer.parseInt(tokens[2]);
+				int y = Integer.parseInt(tokens[3]);
 				TileKey id = new TileKey(new int[]{x,y}, zoom);
 				//this.insert_time_pair(id);
 				this.isBuilt.put(id, true);
