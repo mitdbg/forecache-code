@@ -300,13 +300,13 @@ public class PreCompThread {
 				if(usepc) pcManager.runPredictor(executorService);
 				if(usemem) memManager.runPredictor(executorService);
 				// send the response
-				//long s = System.currentTimeMillis();
+				long s = System.currentTimeMillis();
 				byte[] toSend = NiceTilePacker.packNiceTile(t);
-				//long e = System.currentTimeMillis();
+				long e = System.currentTimeMillis();
 				response.getOutputStream().write(toSend,0,toSend.length);
-				//long e2 = System.currentTimeMillis();
-				//String report= (e-s)+","+(e2-e)+","+toSend.length;
-				//System.out.println(report);
+				long e2 = System.currentTimeMillis();
+				String report= (e-s)+","+(e2-e)+","+toSend.length;
+				System.out.println(report);
 				//log.write(report);
 				//log.newLine();
 				//log.flush();

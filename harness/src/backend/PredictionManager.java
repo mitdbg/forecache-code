@@ -360,6 +360,7 @@ public class PredictionManager {
 		update_allocations_from_string(predictions);
 		usePclas = usePhases;
 		neighborhood = Integer.parseInt(nstr);
+		//System.out.println("new neighborhood variable:"+neighborhood);
 		//defaultpredictions = Integer.parseInt(predictions);
 		//System.out.println("predictions: "+defaultpredictions);
 		
