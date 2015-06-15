@@ -113,7 +113,8 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	}
 	
 	public double[] buildSignatureFromKey(TileKey id) {
-		NiceTile tile = getTile(id);
+		//NiceTile tile = getTile(id);
+		NiceTile tile = diskbuf.getTile(id);
 		return Signatures.buildSiftSignature(tile, vocab, vocabSize);
 	}
 	
@@ -126,6 +127,7 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	
 	// don't use for now
 	public void updateRoi(TileInterface scidbapi) {
+		//long s = System.currentTimeMillis();
 		if(haveRealRoi && !history.newRoi()) return; // nothing to update
 		else if (!haveRealRoi && history.newRoi()) haveRealRoi = true; // now we have a real ROI
 		
@@ -137,7 +139,12 @@ public class SiftSignatureModel extends BasicSignatureModel {
 		int rows = 0;
 		int cols = 0;
 		for(TileKey id : roi) { // for each tile in the ROI
-			Mat d = Signatures.getSiftDescriptorsForImage(getTile(id));
+			long a = System.currentTimeMillis();
+			//NiceTile t = getTile(id);
+			NiceTile t = diskbuf.getTile(id);
+			//System.out.println("size of t: "+t.getSize()+", time to get t: "+(System.currentTimeMillis()-a));
+			//Mat d = Signatures.getSiftDescriptorsForImage(getTile(id));
+			Mat d = Signatures.getSiftDescriptorsForImage(t);
 			if(d.rows() > 0) {
 				rows += d.rows();
 				all_descriptors.add(d); // better have the same number of cols!
@@ -181,6 +188,7 @@ public class SiftSignatureModel extends BasicSignatureModel {
 				histograms.put(id, signature); // save for later use
 			}
 		}
+		//System.out.println("time updating roi's: "+(System.currentTimeMillis()-s));
 	}
 	
 	public static void main(String[] args) {

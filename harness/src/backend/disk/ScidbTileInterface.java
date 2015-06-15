@@ -24,6 +24,7 @@ import utils.UtilityFunctions;
 
 public class ScidbTileInterface extends TileInterface {
 	public static int simulation_build_delay = 33679; // in ms, derived empirically
+	public DiskNiceTileBuffer simulation_buffer;
 	
 	public ScidbTileInterface() {
 		super();
@@ -207,10 +208,17 @@ public class ScidbTileInterface extends TileInterface {
 	// so this should work fine.
 	public synchronized long getSimulatedBuildTile(String arrayname, NiceTile tile) throws InterruptedException {
 		long s = System.currentTimeMillis(); // start of the method
-		long delay = getStoredTile(arrayname, tile);
+		// don't even bother querying the dbms here
+		NiceTile t = simulation_buffer.getTile(tile.id);
+		tile.attributes = t.attributes;
+		tile.data = t.data;
+		tile.extrema = t.extrema;
+		// long delay = getStoredTile(arrayname, tile);
 		// subtract time required to retrieve from DBMS
 		long finalsleep = simulation_build_delay + s - System.currentTimeMillis();
 		if(finalsleep > 0) Thread.sleep(finalsleep);
+		long delay = System.currentTimeMillis() - s;
+		//System.out.println("delay: "+delay);
 		return delay;
 	}
 	

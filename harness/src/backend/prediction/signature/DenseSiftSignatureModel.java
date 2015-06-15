@@ -38,7 +38,8 @@ public class DenseSiftSignatureModel extends SiftSignatureModel{
 	
 	@Override
 	public double[] buildSignatureFromKey(TileKey id) {
-		NiceTile tile = getTile(id);
+		//NiceTile tile = getTile(id);
+		NiceTile tile = diskbuf.getTile(id);
 		return Signatures.buildDenseSiftSignature(tile, vocab, defaultVocabSize);
 	}
 

@@ -122,6 +122,7 @@ public class PreCompThread {
 		scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		membuf = new MemoryNiceTileBuffer();
 		diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
+		scidbapi.simulation_buffer = diskbuf; // so we don't have to query the dbms
 		pcbuf = new PreCompNiceTileBuffer(scidbapi);
 		hist =new TileHistoryQueue(histmax);
 		lmbuf = new NiceTileLruBuffer(lmbuflen); // tracks the user's last x moves
@@ -296,20 +297,22 @@ public class PreCompThread {
 			//System.out.println("threshold: " + threshold);
 			NiceTile t = null;
 			try {
+				long ns = System.currentTimeMillis();
 				t = newFetchTile(tile_id,zoom,threshold);
-				if(usepc) pcManager.runPredictor(executorService);
-				if(usemem) memManager.runPredictor(executorService);
 				// send the response
 				long s = System.currentTimeMillis();
 				byte[] toSend = NiceTilePacker.packNiceTile(t);
 				long e = System.currentTimeMillis();
 				response.getOutputStream().write(toSend,0,toSend.length);
 				long e2 = System.currentTimeMillis();
-				String report= (e-s)+","+(e2-e)+","+toSend.length;
+				String report= (s-ns)+","+(e-s)+","+(e2-e)+","+toSend.length;
 				System.out.println(report);
 				//log.write(report);
 				//log.newLine();
 				//log.flush();
+
+				if(usepc) pcManager.runPredictor(executorService);
+				if(usemem) memManager.runPredictor(executorService);
 			} catch (Exception e) {
 				response.getWriter().println(error);
 				System.out.println("error occured while fetching tile");
@@ -332,10 +335,13 @@ public class PreCompThread {
 			NiceTile t = lmbuf.getTile(key); // check lru cache
 			if(t == null) { // not in user's last x moves. check mem cache
 				t = membuf.getTile(key);
-				if(t == null) { // not cached, get it from disk in DBMS
-					t = new NiceTile();
-					t.id = key;
-					scidbapi.getStoredTile(DBInterface.arrayname, t);
+				if(t == null) { // not cached, get it from disk
+					t = diskbuf.getTile(key);
+					if(t == null) { // check dbms
+						t = new NiceTile();
+						t.id = key;
+						scidbapi.getStoredTile(DBInterface.arrayname, t);
+					}
 				}
 			}
 			
