@@ -109,13 +109,14 @@
     </target>
     <target name="ml-pc-sigs">
         <java classname="frontend.PreCompClient" failonerror="true" fork="yes">
-            <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 server-disk histogram-normal 1-1 8-8"/>
+            <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 server-disk histogram-normal 8-8 1-1 false-false"/>
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>
     <target name="ml-pc-sigs2">
         <java classname="frontend.PreCompClient" failonerror="true" fork="yes">
-            <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 server-disk sift-dsift 1-1 8-8"/>
+            <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 server-disk sift-dsift 8-8 1-1 false-false"/>
+            <!--<arg line="10015 28 task1 server-disk sift 8 1 false"/>-->
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>

@@ -151,6 +151,7 @@ public class PredictionManager {
 	}
 	
 	public void doPredictions() {
+		//long s = System.currentTimeMillis();
 		if(modellabels.length == 0) return;
 		
 		//update allocations amongst predictors
@@ -162,7 +163,7 @@ public class PredictionManager {
 		// get the current list of candidates
 		//System.out.println("neighborhood: "+neighborhood);
 		List<TileKey> candidates = all_models[0].getCandidates(neighborhood);
-		
+		//long s1 = System.currentTimeMillis();
 		for(int m = 0; m < modellabels.length; m++) { // for each model
 			//Model label = modellabels[m];
 			BasicModel mod = all_models[m];
@@ -204,9 +205,13 @@ public class PredictionManager {
 		//		membuf.removeTile(old);
 		//	}
 		//}
+		//long s2 = System.currentTimeMillis();
 		List<TileKey> insertList = new ArrayList<TileKey>();
 		insertList.addAll(toInsert.keySet());
+		//long e = System.currentTimeMillis();
 		insertPredictions(insertList);
+		//System.out.println("predictions: insert-"+(System.currentTimeMillis()-e)+
+		//		", list-"+(e-s2)+",predict-"+(s2-s1)+",candidates-"+(s1-s));
 	}
 	
 	public void insertPredictions(List<TileKey> predictions) {

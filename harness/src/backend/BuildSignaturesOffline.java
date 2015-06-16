@@ -16,6 +16,7 @@ import backend.util.Model;
 import backend.util.NiceTile;
 import backend.util.SignatureMap;
 import backend.util.Signatures;
+import backend.util.Signatures.ConcurrentKDTree;
 import backend.util.TileKey;
 
 public class BuildSignaturesOffline {
@@ -125,7 +126,7 @@ public class BuildSignaturesOffline {
 			System.out.println("running k-means with k="+SiftSignatureModel.defaultVocabSize);
 			Mat centers = Signatures.getKmeansCenters(finalMatrix, SiftSignatureModel.defaultVocabSize);
 			System.out.println("building KD-tree");
-			KDTree<Integer> vocab = Signatures.buildKDTree(centers); // used to find nearest neighbor fast
+			ConcurrentKDTree<Integer> vocab = Signatures.buildConcurrentKDTree(centers); // used to find nearest neighbor fast
 			int vocabSize = centers.rows();
 /*
 			if(vocabSize < defaultVocabSize) {

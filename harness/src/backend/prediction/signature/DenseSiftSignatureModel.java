@@ -1,5 +1,7 @@
 package backend.prediction.signature;
 
+import java.util.List;
+
 import org.opencv.core.Mat;
 
 import backend.disk.DiskNiceTileBuffer;
@@ -41,6 +43,17 @@ public class DenseSiftSignatureModel extends SiftSignatureModel{
 		//NiceTile tile = getTile(id);
 		NiceTile tile = diskbuf.getTile(id);
 		return Signatures.buildDenseSiftSignature(tile, vocab, defaultVocabSize);
+	}
+	
+	@Override
+	public void computeSignaturesInParallel(List<TileKey> ids) {
+		//long a = System.currentTimeMillis();
+		 List<double[]> sigs =  Signatures.buildDenseSiftSignaturesInParallel(diskbuf,ids, vocab, vocabSize);
+		 for(int i = 0; i < sigs.size(); i++) {
+			 histograms.put(ids.get(i), sigs.get(i));
+		 }
+		 //long b = System.currentTimeMillis();
+		 //System.out.println("parallel:"+(b-a));
 	}
 
 }

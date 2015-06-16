@@ -24,6 +24,7 @@ import backend.util.NiceTile;
 import backend.util.NiceTileBuffer;
 import backend.util.SignatureMap;
 import backend.util.Signatures;
+import backend.util.Signatures.ConcurrentKDTree;
 import backend.util.TileKey;
 
 public class SiftSignatureModel extends BasicSignatureModel {
@@ -31,7 +32,7 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	public static int defaultVocabSize = 100;
 	public int vocabSize;
 	protected boolean haveRealRoi = false;
-	KDTree<Integer> vocab = null;
+	ConcurrentKDTree<Integer> vocab = null;
 	protected Map<TileKey,double[]> histograms;
 
 	public SiftSignatureModel(TileHistoryQueue ref, NiceTileBuffer membuf, 
@@ -89,6 +90,17 @@ public class SiftSignatureModel extends BasicSignatureModel {
 			distance = defaultprob;
 		}
 		return distance;
+	}
+	
+	@Override
+	public void computeSignaturesInParallel(List<TileKey> ids) {
+		//long a = System.currentTimeMillis();
+		 List<double[]> sigs =  Signatures.buildSiftSignaturesInParallel(diskbuf,ids, vocab, vocabSize);
+		 for(int i = 0; i < sigs.size(); i++) {
+			 histograms.put(ids.get(i), sigs.get(i));
+		 }
+		 //long b = System.currentTimeMillis();
+		 //System.out.println("parallel:"+(b-a));
 	}
 	
 	public double[] getSignature(TileKey id) {
@@ -167,7 +179,7 @@ public class SiftSignatureModel extends BasicSignatureModel {
 			// these clusters are our visual words
 			// each center represents the center of a word
 			Mat centers = Signatures.getKmeansCenters(finalMatrix, defaultVocabSize);
-			vocab = Signatures.buildKDTree(centers); // used to find nearest neighbor fast
+			vocab = Signatures.buildConcurrentKDTree(centers); // used to find nearest neighbor fast
 			vocabSize = centers.rows();
 /*
 			if(vocabSize < defaultVocabSize) {
@@ -181,12 +193,17 @@ public class SiftSignatureModel extends BasicSignatureModel {
 */
 
 			// now go back through and build histograms for each ROI
-			for(int i = 0; i < all_descriptors.size(); i++) {
-				Mat d = all_descriptors.get(i);
-				TileKey id = roi.get(i);
-				double[] signature = buildSignatureFromMat(d);
-				histograms.put(id, signature); // save for later use
+			if(all_descriptors.size() < 3) {
+				for(int i = 0; i < all_descriptors.size(); i++) {
+					Mat d = all_descriptors.get(i);
+					TileKey id = roi.get(i);
+					double[] signature = buildSignatureFromMat(d);
+					histograms.put(id, signature); // save for later use
+				}
+			} else {
+				Signatures.buildSiftSignaturesInParallel(diskbuf, roi, vocab, vocabSize);
 			}
+			
 		}
 		//System.out.println("time updating roi's: "+(System.currentTimeMillis()-s));
 	}
@@ -208,7 +225,7 @@ public class SiftSignatureModel extends BasicSignatureModel {
 		//	System.out.println();
 		//}
 		
-		KDTree<Integer> vocab = Signatures.buildKDTree(centers);
+		ConcurrentKDTree<Integer> vocab = Signatures.buildConcurrentKDTree(centers);
 		double[] hist = Signatures.buildSiftSignature(descriptors, vocab, defaultVocabSize);
 		for(int i = 0; i < hist.length; i++) {
 			System.out.print(" "+hist[i]);

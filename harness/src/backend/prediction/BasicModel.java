@@ -46,8 +46,12 @@ public class BasicModel {
 		return this.len;
 	}
 	
+	public void computeSignaturesInParallel(List<TileKey> ids) {}
+	
 	public List<TileKey> orderCandidates(List<TileKey> candidates) {
+		//long a = System.currentTimeMillis();
 		updateRoi();
+		//long b = System.currentTimeMillis();
 		List<TileKey> htrace = history.getHistoryTrace(len);
 		if(htrace.size() == 0) {
 			return new ArrayList<TileKey>();
@@ -55,6 +59,7 @@ public class BasicModel {
 		TileKey prev = htrace.get(htrace.size() - 1);
 		List<TileKey> myresult = new ArrayList<TileKey>();
 		List<TilePrediction> order = new ArrayList<TilePrediction>();
+		computeSignaturesInParallel(candidates);
 		// for each direction, compute confidence
 		for(TileKey key : candidates) {
 			TilePrediction tp = new TilePrediction(this.m);
@@ -67,6 +72,7 @@ public class BasicModel {
 			}
 			order.add(tp);
 		}
+		//long c = System.currentTimeMillis();
 		Collections.sort(order);
 		for(int i = 0; i < order.size(); i++) {
 			TilePrediction tp = order.get(i);
@@ -75,7 +81,8 @@ public class BasicModel {
 			//System.out.println(tp.id);
 		}
 		//System.out.println();
-
+		//long d = System.currentTimeMillis();
+		//System.out.println("roi:sort-"+(d-c)+",predict-"+(c-b)+",roi-"+(b-a));
 		return myresult;
 	}
 	

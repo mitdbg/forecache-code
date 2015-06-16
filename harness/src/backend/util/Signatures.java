@@ -6,7 +6,14 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -16,6 +23,8 @@ import org.opencv.core.MatOfKeyPoint;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.highgui.Highgui;
 import org.opencv.core.CvType;
+
+import backend.disk.DiskNiceTileBuffer;
 
 import com.google.gson.Gson;
 
@@ -97,12 +106,56 @@ public class Signatures {
 	}
 	
 	/**************** Dense Sift ****************/
-	public static double[] buildDenseSiftSignature(NiceTile tile, KDTree<Integer> vocabulary, int vocabsize) {
+	public static class DenseSiftSignature implements Callable<double[]> {
+		NiceTileBuffer diskbuf;
+		TileKey id;
+		ConcurrentKDTree<Integer> vocabulary;
+		int vocabsize;
+		
+		public DenseSiftSignature(NiceTileBuffer diskbuf, TileKey id, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+			this.diskbuf = diskbuf;
+			this.id = id;
+			this.vocabulary = vocabulary;
+			this.vocabsize = vocabsize;
+		}
+		
+		@Override
+		public double[] call() {
+			return buildDenseSiftSignature(this.diskbuf.getTile(this.id),this.vocabulary,this.vocabsize);
+		}
+	}
+	
+	public static List<double[]> buildDenseSiftSignaturesInParallel(NiceTileBuffer diskbuf, List<TileKey> ids, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+		ExecutorService executor = Executors.newFixedThreadPool(3);
+		List<DenseSiftSignature> inputs = new ArrayList<DenseSiftSignature>();
+		List<double[]> finalResults = new ArrayList<double[]>();
+		for(TileKey id : ids) {
+			inputs.add(new DenseSiftSignature(diskbuf,id,vocabulary,vocabsize));
+		}
+		List<Future<double[]>> results;
+		try {
+			results = executor.invokeAll(inputs);
+	        executor.shutdown();
+	        
+	        for (Future<double[]> result : results) {
+	            finalResults.add(result.get());
+	        }
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return finalResults;
+	}
+	
+	public static double[] buildDenseSiftSignature(NiceTile tile, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
 		Mat m = getDenseSiftDescriptorsForImage(tile);
 		return buildSiftSignature(m,vocabulary,vocabsize);
 	}
 	
-	public static double[] buildDenseSiftSignature(Mat tile, KDTree<Integer> vocabulary, int vocabsize) {
+	public static double[] buildDenseSiftSignature(Mat tile, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
 		return buildSiftSignature(tile,vocabulary,vocabsize);
 	}
 	
@@ -133,12 +186,57 @@ public class Signatures {
 	}
 	
 	/**************** Sift ****************/
-	public static double[] buildSiftSignature(NiceTile tile, KDTree<Integer> vocabulary, int vocabsize) {
+	public static class SiftSignature implements Callable<double[]> {
+		NiceTileBuffer diskbuf;
+		TileKey id;
+		ConcurrentKDTree<Integer> vocabulary;
+		int vocabsize;
+		
+		public SiftSignature(NiceTileBuffer diskbuf, TileKey id, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+			this.diskbuf = diskbuf;
+			this.id = id;
+			this.vocabulary = vocabulary;
+			this.vocabsize = vocabsize;
+		}
+		
+		@Override
+		public double[] call() {
+			return buildSiftSignature(this.diskbuf.getTile(this.id),this.vocabulary,this.vocabsize);
+		}
+	}
+	
+	public static List<double[]> buildSiftSignaturesInParallel(NiceTileBuffer diskbuf, List<TileKey> ids, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+		ExecutorService executor = Executors.newFixedThreadPool(3);
+		List<SiftSignature> inputs = new ArrayList<SiftSignature>();
+		List<double[]> finalResults = new ArrayList<double[]>();
+		for(TileKey id : ids) {
+			inputs.add(new SiftSignature(diskbuf,id,vocabulary,vocabsize));
+		}
+		List<Future<double[]>> results;
+		try {
+			results = executor.invokeAll(inputs);
+	        executor.shutdown();
+	        
+	        for (Future<double[]> result : results) {
+	            finalResults.add(result.get());
+	        }
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return finalResults;
+	}
+	
+	public static double[] buildSiftSignature(NiceTile tile, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
 		Mat m = getSiftDescriptorsForImage(tile);
 		return buildSiftSignature(m,vocabulary,vocabsize);
 	}
 	
-	public static double[] buildSiftSignature(Mat tile, KDTree<Integer> vocabulary, int vocabsize) {
+	public static double[] buildSiftSignature(Mat tile, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+		long a = System.currentTimeMillis();
 		double[] histogram = new double[vocabsize];
 		int totaldescriptors = tile.rows();
 		for(int i = 0; i < totaldescriptors; i++) { // each row is a descriptor
@@ -151,12 +249,12 @@ public class Signatures {
 
 			// find nearest cluster center to this key
 			Integer word = null;
-			try {
+			//try {
 				word = vocabulary.nearest(key);
-			} catch (KeySizeException e) {
+			//} catch (KeySizeException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			//	e.printStackTrace();
+			//}
 			
 			// increment count for this word
 			if(word != null) {
@@ -171,6 +269,8 @@ public class Signatures {
 			}
 		}
 		
+		long b = System.currentTimeMillis();
+		//System.out.println("signature:"+(b-a));
 		return histogram;
 	}
 	
@@ -405,18 +505,16 @@ public class Signatures {
 	    return returnval;
 	}
 	
-	// use kd-tree to make nearest neighbor fast
-	public static KDTree<Integer> buildKDTree(Mat keys) {
-		int rows = keys.rows();
-		int cols = keys.cols();
-		KDTree<Integer> tree = new KDTree<Integer>(cols);
-		for(int i = 0; i < rows; i++) {
-			double[] key = new double[cols];
-			for(int j = 0; j < cols; j++) {
-				key[j] = keys.get(i, j)[0];
-			}
+	public static class ConcurrentKDTree<T> {
+		protected KDTree<T> tree;
+		
+		public ConcurrentKDTree(int cols) {
+			tree = new KDTree<T>(cols);
+		}
+		
+		public synchronized void insert(double[] key, T value) {
 			try {
-				tree.insert(key, i); // which row was this?
+				this.tree.insert(key, value);
 			} catch (KeySizeException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -425,6 +523,41 @@ public class Signatures {
 				System.out.println("found duplicate key!");
 				e.printStackTrace();
 			}
+		}
+		
+		public synchronized T nearest(double[] key) {
+			T returnval = null;
+			try {
+				returnval = tree.nearest(key);
+			} catch (KeySizeException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return returnval;
+		}
+		
+	}
+	
+	// use kd-tree to make nearest neighbor fast
+	public static ConcurrentKDTree<Integer> buildConcurrentKDTree(Mat keys) {
+		int rows = keys.rows();
+		int cols = keys.cols();
+		ConcurrentKDTree<Integer> tree = new ConcurrentKDTree<Integer>(cols);
+		for(int i = 0; i < rows; i++) {
+			double[] key = new double[cols];
+			for(int j = 0; j < cols; j++) {
+				key[j] = keys.get(i, j)[0];
+			}
+			//try {
+				tree.insert(key, i); // which row was this?
+			//} catch (KeySizeException e) {
+				// TODO Auto-generated catch block
+			//	e.printStackTrace();
+			//} catch (KeyDuplicateException e) {
+				// TODO Auto-generated catch block
+			//	System.out.println("found duplicate key!");
+			//	e.printStackTrace();
+			//}
 		}
 		return tree;
 	}
