@@ -154,7 +154,7 @@ public class PreCompThread {
 		private static ExecutorService executorService;
 		
 		public void init() {
-			executorService = (ExecutorService) Executors.newCachedThreadPool();
+			executorService = (ExecutorService) Executors.newFixedThreadPool(2);
 		}
 				
 		protected boolean isReady() {
@@ -172,13 +172,13 @@ public class PreCompThread {
 		}
 		
 		protected void updatePredictorLruBuffers(NiceTile tile) {
-			memManager.lmbuf.insertTile(tile);
-			pcManager.lmbuf.insertTile(tile);
+			if(usemem) memManager.lmbuf.insertTile(tile);
+			if(usepc) pcManager.lmbuf.insertTile(tile);
 		}
 		
 		protected void updateAccuracy(TileKey id) {
-			memManager.updateAccuracy(id);
-			pcManager.updateAccuracy(id);
+			if(usemem) memManager.updateAccuracy(id);
+			if(usepc) pcManager.updateAccuracy(id);
 		}
 		
 		protected void doMemReset(String useridstr,String modelstr,String predictions,
@@ -212,6 +212,8 @@ public class PreCompThread {
 			usemem = memp != null;
 			usepc = pcp != null;
 			System.out.println("setting cache levels... usemem="+usemem+", usepc="+usepc);
+			if(!usemem) memManager.clear();
+			if(!usepc) pcManager.clear();
 			try {
 				response.getWriter().println(done);
 			} catch (IOException e) {

@@ -395,6 +395,18 @@ public class PredictionManager {
 		this.neighborhood = neighborhood;
 		this.usePclas = usePhase;
 		predictor = null;
+		
+		//reset accuracy
+		cache_hits = 0;
+		total_requests = 0;
+		hitslist.clear();
+		
+		// reinitialize caches and user history
+		buf.clear();
+		lmbuf.clear();
+		
+		setupModels();
+		trainModels();
 	}
 	
 	public void reset(String[] userstrs, String[] modelstrs, String[] predictions,
@@ -406,8 +418,6 @@ public class PredictionManager {
 		neighborhood = Integer.parseInt(nstr);
 		predictor = null;
 		//System.out.println("new neighborhood variable:"+neighborhood);
-		//defaultpredictions = Integer.parseInt(predictions);
-		//System.out.println("predictions: "+defaultpredictions);
 		
 		//reset accuracy
 		cache_hits = 0;

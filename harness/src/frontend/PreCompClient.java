@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.opencv.core.Core;
+
 import backend.BuildSignaturesOffline;
 import backend.PreCompThread;
 import backend.PredictionManager;
@@ -47,17 +49,15 @@ public class PreCompClient {
 	//for prediction
 	public static int deflmbuflen = 0; //default is don't use
 	public static int histmax = 10;
-	public static MemoryNiceTileBuffer clientbuf;
 	public static DiskNiceTileBuffer diskbuf;
 	public static PredictionManager clientManager;
 	public static ScidbTileInterface scidbapi;
 	public static TileHistoryQueue hist;
 	public static SignatureMap sigMap;
-	public static MemoryNiceTileLruBuffer lmbuf;
 	private static ExecutorService executorService;
 	
 	public static void initExecutorService() {
-		executorService = (ExecutorService) Executors.newCachedThreadPool();
+		executorService = (ExecutorService) Executors.newFixedThreadPool(2);
 	}
 	
 	public static void shutdownExecutorService() {
@@ -149,10 +149,10 @@ public class PreCompClient {
 						clientParamsManager.neighborhoods[clientIndex],
 						clientParamsManager.usePhases[clientIndex]);
 			}
-			
+
 			// setup test case on backend
 			sendCacheLevelFlags(usemem, usepc); // are we using these?
-			
+
 			if(usemem) sendReset(memParamsManager.level,trainlist,memParamsManager.models[memIndex],
 				memParamsManager.allocations[memIndex],memParamsManager.neighborhoods[memIndex],
 				memParamsManager.usePhases[memIndex]);
@@ -160,7 +160,7 @@ public class PreCompClient {
 			if(usepc) sendReset(pcParamsManager.level,trainlist,pcParamsManager.models[diskIndex],
 				pcParamsManager.allocations[diskIndex],pcParamsManager.neighborhoods[diskIndex],
 				pcParamsManager.usePhases[diskIndex]);
-			
+
 			//send requests
 			int user_id = testusers.get(u1);
 			List<UserRequest> trace = DBInterface.getHashedTraces(user_id,taskname);
@@ -178,15 +178,15 @@ public class PreCompClient {
 				TileKey tempKey = new TileKey(UtilityFunctions.parseTileIdInteger(tile_id),zoom);
 				long s = 0;
 				long e = 0;
+
 				if(useclient) {
 					//TODO: add code to toggle for cancelling job(s) instead of waiting
 					waitForClientPredictor();
 					clientManager.updateAccuracy(tempKey);
 					s = System.currentTimeMillis();
-					toRetrieve = clientbuf.getTile(tempKey);
+					toRetrieve = clientManager.buf.getTile(tempKey);
 					e = System.currentTimeMillis();
 					addHistory(tempKey);
-					clientManager.runPredictor(executorService);
 				}
 				
 				//TODO: add code to toggle for cancelling job(s) instead of waiting
@@ -196,9 +196,12 @@ public class PreCompClient {
 					durations[r] = sendRequest(tile_id,zoom,tile_hash);
 				} else { // found it on the client
 					durations[r] = e-s;
+					// only add to LRU buffer if it was accessed in this cache
+					clientManager.lmbuf.insertTile(toRetrieve);
 					// tell the server which tile the user requested
 					sendHistory(tile_id,zoom,tile_hash);
 				}
+				if(useclient) clientManager.runPredictor(executorService);
 				
 				avg_duration += durations[r];
 			}
@@ -775,13 +778,14 @@ public class PreCompClient {
 	}
 	
 	public static void initializeCacheManagers(PredictionManager manager,
-			NiceTileBuffer buf) throws Exception {		
+			NiceTileBuffer buf, NiceTileBuffer lmbuf) throws Exception {		
 		// initialize cache managers
 		manager.buf = buf;
+		manager.lmbuf = lmbuf; // tracks the user's last x moves
+		
 		manager.diskbuf = diskbuf; // just used for convenience
 		manager.dbapi = scidbapi;
 		manager.hist = hist;
-		manager.lmbuf = lmbuf; // tracks the user's last x moves
 		
 		// load pre-computed signature map
 		manager.sigMap  = sigMap;
@@ -809,7 +813,6 @@ public class PreCompClient {
 					}
 					
 					hist.addRecord(t); // keep track
-					lmbuf.insertTile(t);
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -857,19 +860,24 @@ public class PreCompClient {
 			}
 			switch(l) {
 			case CLIENT:
+				useclient = true;
+				System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 				clientParamsManager = new ClientParameterManager(userstring,taskstring,
 						l,models[i],allocations[i],neighborhoods[i],phases[i]);
-				useclient = true;
 				
-				clientbuf = new MemoryNiceTileBuffer();
+				clientManager = new PredictionManager();
+				MemoryNiceTileBuffer clientbuf = new MemoryNiceTileBuffer();
+				MemoryNiceTileLruBuffer lmbuf = new MemoryNiceTileLruBuffer(deflmbuflen);
+				
 				diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,
 						DBInterface.hashed_query,DBInterface.threshold);
 				scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,
 						DBInterface.defaultdelim);
 				hist = new TileHistoryQueue(histmax);
-				lmbuf = new MemoryNiceTileLruBuffer(deflmbuflen); // tracks the user's last x moves
+				// tracks the user's last x moves
 				sigMap  = SignatureMap.getFromFile(BuildSignaturesOffline.defaultFilename);
-				initializeCacheManagers(clientManager,clientbuf);
+				
+				initializeCacheManagers(clientManager,clientbuf,lmbuf);
 				initExecutorService();
 				break;
 			case SERVERMM:
