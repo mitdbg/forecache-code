@@ -25,10 +25,11 @@ import backend.disk.DiskNiceTileBuffer;
 import backend.disk.NiceTilePacker;
 import backend.disk.OldScidbTileInterface;
 import backend.disk.PreCompNiceTileBuffer;
+import backend.disk.PreCompNiceTileLruBuffer;
 import backend.disk.ScidbTileInterface;
 import backend.disk.VerticaTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
-import backend.memory.NiceTileLruBuffer;
+import backend.memory.MemoryNiceTileLruBuffer;
 import backend.prediction.TileHistoryQueue;
 import backend.util.NiceTile;
 import backend.util.NiceTileBuffer;
@@ -44,10 +45,7 @@ public class PreCompThread {
 	
 	public static boolean usemem = true;
 	public static boolean usepc = false;
-	public static MemoryNiceTileBuffer membuf;
-	public static PreCompNiceTileBuffer pcbuf;
 	public static DiskNiceTileBuffer diskbuf;
-	public static NiceTileLruBuffer lmbuf;
 	
 	public static PredictionManager pcManager;
 	public static PredictionManager memManager;
@@ -57,20 +55,14 @@ public class PreCompThread {
 	//server
 	public static Server server;
 	public static BufferedWriter log;
+	public static int defaultport = 8080;
 	
-	//accuracy
-	//public static int total_requests = 0;
-	//public static int cache_hits = 0;
-	//public static List<String> hitslist = new ArrayList<String>();
-	
-	// General Model variables
+	// General prediction variables
 	public static int histmax = 10;
 	public static int deflmbuflen = 0; // default is don't use lru cache
-	public static int defaultport = 8080;
 	public static int neighborhood = 1; // default neighborhood from which to pick candidates
 
 
-	
 	public static void setupServer(int port) throws Exception {
 		server = new Server(port);
 		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
@@ -80,13 +72,14 @@ public class PreCompThread {
 		server.start();
 	}
 	
-	public static void initializeCacheManagers(PredictionManager manager, NiceTileBuffer buf) throws Exception {		
+	public static void initializeCacheManagers(PredictionManager manager,
+			NiceTileBuffer buf, NiceTileBuffer lrubuf) throws Exception {		
 		// initialize cache managers
 		manager.buf = buf;
 		manager.diskbuf = diskbuf; // just used for convenience
 		manager.dbapi = scidbapi;
 		manager.hist = hist;
-		manager.lmbuf = lmbuf; // tracks the user's last x moves
+		manager.lmbuf = lrubuf; // tracks the user's last x moves
 		
 		// load pre-computed signature map
 		manager.sigMap  = sigMap;
@@ -115,26 +108,31 @@ public class PreCompThread {
 			System.out.println("neighborhood: "+neighborhood);
 		}
 		
-		pcManager = new PredictionManager();
-		memManager = new PredictionManager();
-		
-		// initialize cache managers
+		hist = new TileHistoryQueue(histmax);
+		diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,
+				DBInterface.hashed_query,DBInterface.threshold);
 		scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
-		membuf = new MemoryNiceTileBuffer();
-		diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,DBInterface.hashed_query,DBInterface.threshold);
 		scidbapi.simulation_buffer = diskbuf; // so we don't have to query the dbms
-		pcbuf = new PreCompNiceTileBuffer(scidbapi);
-		hist =new TileHistoryQueue(histmax);
-		lmbuf = new NiceTileLruBuffer(lmbuflen); // tracks the user's last x moves
-		
 		sigMap  = SignatureMap.getFromFile(BuildSignaturesOffline.defaultFilename);
 		
-		initializeCacheManagers(pcManager,pcbuf);
-		initializeCacheManagers(memManager,membuf);
+		//initialize MM cache manager
+		memManager = new PredictionManager();
+		MemoryNiceTileBuffer membuf = new MemoryNiceTileBuffer();
+		 // tracks the user's last x moves
+		MemoryNiceTileLruBuffer memlrubuf = new MemoryNiceTileLruBuffer(lmbuflen);
+		initializeCacheManagers(memManager,membuf,memlrubuf);
+		
+		// initialize pre-comp cache manager
+		pcManager = new PredictionManager();
+		PreCompNiceTileBuffer pcbuf = new PreCompNiceTileBuffer(scidbapi);
+		PreCompNiceTileLruBuffer pclrubuf = new PreCompNiceTileLruBuffer(scidbapi,
+				lmbuflen,pcbuf.isBuilt);
+		initializeCacheManagers(pcManager,pcbuf,pclrubuf);
 		
 		//logfile for timing results
 		try {
-			log = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("precomp_perflog.csv")));
+			log = new BufferedWriter(new OutputStreamWriter(
+					new FileOutputStream("precomp_perflog.csv")));
 		} catch (IOException e) {
 		    System.out.println("Couldn't open logfile");
 		    e.printStackTrace();
@@ -163,25 +161,44 @@ public class PreCompThread {
 			return (!usemem || memManager.isReady()) && (!usepc || pcManager.isReady());
 		}
 		
+		protected void cancelPredictions() throws Exception {
+			if(usepc) pcManager.cancelPredictorJob();
+			if(usemem) memManager.cancelPredictorJob();
+		}
+		
+		protected void makePredictions() {
+			if(usepc) pcManager.runPredictor(executorService);
+			if(usemem) memManager.runPredictor(executorService);
+		}
+		
+		protected void updatePredictorLruBuffers(NiceTile tile) {
+			memManager.lmbuf.insertTile(tile);
+			pcManager.lmbuf.insertTile(tile);
+		}
+		
 		protected void updateAccuracy(TileKey id) {
 			memManager.updateAccuracy(id);
 			pcManager.updateAccuracy(id);
 		}
 		
-		protected void doMemReset(String useridstr,String modelstr,String predictions, String nstr,String usePhases) throws Exception {
+		protected void doMemReset(String useridstr,String modelstr,String predictions,
+				String nstr,String usePhases) throws Exception {
 			if(usemem) {
 				System.out.println("Doing mem reset...");
-				memManager.reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"), nstr,
+				memManager.reset(useridstr.split("_"),modelstr.split("_"),
+						predictions.split("_"), nstr,
 						(usePhases != null) && usePhases.equals("true"));
 			} else {
 				memManager.clear();
 			}
 		}
 		
-		protected void doPcReset(String useridstr,String modelstr,String predictions, String nstr,String usePhases) throws Exception {
+		protected void doPcReset(String useridstr,String modelstr,String predictions,
+				String nstr,String usePhases) throws Exception {
 			if(usepc) {
 				System.out.println("Doing disk reset...");
-				pcManager.reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"), nstr,
+				pcManager.reset(useridstr.split("_"),modelstr.split("_"),
+						predictions.split("_"), nstr,
 						(usePhases != null) && usePhases.equals("true"));
 			} else {
 				pcManager.clear();
@@ -214,9 +231,13 @@ public class PreCompThread {
 			String usePhases = request.getParameter("usephases");
 			String nstr = request.getParameter("neighborhood");
 			try {
-				if(level.equals(CacheLevel.SERVERMM.toString())) doMemReset(useridstr,modelstr,predictions, nstr,usePhases);
-				else if (level.equals(CacheLevel.SERVERDISK.toString())) doPcReset(useridstr,modelstr,predictions, nstr,usePhases);
-
+				if(level.equals(CacheLevel.SERVERMM.toString())) {
+					doMemReset(useridstr,modelstr,predictions, nstr,usePhases);
+				}
+				else if (level.equals(CacheLevel.SERVERDISK.toString())) {
+					doPcReset(useridstr,modelstr,predictions, nstr,usePhases);
+				}
+				hist.clear();
 				response.getWriter().println(done);
 			} catch (Exception e) {
 				System.out.println("error resetting");
@@ -252,39 +273,6 @@ public class PreCompThread {
 			return;
 		}
 		
-		protected void doComp(HttpServletRequest request,
-				HttpServletResponse response) throws IOException {
-			String zoom = request.getParameter("zoom");
-			String tile_id = request.getParameter("tile_id");
-			String threshold = request.getParameter("threshold");
-			//System.out.println("hashed query: " + hashed_query);
-			//System.out.println("zoom: " + zoom);
-			//System.out.println("tile id: " + tile_id);
-			//System.out.println("threshold: " + threshold);
-			NiceTile t = null;
-			try {
-				//t = fetchTile(tile_id,zoom,threshold);
-				t = newFetchTile(tile_id,zoom,threshold);
-				if(usepc) pcManager.runPredictor(executorService);
-				if(usemem) memManager.runPredictor(executorService);
-				// send the response
-				//long s = System.currentTimeMillis();
-				byte[] toSend = NiceTilePacker.packNiceTile(t);
-				//long e = System.currentTimeMillis();
-				response.getOutputStream().write(toSend,0,toSend.length);
-				//long e2 = System.currentTimeMillis();
-				//String report= (e-s)+","+(e2-e)+","+toSend.length;
-				//System.out.println(report);
-				//log.write(report);
-				//log.newLine();
-				//log.flush();
-			} catch (Exception e) {
-				response.getWriter().println(error);
-				System.out.println("error occured while fetching tile");
-				e.printStackTrace();
-			}
-		}
-		
 		protected void doFetch(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
 			
@@ -298,7 +286,7 @@ public class PreCompThread {
 			NiceTile t = null;
 			try {
 				long ns = System.currentTimeMillis();
-				t = newFetchTile(tile_id,zoom,threshold);
+				t = fetchTile(tile_id,zoom,threshold);
 				// send the response
 				long s = System.currentTimeMillis();
 				byte[] toSend = NiceTilePacker.packNiceTile(t);
@@ -311,12 +299,14 @@ public class PreCompThread {
 				//log.newLine();
 				//log.flush();
 
-				if(usepc) pcManager.runPredictor(executorService);
-				if(usemem) memManager.runPredictor(executorService);
+				hist.addRecord(t);
+				updatePredictorLruBuffers(t);
+				
+				makePredictions();
 			} catch (Exception e) {
-				response.getWriter().println(error);
-				System.out.println("error occured while fetching tile");
+				System.err.println("error occured while fetching tile");
 				e.printStackTrace();
+				response.getWriter().println(error);
 			}
 		}
 		
@@ -331,26 +321,20 @@ public class PreCompThread {
 			int z = Integer.parseInt(zoom);
 			TileKey key = new TileKey(id,z);
 			
+			updateAccuracy(key); // just see if it's in the cache
+			
 			// get the tile, so we can put it in the history
-			NiceTile t = lmbuf.getTile(key); // check lru cache
-			if(t == null) { // not in user's last x moves. check mem cache
-				t = membuf.getTile(key);
-				if(t == null) { // not cached, get it from disk
-					t = diskbuf.getTile(key);
-					if(t == null) { // check dbms
-						t = new NiceTile();
-						t.id = key;
-						scidbapi.getStoredTile(DBInterface.arrayname, t);
-					}
-				}
+			// this should not impact the latency numbers
+			NiceTile t = diskbuf.getTile(key);
+			if(t == null) { // check dbms
+				t = new NiceTile();
+				t.id = key;
+				scidbapi.getStoredTile(DBInterface.arrayname, t);
 			}
-			
 			hist.addRecord(t); // keep track
-			lmbuf.insertTile(t);
 			
-			// pre-emptively cache, just in case
-			if(usepc) pcManager.runPredictor(executorService);
-			if(usemem) memManager.runPredictor(executorService);
+			// make some new predictions, just in case
+			makePredictions();
 		}
 		
 		protected void doGet(HttpServletRequest request,
@@ -403,7 +387,8 @@ public class PreCompThread {
 			}
 		}
 		
-		protected NiceTile newFetchTile(String tile_id, String zoom, String threshold) {
+		protected NiceTile fetchTile(String tile_id, String zoom,
+				String threshold) throws InterruptedException {
 			String reverse = UtilityFunctions.unurlify(tile_id); // undo urlify
 			int[] id = UtilityFunctions.parseTileIdInteger(reverse);
 			int z = Integer.parseInt(zoom);
@@ -412,46 +397,30 @@ public class PreCompThread {
 			//System.out.println("tile to predict: "+key);
 			//System.out.println("last request: "+hist.getLast());
 			
-			updateAccuracy(key);
+			updateAccuracy(key); // tracks hits/misses
+			
 			//boolean found = false;
 			NiceTile t = null;
-			if (usemem) t = lmbuf.getTile(key); // check lru cache
+			if (usemem) t = memManager.lmbuf.getTile(key); // check lru cache
 			if(t == null) { // not in user's last x moves. check mem cache
-				if(usemem) t = membuf.getTile(key);
+				if(usemem) t = memManager.buf.getTile(key);
 				if(t == null) { // not cached, get it from disk in DBMS
-					if(usepc) {
-						t = pcbuf.getTile(key);
-					} else {
-						t = new NiceTile();
-						t.id = key;
-						scidbapi.getStoredTile(DBInterface.arrayname, t);
-						//verticaapi.getStoredTile(DBInterface.arrayname, t);
+					if(usepc) pcManager.lmbuf.getTile(key);
+					if(t == null) {
+						if(usepc) {
+							t = pcManager.buf.getTile(key);
+							if(t == null) {
+								scidbapi.getSimulatedBuildTile(DBInterface.arrayname, t);
+							}
+						} else {
+							t = new NiceTile();
+							t.id = key;
+							scidbapi.getStoredTile(DBInterface.arrayname, t);
+							//verticaapi.getStoredTile(DBInterface.arrayname, t);
+						}
 					}
-					
-					//membuf.insertTile(t);
-				} else { // found in memory
-					//cache_hits++;
-					if(usemem) membuf.touchTile(key); // update timestamp
-					//found = true;
 				}
-			} else { // found in lru cache
-				//cache_hits++;
-				//found = true;
 			}
-			//total_requests++;
-			hist.addRecord(t);
-			lmbuf.insertTile(t);
-			/*
-			if(found) {
-				//System.out.println("hit in cache for tile "+key);
-				hitslist.add("hit");
-			} else {
-				//System.out.println("miss in cache for tile "+key);
-				hitslist.add("miss");
-			}
-			*/
-			//System.out.println("current accuracy: "+ (1.0 * cache_hits / total_requests));
-			//System.out.println("cache size: "+membuf.tileCount()+" tiles");
 			return t;
 		}
 		

@@ -31,7 +31,7 @@ import backend.disk.OldScidbTileInterface;
 import backend.disk.ScidbTileInterface;
 import backend.disk.VerticaTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
-import backend.memory.NiceTileLruBuffer;
+import backend.memory.MemoryNiceTileLruBuffer;
 import backend.prediction.BasicModel;
 import backend.prediction.TestSVM;
 import backend.prediction.TileHistoryQueue;
@@ -60,7 +60,7 @@ public class MainThread {
 	public static VerticaTileInterface verticaapi;
 	public static int histmax = 10;
 	public static TileHistoryQueue hist;
-	public static NiceTileLruBuffer lmbuf;
+	public static MemoryNiceTileLruBuffer lmbuf;
 	public static TestSVM.SvmWrapper pclas;
 	public static boolean usePclas = false;
 	public static SignatureMap sigMap;
@@ -326,7 +326,7 @@ public class MainThread {
 		scidbapi = new OldScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		newScidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		verticaapi = new VerticaTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
-		lmbuf = new NiceTileLruBuffer(lmbuflen); // tracks the user's last x moves
+		lmbuf = new MemoryNiceTileLruBuffer(lmbuflen); // tracks the user's last x moves
 		hist = new TileHistoryQueue(histmax);
 		// load pre-computed signature map
 		sigMap = SignatureMap.getFromFile(BuildSignaturesOffline.defaultFilename);

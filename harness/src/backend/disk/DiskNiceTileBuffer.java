@@ -93,6 +93,7 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 
 	@Override
 	public synchronized void insertTile(NiceTile tile) {
+		if(this.storagemax == 0) return;
 		TileKey id = tile.id;
 		if(!peek(id)) {
 			// make room for new tile in storage

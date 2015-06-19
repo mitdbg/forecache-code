@@ -16,14 +16,14 @@ import utils.TraceMetadata;
 import utils.UserRequest;
 import utils.UtilityFunctions;
 import backend.disk.NiceTilePacker;
-import backend.memory.NiceTileLruBuffer;
+import backend.memory.MemoryNiceTileLruBuffer;
 import backend.util.DirectionClass;
 import backend.util.ModelAccuracy;
 import backend.util.NiceTile;
 import backend.util.TileKey;
 
 public class CachingClient extends Client {
-	public static NiceTileLruBuffer memcache;
+	public static MemoryNiceTileLruBuffer memcache;
 	
 	public static void crossValidationModelSpecific(int[] users, String[] tasknames, String[][] models, int[][] allocations, boolean[] usePhases) throws Exception {
 		List<Integer> testusers = new ArrayList<Integer>();
@@ -405,7 +405,7 @@ public class CachingClient extends Client {
 		} else {
 			System.out.println("using client-side cache of size " + cacheSize+"...");
 		}
-		memcache = new NiceTileLruBuffer(cacheSize);
+		memcache = new MemoryNiceTileLruBuffer(cacheSize);
 		
 		if(groundtruth) {
 			for(int len = 1; len <= 10; len++) {

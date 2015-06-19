@@ -19,11 +19,11 @@ import backend.util.TimePair;
  * cache.
  */
 public class PreCompNiceTileBuffer implements NiceTileBuffer {
+	//TODO: make cache eviction policies separate from tile buffer code
 	protected Map<TileKey,TimePair> timeMap; // for finding things in the queue
 	protected PriorityQueue<TimePair> lruQueue; // for identifying lru tiles in storage
-	protected Map<TileKey,Boolean> isBuilt;
+	public Map<TileKey,Boolean> isBuilt;
 	protected int storagemax;
-	protected int size;
 	protected final int DEFAULTMAX = 1; // default buffer size
 	protected final int initqueuesize = 50;
 	protected String tileNamePrefix = DBInterface.arrayname+"_"; // default prefix
@@ -37,7 +37,6 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 		
 		this.lruQueue = new PriorityQueue<TimePair>(this.initqueuesize,new TimePair.TPSort());
 		this.timeMap = new HashMap<TileKey,TimePair>();
-		this.size = 0;
 		this.storagemax = this.DEFAULTMAX;
 		findExistingTiles(); // check cache root for existing tiles
 	}
@@ -68,7 +67,7 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 	}
 	
 	public synchronized int freeSpace() {
-		return storagemax - this.timeMap.size();
+		return storagemax - tileCount();
 	}
 
 	@Override
@@ -78,21 +77,14 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 
 	@Override
 	public synchronized NiceTile getTile(TileKey id) {
-		//return sti.getNiceTile(id);
-		NiceTile t = new NiceTile();
-		t.id = id;
 		if(peek(id)) {
+			NiceTile t = new NiceTile();
+			t.id = id;
 			sti.getStoredTile(arrayname, t);
-		} else {
-			try {
-				sti.getSimulatedBuildTile(arrayname, t);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				t = null;
-			}
+			this.update_time_pair(id);
+			return t;
 		}
-		return t;
+		return null; // not in the cache
 	}
 
 	@Override
@@ -109,15 +101,15 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 	public synchronized void clear() {
 		lruQueue.clear();
 		timeMap.clear();
-		this.size = 0;
 	}
 
 	@Override
 	public synchronized void insertTile(NiceTile tile) {
+		if(this.storagemax == 0) return;
 		TileKey id = tile.id;
 		if(!peek(id)) {
 			// make room for new tile in storage
-			while(this.size >= this.storagemax) {
+			while(tileCount() >= this.storagemax) {
 				this.remove_lru_tile();
 			}
 			insert_time_pair(tile.id);
@@ -135,18 +127,14 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 
 	@Override
 	public synchronized void removeTile(TileKey id) {
-		if(peek(id)) {
-			this.remove_tile(id);
-		}
+		this.remove_tile(id);
 
 	}
 	
 	@Override
 	public synchronized void touchTile(TileKey id) {
-		if(peek(id)) {
-			// update metadata
-			this.update_time_pair(id);
-		}
+		// update metadata
+		this.update_time_pair(id);
 	}
 	
 	// find all tiles already cooked in the database
@@ -171,9 +159,8 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 	
 	// updates eviction metadata for existing tile id
 	protected synchronized void update_time_pair(TileKey id) {
-		TimePair tp;
-		if(timeMap.containsKey(id)) { // time map tells us if file exists
-			tp = timeMap.get(id);
+		if(peek(id)) { // time map tells us if file exists
+			TimePair tp = timeMap.get(id);
 			lruQueue.remove(tp);
 			tp.updateTimestamp();
 			lruQueue.add(tp);
@@ -182,24 +169,17 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 	
 	// adds new eviction metadata for given tile id
 	protected synchronized void insert_time_pair(TileKey id) {
-		TimePair tp;
-		if(!timeMap.containsKey(id)) {
-			tp = new TimePair(id,1);
+		if(!peek(id)) {
+			TimePair tp = new TimePair(id,1);
 			lruQueue.add(tp);
 			timeMap.put(id, tp);
-		} else {
-			update_time_pair(id);
 		}
 	}
 	
 	// removes eviction metadata for existing tile id
 	protected synchronized void remove_time_pair(TileKey id) {
-		TimePair tp;
-		if(timeMap.containsKey(id)) {
-			tp = timeMap.get(id);
-			lruQueue.remove(tp);
-			timeMap.remove(id);
-		}
+		TimePair tp = timeMap.remove(id);
+		lruQueue.remove(tp);
 	}
 	
 	// checks priority queue and removes lru tile
@@ -217,18 +197,14 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 	
 	// removes a specific tile from buffer
 	protected synchronized void remove_tile(TileKey id) {
-		if(peek(id)) {
-			//NiceTilePacker.removeNiceTile(id);
-			// remove metadata
-			this.remove_time_pair(id);
-			this.size --;
-		}
+		// remove metadata
+		this.remove_time_pair(id);
 	}
 	
 	public static void main(String[] args) throws Exception {
 		ScidbTileInterface sti = new ScidbTileInterface();
 		PreCompNiceTileBuffer buf = new PreCompNiceTileBuffer(sti); // calls init in constructor
-		System.out.println(buf.size);
+		System.out.println(buf.tileCount());
 		System.out.println(buf.isBuilt.size());
 	}
 }

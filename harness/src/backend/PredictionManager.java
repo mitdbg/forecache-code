@@ -10,7 +10,7 @@ import java.util.concurrent.RunnableFuture;
 
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.TileInterface;
-import backend.memory.NiceTileLruBuffer;
+import backend.memory.MemoryNiceTileLruBuffer;
 import backend.prediction.BasicModel;
 import backend.prediction.TestSVM;
 import backend.prediction.TileHistoryQueue;
@@ -32,7 +32,7 @@ import backend.util.TileKey;
 
 public class PredictionManager {
 	public NiceTileBuffer buf;
-	public NiceTileLruBuffer lmbuf;
+	public NiceTileBuffer lmbuf;
 	public DiskNiceTileBuffer diskbuf;
 	public TileInterface dbapi;
 	
@@ -74,6 +74,18 @@ public class PredictionManager {
 		pclas = TestSVM.buildSvmPhaseClassifier();
 	}
 	
+	public synchronized void cancelPredictorJob() throws Exception {
+		if(predictor !=null) {
+			// try to cancel the job
+			for(int i = 0; (i < 10) && !predictor.isDone(); i++) {
+				predictor.cancel(true);
+			}
+			if(!predictor.isDone()) {
+				throw new Exception("Could not cancel predictor job!!!");
+			}
+		}
+	}
+	
 	public synchronized void runPredictor(ExecutorService executorService) {
 		predictor = new FutureTask<Object>(new PredictionTask(),null);
 		executorService.submit(predictor);
@@ -84,7 +96,8 @@ public class PredictionManager {
 	}
 	
 	public void updateAccuracy(TileKey id) {
-		boolean found = buf.peek(id);
+		// is it in LRU buffer or regular buffer?
+		boolean found = lmbuf.peek(id) || buf.peek(id);
 		if(found) {
 			cache_hits++;
 			hitslist.add("hit");
@@ -107,6 +120,10 @@ public class PredictionManager {
 			res = res + ","+hitslist.get(i);
 		}
 		return res;
+	}
+	
+	public String[] getFullAccuracyRaw() {
+		return hitslist.toArray(new String[hitslist.size()]);
 	}
 	
 	public void setupModels() {
@@ -337,6 +354,17 @@ public class PredictionManager {
 		totalStorage = required;
 	}
 	
+	public void update_allocations2(int[] allocations) {
+		int required = 0;
+		allocatedStorage = allocations;
+		for(int i = 0; i < allocations.length; i++) {
+			required += allocations[i];
+		}
+		buf.clear();
+		buf.setStorageMax(required);
+		totalStorage = required;
+	}
+	
 	public void clear() {
 		update_users(new String[]{});
 		update_model_labels(new String[]{});
@@ -344,6 +372,7 @@ public class PredictionManager {
 		all_models = null;
 		usePclas = false;
 		neighborhood = 1;
+		predictor = null;
 		//defaultpredictions = Integer.parseInt(predictions);
 		//System.out.println("predictions: "+defaultpredictions);
 		
@@ -356,15 +385,26 @@ public class PredictionManager {
 		totalStorage = 0;
 		buf.clear();
 		lmbuf.clear();
-		hist.clear();
 	}
 	
-	public void reset(String[] userstrs, String[] modelstrs, String[] predictions, String nstr,boolean usePhases) throws Exception {
+	public void reset(int[] users, String[] modelstrs, int[] allocations,
+			int neighborhood, boolean usePhase) {
+		user_ids = users;
+		update_model_labels(modelstrs);
+		update_allocations2(allocations);
+		this.neighborhood = neighborhood;
+		this.usePclas = usePhase;
+		predictor = null;
+	}
+	
+	public void reset(String[] userstrs, String[] modelstrs, String[] predictions,
+			String nstr,boolean usePhases) throws Exception {
 		update_users(userstrs);
 		update_model_labels(modelstrs);
 		update_allocations_from_string(predictions);
 		usePclas = usePhases;
 		neighborhood = Integer.parseInt(nstr);
+		predictor = null;
 		//System.out.println("new neighborhood variable:"+neighborhood);
 		//defaultpredictions = Integer.parseInt(predictions);
 		//System.out.println("predictions: "+defaultpredictions);
@@ -377,7 +417,6 @@ public class PredictionManager {
 		// reinitialize caches and user history
 		buf.clear();
 		lmbuf.clear();
-		hist.clear();
 		
 		setupModels();
 		trainModels();

@@ -6,9 +6,23 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import backend.BuildSignaturesOffline;
+import backend.PreCompThread;
+import backend.PredictionManager;
+import backend.disk.DiskNiceTileBuffer;
+import backend.disk.ScidbTileInterface;
+import backend.memory.MemoryNiceTileBuffer;
+import backend.memory.MemoryNiceTileLruBuffer;
+import backend.prediction.TileHistoryQueue;
 import backend.util.DirectionClass;
 import backend.util.ModelAccuracy;
+import backend.util.NiceTile;
+import backend.util.NiceTileBuffer;
+import backend.util.SignatureMap;
+import backend.util.TileKey;
 import utils.DBInterface;
 import utils.ExplorationPhase;
 import utils.TraceMetadata;
@@ -20,9 +34,9 @@ public class PreCompClient {
 	public static int backend_port = 8080;
 	public static String backend_root = "gettile";
 	//public static String [] tasknames = {"warmup", "task1", "task2", "task3"};
-	public static ClientParameterManager clientManager = null;
-	public static ClientParameterManager memManager = null;
-	public static ClientParameterManager pcManager = null;
+	public static ClientParameterManager clientParamsManager = null;
+	public static ClientParameterManager memParamsManager = null;
+	public static ClientParameterManager pcParamsManager = null;
 	public static boolean useclient = false;
 	public static boolean usemem = false;
 	public static boolean usepc = false;
@@ -30,6 +44,30 @@ public class PreCompClient {
 	public static int memIndex;
 	public static int diskIndex;
 	
+	//for prediction
+	public static int deflmbuflen = 0; //default is don't use
+	public static int histmax = 10;
+	public static MemoryNiceTileBuffer clientbuf;
+	public static DiskNiceTileBuffer diskbuf;
+	public static PredictionManager clientManager;
+	public static ScidbTileInterface scidbapi;
+	public static TileHistoryQueue hist;
+	public static SignatureMap sigMap;
+	public static MemoryNiceTileLruBuffer lmbuf;
+	private static ExecutorService executorService;
+	
+	public static void initExecutorService() {
+		executorService = (ExecutorService) Executors.newCachedThreadPool();
+	}
+	
+	public static void shutdownExecutorService() {
+		executorService.shutdown();
+	}
+	
+	public static void cancelPredictions() throws Exception {
+		if(useclient) clientManager.cancelPredictorJob();
+	}
+		
 	public static void crossValidationMultiLevel() throws Exception {
 		int[] users = new int[0];
 		String[] tasknames = new String[0];
@@ -41,19 +79,19 @@ public class PreCompClient {
 		int memmax = 1;
 		int diskmax = 1;
 		if(useclient) {
-			clientmax = clientManager.usePhases.length;
-			tasknames = clientManager.tasknames;
-			users = clientManager.user_ids;
+			clientmax = clientParamsManager.usePhases.length;
+			tasknames = clientParamsManager.tasknames;
+			users = clientParamsManager.user_ids;
 		}
 		if(usemem) {
-			memmax = memManager.usePhases.length;
-			tasknames = memManager.tasknames;
-			users = memManager.user_ids;
+			memmax = memParamsManager.usePhases.length;
+			tasknames = memParamsManager.tasknames;
+			users = memParamsManager.user_ids;
 		}
 		if(usepc) {
-			diskmax = pcManager.usePhases.length;
-			tasknames = pcManager.tasknames;
-			users = pcManager.user_ids;
+			diskmax = pcParamsManager.usePhases.length;
+			tasknames = pcParamsManager.tasknames;
+			users = pcParamsManager.user_ids;
 		}
 		if(users.length == 0) throw new Exception("List of users is empty!");
 		if(tasknames.length == 0) throw new Exception("List of tasks is empty!");
@@ -74,7 +112,8 @@ public class PreCompClient {
 		}
 	}
 	
-	public static void doMultiLevelValidation(List<Integer> testusers, String taskname) throws Exception {
+	public static void doMultiLevelValidation(List<Integer> testusers,
+			String taskname) throws Exception {
 		List<Integer> users = DBInterface.getUsers();
 		List<Integer> finalusers = new ArrayList<Integer>();
 		
@@ -105,18 +144,22 @@ public class PreCompClient {
 			//setup test case on frontend
 			if(useclient) {
 				// TODO: fill this in for multi-level follow-on work
+				clientManager.reset(trainlist, clientParamsManager.models[clientIndex],
+						clientParamsManager.allocations[clientIndex],
+						clientParamsManager.neighborhoods[clientIndex],
+						clientParamsManager.usePhases[clientIndex]);
 			}
 			
 			// setup test case on backend
 			sendCacheLevelFlags(usemem, usepc); // are we using these?
 			
-			if(usemem) sendReset(memManager.level,trainlist,memManager.models[memIndex],
-				memManager.allocations[memIndex],memManager.neighborhoods[memIndex],
-				memManager.usePhases[memIndex]);
+			if(usemem) sendReset(memParamsManager.level,trainlist,memParamsManager.models[memIndex],
+				memParamsManager.allocations[memIndex],memParamsManager.neighborhoods[memIndex],
+				memParamsManager.usePhases[memIndex]);
 			
-			if(usepc) sendReset(pcManager.level,trainlist,pcManager.models[diskIndex],
-				pcManager.allocations[diskIndex],pcManager.neighborhoods[diskIndex],
-				pcManager.usePhases[diskIndex]);
+			if(usepc) sendReset(pcParamsManager.level,trainlist,pcParamsManager.models[diskIndex],
+				pcParamsManager.allocations[diskIndex],pcParamsManager.neighborhoods[diskIndex],
+				pcParamsManager.usePhases[diskIndex]);
 			
 			//send requests
 			int user_id = testusers.get(u1);
@@ -130,27 +173,51 @@ public class PreCompClient {
 				String tile_hash = ur.tile_hash;
 				int zoom = ur.zoom;
 				//System.out.println("tile id: '" +tile_id+ "'");
-				//Thread.sleep(100);
+				
+				NiceTile toRetrieve = null;
+				TileKey tempKey = new TileKey(UtilityFunctions.parseTileIdInteger(tile_id),zoom);
+				long s = 0;
+				long e = 0;
+				if(useclient) {
+					//TODO: add code to toggle for cancelling job(s) instead of waiting
+					waitForClientPredictor();
+					clientManager.updateAccuracy(tempKey);
+					s = System.currentTimeMillis();
+					toRetrieve = clientbuf.getTile(tempKey);
+					e = System.currentTimeMillis();
+					addHistory(tempKey);
+					clientManager.runPredictor(executorService);
+				}
+				
+				//TODO: add code to toggle for cancelling job(s) instead of waiting
 				waitForServer();
-				durations[r] = sendRequest(tile_id,zoom,tile_hash);
+				if(toRetrieve == null) { // not cached on client
+					//System.out.println("tile id: '" +tile_id+ "'");
+					durations[r] = sendRequest(tile_id,zoom,tile_hash);
+				} else { // found it on the client
+					durations[r] = e-s;
+					// tell the server which tile the user requested
+					sendHistory(tile_id,zoom,tile_hash);
+				}
+				
 				avg_duration += durations[r];
 			}
 			long end = System.currentTimeMillis();
 			System.out.println("duration: "+(1.0*(end-start)/1000)+" secs");
 			//get accuracy for this user
 			if(useclient) {
-				clientManager.accuracy = getAccuracy(clientManager.level);
-				clientManager.fullAccuracy = getFullAccuracy(clientManager.level);
+				clientParamsManager.accuracy = clientManager.getAccuracy();
+				clientParamsManager.fullAccuracy = clientManager.getFullAccuracyRaw();
 			}
 			
 			if(usemem) {
-				memManager.accuracy = getAccuracy(memManager.level);
-				memManager.fullAccuracy = getFullAccuracy(memManager.level);
+				memParamsManager.accuracy = getAccuracy(memParamsManager.level);
+				memParamsManager.fullAccuracy = getFullAccuracy(memParamsManager.level);
 			}
 			
 			if(usepc) {
-				pcManager.accuracy = getAccuracy(pcManager.level);
-				pcManager.fullAccuracy = getFullAccuracy(pcManager.level);
+				pcParamsManager.accuracy = getAccuracy(pcParamsManager.level);
+				pcParamsManager.fullAccuracy = getFullAccuracy(pcParamsManager.level);
 			}
 			
 			avg_duration /= trace.size();
@@ -201,36 +268,51 @@ public class PreCompClient {
 				System.out.print(user_id+"\t"+taskname+"\t");
 				System.out.print(useclient+"\t"+usemem+"\t"+usepc+"\t");
 				
-				if(useclient) UtilityFunctions.printStringArray(clientManager.models[clientIndex]);
+				if(useclient) UtilityFunctions.printStringArray(
+						clientParamsManager.models[clientIndex]);
 				System.out.print("\t");
-				if(useclient) UtilityFunctions.printIntArray(clientManager.allocations[clientIndex]);
-				System.out.print("\t");
-				
-				if(usemem) UtilityFunctions.printStringArray(memManager.models[memIndex]);
-				System.out.print("\t");
-				if(usemem) UtilityFunctions.printIntArray(memManager.allocations[memIndex]);
+				if(useclient) UtilityFunctions.printIntArray(
+						clientParamsManager.allocations[clientIndex]);
 				System.out.print("\t");
 				
-				if(usepc) UtilityFunctions.printStringArray(pcManager.models[diskIndex]);
+				if(usemem) UtilityFunctions.printStringArray(memParamsManager.models[memIndex]);
 				System.out.print("\t");
-				if(usepc) UtilityFunctions.printIntArray(pcManager.allocations[diskIndex]);
+				if(usemem) UtilityFunctions.printIntArray(memParamsManager.allocations[memIndex]);
 				System.out.print("\t");
 				
-				System.out.print(request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
-						"\t");
+				if(usepc) UtilityFunctions.printStringArray(pcParamsManager.models[diskIndex]);
+				System.out.print("\t");
+				if(usepc) UtilityFunctions.printIntArray(pcParamsManager.allocations[diskIndex]);
+				System.out.print("\t");
 				
-				if(useclient) System.out.print(clientManager.fullAccuracy[i]);
+				System.out.print(request.zoom+"\t"+id[0]+"\t"+id[1]+
+						"\t"+dirs.get(i)+"\t"+phases.get(i)+"\t");
+				
+				if(useclient) System.out.print(clientParamsManager.fullAccuracy[i]);
 				System.out.print("\t");
-				if(usemem) System.out.print(memManager.fullAccuracy[i]);
+				if(usemem) System.out.print(memParamsManager.fullAccuracy[i]);
 				System.out.print("\t");
-				if(usepc) System.out.print(pcManager.fullAccuracy[i]);
+				if(usepc) System.out.print(pcParamsManager.fullAccuracy[i]);
 				System.out.print("\t");
-				//System.out.println("\t"+predictions+"\t"+request.zoom+"\t"+id[0]+"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
+				//System.out.println("\t"+predictions+"\t"+request.zoom+"\t"+id[0]+
+				//		"\t"+id[1]+"\t"+dirs.get(i)+"\t"+phases.get(i)+
 				//		"\t"+fullAccuracy[i]);
 				System.out.print("\t");
 				System.out.println(durations[i]);
 			}
 			
+		}
+	}
+	
+	public static void waitForClientPredictor() throws InterruptedException {
+		for(int i = 0; i < 10000; i++) {
+			if(!clientManager.isReady()) {
+				//System.out.println("not ready... waiting 100ms");
+				Thread.sleep(100);
+			} else {
+				//System.out.println("continuing on...");
+				break;
+			}
 		}
 	}
 	
@@ -362,7 +444,8 @@ public class PreCompClient {
 	
 	// tell server what user ids and models to train on
 		public static boolean sendCacheLevelFlags(boolean usemem, boolean usepc) {
-			String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/?cachelevels";
+			String urlstring = "http://"+backend_host+":"+backend_port
+					+"/"+backend_root + "/?cachelevels";
 			if(usemem) urlstring += "&usemem";
 			if (usepc) urlstring += "&usepc";
 			
@@ -420,7 +503,8 @@ public class PreCompClient {
 		}
 
 	// tell server what user ids and models to train on
-	public static boolean sendReset(CacheLevel level, int[] user_ids, String[] models, int[] predictions, int neighborhood,boolean usePhases) {
+	public static boolean sendReset(CacheLevel level, int[] user_ids, String[] models,
+			int[] predictions, int neighborhood,boolean usePhases) {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
 				+ "?"+buildResetParams(level,user_ids,models, predictions, neighborhood,usePhases);
 		URL geturl = null;
@@ -527,8 +611,67 @@ public class PreCompClient {
 		}
 		return ready;
 	}
+	
+	public static long sendHistory(String tile_id, int zoom,
+			String hashed_query) throws Exception {
+		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
+				+ "?addhistory&" + buildUrlParams(hashed_query, tile_id, zoom);
+		URL geturl = null;
+		HttpURLConnection connection = null;
+		BufferedReader reader = null;
+		StringBuffer sbuffer = new StringBuffer();
+		String result = null;
+		long diff = 0;
+		try {
+			geturl = new URL(urlstring);
+		} catch (MalformedURLException e) {
+			System.out.println("error occurred while retrieving url object for: '"+urlstring+"'");
+			e.printStackTrace();
+		}
+		if(geturl == null) {
+			return diff;
+		}
 
-	public static long sendRequest(String tile_id, int zoom, String hashed_query) throws Exception {
+		try {
+			connection = (HttpURLConnection) geturl.openConnection();
+			diff = System.currentTimeMillis();
+			InputStream is = connection.getInputStream();
+			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+			
+			int nRead;
+			byte[] data = new byte[16384];
+
+			while ((nRead = is.read(data, 0, data.length)) != -1) {
+			  buffer.write(data, 0, nRead);
+			}
+
+			buffer.flush();
+			diff = System.currentTimeMillis() - diff;
+			result = sbuffer.toString();
+			if(result.equals("error")) {
+				throw new Exception("serious error occurred on backend while sending history");
+			}
+		} catch (IOException e) {
+			System.out.println("Error retrieving response from url: '"+urlstring+"'");
+			e.printStackTrace();
+		}
+
+		if(connection != null) {
+			connection.disconnect();
+		}
+		if(reader != null) {
+			try {
+				reader.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return diff;
+	}
+
+	public static long sendRequest(String tile_id, int zoom,
+			String hashed_query) throws Exception {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
 				+ "?fetch&" + buildUrlParams(hashed_query, tile_id, zoom);
 		URL geturl = null;
@@ -631,12 +774,42 @@ public class PreCompClient {
 		return params;
 	}
 	
+	public static void initializeCacheManagers(PredictionManager manager,
+			NiceTileBuffer buf) throws Exception {		
+		// initialize cache managers
+		manager.buf = buf;
+		manager.diskbuf = diskbuf; // just used for convenience
+		manager.dbapi = scidbapi;
+		manager.hist = hist;
+		manager.lmbuf = lmbuf; // tracks the user's last x moves
+		
+		// load pre-computed signature map
+		manager.sigMap  = sigMap;
+		
+		//setup models for prediction
+		manager.setupModels();
+		manager.trainModels();
+	}
+	
 	public static void testsequence() throws Exception {
 		sendRequest("[0, 0]", 0, "123");
 		sendRequest("[0, 0]", 0, "123");
 		//sendRequest("[0, 0]", 1, "123");
 		//sendRequest("[0, 1]", 2, "123");
 		//sendRequest("[0, 2]", 3, "123");
+	}
+	
+	public static void addHistory(TileKey key) {
+		// get the tile, so we can put it in the history
+					NiceTile t = diskbuf.getTile(key);
+					if(t == null) { // check dbms
+						t = new NiceTile();
+						t.id = key;
+						scidbapi.getStoredTile(DBInterface.arrayname, t);
+					}
+					
+					hist.addRecord(t); // keep track
+					lmbuf.insertTile(t);
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -679,31 +852,42 @@ public class PreCompClient {
 		for(int i = 0; i < levels.length; i++) {
 			CacheLevel l = UtilityFunctions.getCacheLevel(levels[i]);
 			if(alreadySpecified.containsKey(l)) {
-				throw new Exception("Duplicate set of parameters specified for caching level '"+l+"'!");
+				throw new Exception("Duplicate set of parameters " +
+						"specified for caching level '"+l+"'!");
 			}
 			switch(l) {
 			case CLIENT:
-				clientManager = new ClientParameterManager(userstring,taskstring,l,models[i],allocations[i],neighborhoods[i],phases[i]);
+				clientParamsManager = new ClientParameterManager(userstring,taskstring,
+						l,models[i],allocations[i],neighborhoods[i],phases[i]);
 				useclient = true;
+				
+				clientbuf = new MemoryNiceTileBuffer();
+				diskbuf = new DiskNiceTileBuffer(DBInterface.nice_tile_cache_dir,
+						DBInterface.hashed_query,DBInterface.threshold);
+				scidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,
+						DBInterface.defaultdelim);
+				hist = new TileHistoryQueue(histmax);
+				lmbuf = new MemoryNiceTileLruBuffer(deflmbuflen); // tracks the user's last x moves
+				sigMap  = SignatureMap.getFromFile(BuildSignaturesOffline.defaultFilename);
+				initializeCacheManagers(clientManager,clientbuf);
+				initExecutorService();
 				break;
 			case SERVERMM:
-				memManager = new ClientParameterManager(userstring,taskstring,l,models[i],allocations[i],neighborhoods[i],phases[i]);
+				memParamsManager = new ClientParameterManager(userstring,taskstring,
+						l,models[i],allocations[i],neighborhoods[i],phases[i]);
 				usemem = true;
 				break;
 			case SERVERDISK:
-				pcManager = new ClientParameterManager(userstring,taskstring,l,models[i],allocations[i],neighborhoods[i],phases[i]);
+				pcParamsManager = new ClientParameterManager(userstring,taskstring,
+						l,models[i],allocations[i],neighborhoods[i],phases[i]);
 				usepc = true;
 				break;
 			}
 			alreadySpecified.put(l, true);
 		}
-		
-		//default settings
-		//if(!useclient) clientManager = new ClientParameterManager(userstring,taskstring,CacheLevel.CLIENT,"","","");
-		//if(!usemem) memManager = new ClientParameterManager(userstring,taskstring,CacheLevel.SERVERMM,"","","");
-		//if(!usepc) pcManager = new ClientParameterManager(userstring,taskstring,CacheLevel.SERVERDISK,"","","");
-		
+
 		if(!useclient && !usemem && !usepc) throw new Exception("no caching flags set!");
 		PreCompClient.crossValidationMultiLevel();
+		if(useclient) shutdownExecutorService();
 	}
 }
