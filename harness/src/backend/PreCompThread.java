@@ -39,7 +39,7 @@ import utils.DBInterface;
 import utils.UtilityFunctions;
 
 public class PreCompThread {
-	public static OldScidbTileInterface OldScidbapi;
+	//public static OldScidbTileInterface OldScidbapi;
 	public static ScidbTileInterface scidbapi;
 	public static VerticaTileInterface verticaapi;
 	
@@ -412,6 +412,8 @@ public class PreCompThread {
 						if(usepc) {
 							t = pcManager.buf.getTile(key);
 							if(t == null) {
+								t = new NiceTile();
+								t.id = key;
 								scidbapi.getSimulatedBuildTile(DBInterface.arrayname, t);
 							}
 						} else {

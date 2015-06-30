@@ -3,17 +3,17 @@ package backend.disk;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
+//import java.sql.Connection;
+//import java.sql.PreparedStatement;
+//import java.sql.ResultSet;
+//import java.sql.ResultSetMetaData;
+//import java.sql.SQLException;
+//import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.scidb.jdbc.IResultSetWrapper;
-import org.scidb.jdbc.IStatementWrapper;
+//import org.scidb.jdbc.IResultSetWrapper;
+//import org.scidb.jdbc.IStatementWrapper;
 
 
 import backend.util.NiceTile;
@@ -270,6 +270,15 @@ public class ScidbTileInterface extends TileInterface {
 		return end - start;
 	}
 	
+	public  synchronized void executeQuery(String arrayname, Params p, NiceTile tile) {
+		getStoredTile(arrayname,tile);
+		if(tile.getSize() == 0) {
+			buildAndStoreTile(arrayname,tile.id);
+			getStoredTile(arrayname,tile);
+		}
+	}
+	
+	/*
 	public synchronized void executeQuery(String arrayname, Params p, NiceTile tile) {
 		List<Double> temp = new ArrayList<Double>();
 		String[] labels = new String[0];
@@ -309,6 +318,7 @@ public class ScidbTileInterface extends TileInterface {
 		tile.initializeData(temp, labels);
 		//long end = System.currentTimeMillis();
 	}
+	*/
 	
 	public static void main(String[] args) {
 		boolean tiletest = true;

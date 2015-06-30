@@ -12,9 +12,9 @@
     <path id="OpenCV-2.4.9.userclasspath">
         <pathelement location="../../../../../usr/local/share/OpenCV/java/opencv-249.jar"/>
     </path>
-    <path id="GoogleProtobuf.userclasspath">
+    <!--<path id="GoogleProtobuf.userclasspath">
         <pathelement location="../../../../../usr/local/share/java/protobuf-java.jar"/>
-    </path>
+    </path>-->
     <path id="ScalarPrefetch.classpath">
         <pathelement location="bin"/>
         <pathelement location="lib/libsvm-master/java/libsvm.jar"/>
@@ -26,7 +26,7 @@
         <pathelement location="lib/jetty-all-9.1.3.v20140225.jar"/>
         <pathelement location="lib/berkeleylm.jar"/>
         <path refid="OpenCV-2.4.9.userclasspath"/>
-        <path refid="GoogleProtobuf.userclasspath"/>
+        <!--<path refid="GoogleProtobuf.userclasspath"/>-->
         <pathelement location="lib/imgscalr-lib-4.2.jar"/>
         <pathelement location="lib/kd.jar"/>
         <pathelement location="lib/gson-2.3.jar"/>

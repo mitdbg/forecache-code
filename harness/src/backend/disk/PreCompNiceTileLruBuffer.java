@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
+//import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
 
@@ -13,7 +13,7 @@ import utils.DBInterface;
 import backend.util.NiceTile;
 import backend.util.NiceTileBuffer;
 import backend.util.TileKey;
-import backend.util.TimePair;
+//import backend.util.TimePair;
 
 // used to keep track of user's last x moves, where x=bufferSize
 public class PreCompNiceTileLruBuffer implements NiceTileBuffer {

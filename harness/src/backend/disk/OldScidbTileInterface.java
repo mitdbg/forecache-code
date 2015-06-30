@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import org.scidb.jdbc.Statement;
+//import org.scidb.jdbc.Statement;
 
 import utils.DBInterface;
 import utils.UtilityFunctions;

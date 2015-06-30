@@ -1,7 +1,5 @@
 package backend.disk;
 
-import java.util.Map;
-
 import utils.DBInterface;
 import backend.util.NiceTile;
 import backend.util.Params;

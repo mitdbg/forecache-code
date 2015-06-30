@@ -269,6 +269,178 @@ public class TestSVM {
 		return model;
 	}
 	
+	public static void runSvm3(String input, boolean header, int cmax) {
+		int[] hlens = {1};
+		int[] users = {146, 150, 123, 145, 140, 132, 141, 151, 144, 148, 121, 130, 124, 135, 134, 137, 139, 138};
+		int oldphase = 0;
+		int direction = 1;
+		int userid = 2;
+		int taskname = 3;
+		int x = 4;
+		int y = 5;
+		int zoom = 6;
+		int phase = 7;
+		int next_phase = 8;
+		int added = 9;
+		int deleted = 10;
+
+		Map<String,Integer> LabelsToInts = new HashMap<String,Integer>();
+		List<String> IntsToLabels = new ArrayList<String>();
+		List<String> output = new ArrayList<String>();
+		
+		for(int hl = 0; hl < hlens.length; hl++) {
+			int hlen = hlens[hl];
+			double overall_accuracy = 0;
+			double total = 0;
+			for(int u = 0; u < users.length; u++) {
+				int uid = users[u];
+				List<double[]> X = new ArrayList<double[]>();
+				List<Integer> labels = new ArrayList<Integer>();
+				List<double[]> TestX = new ArrayList<double[]>();
+				List<Integer> TestLabels = new ArrayList<Integer>();
+
+				String splitBy = "\t";
+				BufferedReader br;
+				try {
+					br = new BufferedReader(new FileReader(input));
+					String user = null;
+					if(header) br.readLine(); //get rid of header
+					String line = br.readLine();
+					
+					int prevzoom = -1;
+					String prev = null;
+					
+					int[] in = new int[cmax]; // 0 = prev, 1 = prev-prev
+					int[] out = new int[cmax];
+					int[] pan = new int[cmax];
+					
+					while(line!=null){
+						String[] b = line.split(splitBy);
+						if(b[deleted].equals("1")) {
+							line = br.readLine();
+							continue;
+						}
+						
+						String ustring = b[userid];
+						String currtask = b[taskname];
+						int currzoom = Integer.parseInt(b[zoom]);
+						int currx = Integer.parseInt(b[x]);
+						int curry = Integer.parseInt(b[y]);
+						String currphase = b[phase];
+						String currdir = b[direction];
+						
+						if(user == null || !ustring.equals(user)) {
+							user = ustring;
+							prevzoom = -1;
+							for(int i = 0; i < in.length; i++) {
+								in[i] = out[i] = pan[i] = 0;
+							}
+						}
+						for(int i = cmax-1; i > 0; i--) {
+							in[i] = in[i-1];
+							out[i] = out[i-1];
+							pan[i] = pan[i-1];
+						}
+						
+						if(prevzoom > -1) {
+							int zoomdiff = currzoom - prevzoom;
+							in[0] = out[0] = pan[0] = 0;
+							//System.out.println("zoomdiff: "+zoomdiff);
+							if(zoomdiff == 0) { // pan
+								pan[0] = 1;
+							} else if (zoomdiff > 0) { // currzoom > prevzoom -> zoom in
+								in[0] = 1;
+							} else {
+								out[0] = 1;
+							}
+						}
+						
+						prevzoom = currzoom;
+						
+						double[] inp = new double[in.length+out.length+pan.length+3];
+						for(int i = 0; i < in.length; i++) {
+							System.out.print("\t"+in[i]);
+							inp[i] = in[i];
+						}
+						
+						for(int i = 0; i < out.length; i++) {
+							System.out.print("\t"+out[i]);
+							inp[in.length+i] = out[i];
+						}
+						for(int i = 0; i < pan.length; i++) {
+							System.out.print("\t"+pan[i]);
+							inp[in.length+out.length+i] = pan[i];
+						}
+						System.out.println();
+						inp[inp.length-3] = currzoom;
+						inp[inp.length-2] = currx;
+						inp[inp.length-1] = curry;
+						
+						String label = currphase;
+						Integer yval = LabelsToInts.get(label);
+						if(yval == null) {
+							yval = LabelsToInts.size();
+							LabelsToInts.put(label, yval);
+							IntsToLabels.add(label);
+						}
+						if(Integer.parseInt(ustring) == uid) { // test data
+							TestX.add(inp);
+							TestLabels.add(yval);
+						} else { // training data
+							X.add(inp);
+							labels.add(yval);
+						}
+
+						//System.out.print(curruser+"\t"+currtask+"\t"+currx+"\t"+curry+"\t"+currzoom+"\t"+prev+"\t"+currdir);
+						line = br.readLine();
+					}
+					br.close();
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				// build the SVM classifier
+				SvmWrapper wrapped = buildModel(X,labels);
+				
+				//Test the model
+				double accuracy = 0;
+				for(int i = 0; i < TestX.size(); i++) {
+					double[] inp = TestX.get(i);
+
+					svm_node[] nodes = new svm_node[inp.length];
+					for(int j = 0; j < inp.length; j++) {
+						nodes[j] = new svm_node();
+						nodes[j].index = j+1;
+						// normalize using the same mean/stddev from the training data
+						nodes[j].value = (inp[j] - wrapped.sum[j]) / wrapped.diffs[j];
+					}
+					int[] class_labels = new int[wrapped.model.nr_class];
+					svm.svm_get_labels(wrapped.model, class_labels);
+					int v = (int) svm.svm_predict(wrapped.model, nodes);
+					//String pred = IntsToLabels.get(class_labels[v]);
+					//System.out.println("labels: "+class_labels[0]+","+class_labels[1]+","+class_labels[2]);
+					if(class_labels[v] == TestLabels.get(i)) {
+						//System.out.println("hit at row "+i);
+						accuracy++;
+						overall_accuracy++;
+					}
+					total++;
+				}
+				accuracy /= TestX.size();
+				output.add("accuracy for user "+uid+": "+accuracy);
+			}
+			overall_accuracy /= total;
+			for(String line : output) {
+				System.out.println(line);
+			}
+			System.out.println("overall accuracy for hlen "+hlen+": "+overall_accuracy);
+		}
+	}
+	
 	public static void runSvm2(String input, boolean header, int cmax) {
 		int[] hlens = {1};
 		int[] users = {146, 150, 123, 145, 140, 132, 141, 151, 144, 148, 121, 130, 124, 135, 134, 137, 139, 138};
@@ -286,7 +458,8 @@ public class TestSVM {
 
 		Map<String,Integer> LabelsToInts = new HashMap<String,Integer>();
 		List<String> IntsToLabels = new ArrayList<String>();
-
+		List<String> output = new ArrayList<String>();
+		
 		for(int hl = 0; hl < hlens.length; hl++) {
 			int hlen = hlens[hl];
 			double overall_accuracy = 0;
@@ -424,9 +597,12 @@ public class TestSVM {
 					total++;
 				}
 				accuracy /= TestX.size();
-				System.out.println("accuracy for user "+uid+": "+accuracy);
+				output.add("accuracy for user "+uid+": "+accuracy);
 			}
 			overall_accuracy /= total;
+			for(String line : output) {
+				System.out.println(line);
+			}
 			System.out.println("overall accuracy for hlen "+hlen+": "+overall_accuracy);
 		}
 	}
@@ -597,6 +773,9 @@ public class TestSVM {
 	public static void main(String[] args) throws Exception {
 		//runSvm(true);
 		//runSvm2("/Volumes/E/mit/vis/code/scalar-prefetch/gt_updated.csv",true,1);
-		buildSvmPhaseClassifier();
+		//runSvm2("/home/leibatt/projects/scalar-prefetch/gt_updated.csv",true,1);
+		//runSvm2("/home/leibatt/projects/scalar-prefetch/gt_updated.csv",true,2);
+		runSvm3("/home/leibatt/projects/scalar-prefetch/gt_updated.csv",true,5);
+		//buildSvmPhaseClassifier();
 	}
 }
