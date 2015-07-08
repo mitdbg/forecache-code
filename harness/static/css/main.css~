@@ -1,0 +1,15 @@
+/* center all page headers */
+div.page-header h1, div.page-header h2 {
+	text-align: center;
+}
+
+/*
+#xlabel-radio ,#ylabel-radio,#zlabel-radio {
+	display: inline;
+}
+*/
+/*
+div .accordion-heading {
+    border-bottom: 2px solid #FF00FF;
+}
+*/

@@ -1,0 +1,67 @@
+<html>
+<head>
+<META NAME="ROBOTS" CONTENT="NOINDEX">
+<META NAME="ROBOTS" CONTENT="NOFOLLOW">
+	<title>ScalaR Demo</title>
+	<link rel="stylesheet" type="text/css" href="/static/css/nav.css">
+	<link rel="stylesheet" type="text/css" href="/static/css/main.css">
+	<link rel="stylesheet" type="text/css" href="/static/bootstrap/css/bootstrap.css">
+	<script type="text/javascript" src="/static/js/jquery-1.9.1.js" ></script>
+	<script type="text/javascript" src="/static/bootstrap/js/bootstrap.js" ></script>
+
+
+	<link rel="stylesheet" type="text/css" href="/static/css/jquery-ui-1.10.1.custom.css">
+	<link rel="stylesheet" type="text/css" href="/static/css/base.css">
+	<link rel="stylesheet" type="text/css" href="/static/css/directional_buttons.css">
+	<link rel="stylesheet" type="text/css" href="/static/css/slider.css">
+	<link rel="stylesheet" type="text/css" href="/static/css/myslider.css">
+
+	<script type="text/javascript" src="/static/js/jquery-ui-1.10.1.custom.js" ></script>
+	<script type="text/javascript" src="/static/js/d3.v2.js" ></script>
+	<script type="text/javascript" src="/static/js/move-zoom.js" ></script>
+	<script type="text/javascript" src="/static/js/colorbrewer.js" ></script>
+	<script type="text/javascript" src="/static/js/QVisBase.js" ></script>
+	<script type="text/javascript" src="/static/js/QVisHeatMap.js" ></script>
+	<script type="text/javascript" src="/static/js/bootstrap-slider.js" ></script>
+	<script type=text/javascript>
+		$SCRIPT_ROOT = "http://localhost:10080";
+	        $DATA_SET = "thesis2";//"ndsi_agg_istc11";//"us100";
+        	$TASK = "task1";
+        	$RESOLUTION_LVL = 90000;
+	</script>
+
+</head>
+<body>
+	<h2 id="resulting-plot-header" class="heading">Resulting Plot</h2>
+	<img src="/static/images/ajax-loader.gif" id="loading_image">
+	<div id="nav">
+		<a id="button-up" class="nav-button btn"><i class="icon-arrow-up"></i></a>
+		<a id="button-down" class="nav-button btn"><i class="icon-arrow-down"></i></a>
+		<a id="button-left" class="nav-button btn"><i class="icon-arrow-left"></i></a>
+		<a id="button-right" class="nav-button btn"><i class="icon-arrow-right"></i></a>
+		<a rel="tooltip" data-placement="right" data-toggle="tooltip" title="click these buttons to move up/down/left/right through the data set. Left click on the visualization to zoom in. Right click on the visualization to zoom out."><i class="icon-question-sign"></i></a>
+		<div id="zoom-disable-div">
+		</div>
+	</div>
+	<div id="legend">
+		<!--<h3>Legend</h3>-->
+		<div id="legend-content">
+		</div>
+	</div>
+	<div id="aggplot" class=".hide-element">
+		<canvas id="canvas" class=".hide-element"></canvas>
+	<div>
+	<div id="extra-content">
+		<div id="vis-loading-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="vis-modal-label" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+				<h3 id="vis-modal-label">Drawing Visualization</h3>
+			</div>
+			<div class="modal-body">
+				<p>This window will close automatically when finished.</p>
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>

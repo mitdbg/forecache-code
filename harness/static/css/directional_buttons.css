@@ -1,0 +1,5 @@
+/* don't let people click on disabled navigation links */
+#button-up.disabled, #button-down.disabled,
+#button-left.disabled, #button-right.disabled {
+	pointer-events: none;
+}

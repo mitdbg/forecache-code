@@ -1,0 +1,21 @@
+/* add padding between delete selections buttons and thumbnails */
+
+#example-images img.found {
+	opacity: 0.35;
+	filter:alpha(opacity=35);
+}
+
+#delete-selections-buttons {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
+.incorrect {
+	text-align: center;
+	color: #FF0000;
+}
+
+.correct {
+	text-align: center;
+	color: #0000FF;
+}

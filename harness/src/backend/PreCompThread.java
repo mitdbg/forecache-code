@@ -43,7 +43,7 @@ public class PreCompThread {
 	public static ScidbTileInterface scidbapi;
 	public static VerticaTileInterface verticaapi;
 	
-	public static boolean usemem = true;
+	public static boolean usemem = false;
 	public static boolean usepc = false;
 	public static DiskNiceTileBuffer diskbuf;
 	
@@ -403,6 +403,11 @@ public class PreCompThread {
 			
 			//boolean found = false;
 			NiceTile t = null;
+			
+			if(!usemem && !usepc) {
+				return diskbuf.getTile(key);
+			}
+			
 			if (usemem) t = memManager.lmbuf.getTile(key); // check lru cache
 			if(t == null) { // not in user's last x moves. check mem cache
 				if(usemem) t = memManager.buf.getTile(key);

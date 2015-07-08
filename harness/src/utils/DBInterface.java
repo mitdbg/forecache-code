@@ -11,6 +11,29 @@ import java.util.List;
 
 public class DBInterface {
 	/*
+	 //for big dawg
+	public static String nice_tile_cache_dir = "/home/gridsan/lbattle/forecache-code/data/nice_tile_cache";
+	//public static String nice_tile_cache_dir = "/home/gridsan/lbattle/forecache-code/data/vertica_nice_tile_cache";
+	public static String defaultparamsfile = "/home/gridsan/lbattle/leilani/forecache-code/data/ndsi_agg_7_18_2013_params.tsv";
+	public static final String cache_root_dir = "/home/gridsan/lbattle/forecache-code/data/test_cache";
+	public static final String sig_root_dir = "/home/gridsan/lbattle/forecache-code/data/_scalar_sig_dir2";
+	public static final String csv_root_dir = "/home/gridsan/lbattle/forecache-code/data/_scalar_csv_dir2";
+	public static final String dbname  = "scalar";
+	public static final String user  = "leilani_testuser";
+	public static final String arrayname = "ndsi_agg_7_18_2013";
+	public static final String dim1 = "dims.latitude_e4ndsi_06_03_2013ndsi_agg_7_18_2013";
+	public static final String dim2  = "dims.longitude_e4ndsi_06_03_2013ndsi_agg_7_18_2013";
+	public static final String query  = "select * from ndsi_agg_7_18_2013";
+	public static final String hashed_query  = "2a0cf5267692de290efac7e3b6d5a593";
+	public static final String threshold  = "90000";
+	public static final int minuser = 121;
+	public static final String xdim = "longitude_e4ndsi_06_03_2013";
+	public static final String ydim = "latitude_e4ndsi_06_03_2013";
+	public static final String zattr = "avg_ndsi";
+	public static final String groundTruth = "/home/gridsan/lbattle/forecache-code/data/gt_updated.csv";
+*/	
+	
+	/*
 	public static String nice_tile_cache_dir = "/home/leilani/nice_tile_cache";
 	//public static String nice_tile_cache_dir = "/home/leilani/vertica_nice_tile_cache";
 	public static String defaultparamsfile = "/data/scidb/000/1/leilani/csv/ndsi_agg_7_18_2013_params.tsv";
