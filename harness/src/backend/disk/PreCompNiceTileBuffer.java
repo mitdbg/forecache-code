@@ -38,7 +38,8 @@ public class PreCompNiceTileBuffer implements NiceTileBuffer {
 		this.lruQueue = new PriorityQueue<TimePair>(this.initqueuesize,new TimePair.TPSort());
 		this.timeMap = new HashMap<TileKey,TimePair>();
 		this.storagemax = this.DEFAULTMAX;
-		findExistingTiles(); // check cache root for existing tiles
+		//TODO: uncomment this line!!!
+		//findExistingTiles(); // check cache root for existing tiles
 	}
 	
 	public PreCompNiceTileBuffer(ScidbTileInterface sti, int storagemax) throws Exception {

@@ -151,7 +151,7 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 					insert_time_pair(t.id); // add to lru metadata
 					currsize++;
 					//System.out.println("using " + currsize + " bytes out of " + storagemax);
-					//System.out.println("inserting tile in disk based cache: '"+tileidstring+"',"+zoom);
+					System.out.println("inserting tile in disk based cache: '"+t.id+"'");
 				}
 			}
 		}
