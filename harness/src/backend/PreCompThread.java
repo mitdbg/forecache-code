@@ -85,8 +85,8 @@ public class PreCompThread {
 		manager.sigMap  = sigMap;
 		
 		//setup models for prediction
-		manager.setupModels();
-		manager.trainModels();
+		//manager.setupModels();
+		//manager.trainModels();
 	}
 
 	public static void main(String[] args) throws Exception {
