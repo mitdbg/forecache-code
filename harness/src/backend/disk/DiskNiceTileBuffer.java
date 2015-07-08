@@ -39,7 +39,7 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 		this.timeMap = new HashMap<TileKey,TimePair>();
 		this.size = 0;
 		this.storagemax = this.DEFAULTMAX;
-		init(); // check cache root for existing tiles
+		//init(); // check cache root for existing tiles
 	}
 	
 	public DiskNiceTileBuffer(String cache_root_dir, String hashed_query, String threshold, int storagemax) throws Exception {
