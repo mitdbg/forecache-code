@@ -14,7 +14,7 @@ public class DBInterface {
 	 //for big dawg
 	public static String nice_tile_cache_dir = "/home/gridsan/lbattle/forecache-code/data/nice_tile_cache";
 	//public static String nice_tile_cache_dir = "/home/gridsan/lbattle/forecache-code/data/vertica_nice_tile_cache";
-	public static String defaultparamsfile = "/home/gridsan/lbattle/leilani/forecache-code/data/ndsi_agg_7_18_2013_params.tsv";
+	public static String defaultparamsfile = "/home/gridsan/lbattle/forecache-code/data/ndsi_agg_7_18_2013_params.tsv";
 	public static final String cache_root_dir = "/home/gridsan/lbattle/forecache-code/data/test_cache";
 	public static final String sig_root_dir = "/home/gridsan/lbattle/forecache-code/data/_scalar_sig_dir2";
 	public static final String csv_root_dir = "/home/gridsan/lbattle/forecache-code/data/_scalar_csv_dir2";
