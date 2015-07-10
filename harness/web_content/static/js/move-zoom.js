@@ -1,5 +1,5 @@
-var renderagg = null;
-var query = null;
+var legend = $("#legend-content");
+var userid = '';
 var current_zoom = 0;
 var flip = true; // whether we need to do inverted moves
 
@@ -19,12 +19,7 @@ var menutype;
 var once =0;
 
 $(document).ready(function() {
-    // don't let IE users click on disabled nav links
-    $('ul.nav-list > li.disabled > a').click(function () { return false; });
-
     $('[rel=tooltip]').tooltip(); // enable tooltips
-    $('#sliders-div div.myslider input[type=text]').slider();
-    $('#sql-query-submit').on('click',user_query_handler);
     $('#button-up').on('click',move_up);
     $('#button-down').on('click',move_down);
     $('#button-left').on('click',move_left);
@@ -180,6 +175,24 @@ $(document).ready(function() {
             }
         };
 
+	var get_userid = function(jsondata) {
+            userid = jsondata;
+            console.log(["userid",userid,"length",userid.length]);
+            if(userid.length > 0) {
+                // get results here bc this is when we have the jobid
+                self.f = function() {
+                    console.log('calling f');
+                    self.getJSON(
+                        $SCRIPT_ROOT+'/scalar/fetch/',
+            		{fft:1,user:userid,data_set: $DATA_SET,task:$TASK,data_threshold:resolution_lvl},
+                        get_jobid,
+                        'fail' // error string should be fail
+                    );
+                };
+                self.f();
+            }
+        };
+
         var get_jobid = function(jsondata) {
             var jobid = jsondata;
             console.log(["jobid",jobid,"length",jobid > 0]);
@@ -189,7 +202,7 @@ $(document).ready(function() {
                     console.log('calling f');
                     self.getJSON(
                         $SCRIPT_ROOT+'/scalar/fetch/',
-                        {user:'',jobid:jobid,gr:1},
+                        {user:userid,jobid:jobid,gr:1},
                         get_results,
                         'fail' // error string should be fail
                     );
@@ -197,14 +210,25 @@ $(document).ready(function() {
                 self.f();
             }
         };
-        
+
+	if(userid.length == 0) {        
+        // get the userid first
+        self.getJSON(
+            $SCRIPT_ROOT+'/scalar/fetch/',
+            {guid:1},
+            get_userid,
+            '' // error string should be empty string
+        );
+	} else {
         // get the results
         self.getJSON(
             $SCRIPT_ROOT+'/scalar/fetch/',
-            {fft:1,user:'',data_set: $DATA_SET,task:$TASK,data_threshold:resolution_lvl},
+            {fft:1,user:userid,data_set: $DATA_SET,task:$TASK,data_threshold:resolution_lvl},
             get_jobid,
             '' // error string should be empty string
         );
+
+	}
        
     }
 
@@ -214,7 +238,7 @@ $(document).ready(function() {
         if(!("error" in jsondata)) {
             draw_graph(jsondata);
             $('#resulting-plot-header').addClass('show');
-            //$('#nav').addClass('show');
+            $('#nav').addClass('show');
             $('#aggplot').addClass('show');
             $('#legend').addClass('show');
 
@@ -240,9 +264,6 @@ $(document).ready(function() {
     function user_query_handler() {
         max_zoom = QVis.DEFAULT_MAX_ZOOM;
         once = 0;
-        if(renderagg) {
-            renderagg.clear();
-        }
         current_zoom = 0;
         //$('#resolution-lvl-menu').val();
         resolution_lvl = $RESOLUTION_LVL;
@@ -258,6 +279,10 @@ $(document).ready(function() {
         //$('#loading_image').addClass('show');
         $("body").css("cursor", "progress");
         $('#vis-loading-modal').modal('show');
+        $('#button-up').addClass('disabled');
+        $('#button-down').addClass('disabled');
+        $('#button-left').addClass('disabled');
+        $('#button-right').addClass('disabled');
         
         fetch_first_tile(
             {data_set: $DATA_SET,task:$TASK,data_threshold:resolution_lvl},
@@ -279,6 +304,7 @@ $(document).ready(function() {
 	var xind = 0;
 	var yind = 1;
 	var colorind = 2;
+	var lsmaskind = 5;
 	var w = 700;
 	var pad = 10;
 	var h = 400;
@@ -294,7 +320,7 @@ var yscale = d3.scale.linear()
 
 var colorscale = d3.scale.quantize()
 	.range(colorbrewer["Spectral"][9])
-  .domain([-1.0,1.0]);
+  .domain([1.0,-1.0]);
 
 
         $('#canvas').attr('width', w)
@@ -310,15 +336,52 @@ var colorscale = d3.scale.quantize()
 	ctx.closePath();
     for(var drawindex = 0; drawindex < l; drawindex++) {
   	ctx.beginPath();
+	if((data[drawindex*al+lsmaskind] < 4) && 
+		(data[drawindex*al+lsmaskind] > 1)) {
         ctx.fillStyle = colorscale(data[drawindex*al+colorind]);
+	} else {
+        ctx.fillStyle = '#C0C0C0';
+	}
         ctx.fillRect(xscale(data[drawindex*al+xind]),
             yscale(data[drawindex*al+yind]),2,2);
 	ctx.closePath();
     }
+    drawLegend(25,200,colorscale);
 
     }
 
     function redraw_graph(jsondata){
+	draw_graph(jsondata);
     }
+
+    function drawLegend(l_w,l_h,color) {
+    $('#legend-content').empty();
+    var xpadding = 50;
+    var ypadding = 15;
+    var numcolors = 9; // number of colors in color scale
+    var temp = this;
+    var color_domain = color.domain();
+    var scale = d3.scale.linear().domain([color_domain[0],color_domain[1]]).range([ypadding,l_h+ypadding]);
+    var ticks = [color_domain[0]];
+    var step = 1.0 *(color_domain[1] - color_domain[0]) / numcolors; // divide domain by number of colors in the scale
+    for(var i = 1; i < numcolors; i++) { // loop over number of colors in scale - 1 to get ticks, I only use 9 by default
+        ticks.push(color_domain[0]+i*step);
+    }
+    ticks.push(color_domain[1]);
+    console.log(["ticks",ticks]);
+    var axis = d3.svg.axis().scale(scale).orient("left").tickValues(ticks).tickFormat(d3.format(".2f"));
+    var svg = d3.select('#legend-content').append("svg")
+        .attr("width",l_w+xpadding)
+        .attr("height",l_h+2*ypadding);
+    svg.selectAll("rect")
+        .data(ticks.slice(0,ticks.length-1))
+        .enter().append("rect")
+        .attr("x", xpadding)
+        .attr("y", function(d) { return scale(d); })
+        .attr("width",l_w)
+        .attr("height",Math.round(l_h/numcolors))
+        .attr("fill",function(d) { return color(d) });
+    svg.append("g").attr("class","legend-axis").attr("transform","translate("+xpadding+",0)").call(axis);
+}
     user_query_handler();
 });

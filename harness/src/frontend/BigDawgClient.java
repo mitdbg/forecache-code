@@ -36,7 +36,7 @@ public class BigDawgClient {
 		server = new Server(port);
 		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 		context.setContextPath("/");
-		context.setResourceBase(".");
+		context.setResourceBase("web_content");
 		System.out.println(context.getResourceBase());
 		server.setHandler(context);
 		context.addServlet(new ServletHolder(new BigDawgFetchServlet()), "/scalar/fetch/*");
