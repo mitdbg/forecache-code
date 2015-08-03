@@ -19,6 +19,11 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.opencv.core.Core;
 
+import configurations.BigDawgConfig;
+import configurations.Config;
+import configurations.ModisConfig;
+import configurations.VMConfig;
+
 import frontend.CacheLevel;
 
 import backend.disk.DiskNiceTileBuffer;
@@ -90,7 +95,15 @@ public class PreCompThread {
 	}
 
 	public static void main(String[] args) throws Exception {
+		// tell java where opencv is
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+		//set configurations
+		Config conf;
+		conf = new VMConfig();
+		// conf = new BigDawgConfig();
+		// conf = new ModisConfig();
+		conf.setConfig();
+		
 		int lmbuflen = deflmbuflen;
 		int port = defaultport;
 		

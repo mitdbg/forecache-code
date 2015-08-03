@@ -10,6 +10,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import configurations.BigDawgConfig;
+import configurations.Config;
+import configurations.ModisConfig;
+import configurations.VMConfig;
+
 import utils.DBInterface;
 import utils.ExplorationPhase;
 import utils.TraceMetadata;
@@ -289,6 +294,13 @@ public class CachingClient extends Client {
 	
 	
 	public static void main(String[] args) throws Exception {
+		//set configurations
+		Config conf;
+		conf = new VMConfig();
+		// conf = new BigDawgConfig();
+		// conf = new ModisConfig();
+		conf.setConfig();
+		
 		// setup the cache
 		int cacheSize = 0;
 

@@ -11,6 +11,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import configurations.BigDawgConfig;
+import configurations.Config;
+import configurations.ModisConfig;
+import configurations.VMConfig;
+
 import utils.DBInterface;
 
 import backend.disk.DiskNiceTileBuffer;
@@ -28,6 +33,13 @@ public class BuildTilesOffline {
 	public static String logfile = "tile_build_log.tsv";
 	
 	public static void main(String[] args) throws Exception {
+		//set configurations
+		Config conf;
+		conf = new VMConfig();
+		// conf = new BigDawgConfig();
+		// conf = new ModisConfig();
+		conf.setConfig();
+		
 		try {
 			log = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(logfile)));
 		} catch (IOException e) {

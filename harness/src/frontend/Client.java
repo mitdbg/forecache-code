@@ -6,6 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import configurations.BigDawgConfig;
+import configurations.Config;
+import configurations.ModisConfig;
+import configurations.VMConfig;
+
 import backend.util.Direction;
 import backend.util.DirectionClass;
 import backend.util.History;
@@ -776,6 +781,13 @@ public class Client {
 	}
 
 	public static void main(String[] args) throws Exception {
+		//set configurations
+		Config conf;
+		conf = new VMConfig();
+		// conf = new BigDawgConfig();
+		// conf = new ModisConfig();
+		conf.setConfig();
+		
 		int[] user_ids = null;
         String[] tasknames = null;
         String[][] models = null;

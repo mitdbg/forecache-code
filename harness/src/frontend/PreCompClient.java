@@ -11,6 +11,11 @@ import java.util.concurrent.Executors;
 
 import org.opencv.core.Core;
 
+import configurations.BigDawgConfig;
+import configurations.Config;
+import configurations.ModisConfig;
+import configurations.VMConfig;
+
 import backend.BuildSignaturesOffline;
 import backend.PreCompThread;
 import backend.PredictionManager;
@@ -115,6 +120,7 @@ public class PreCompClient {
 	public static void doMultiLevelValidation(List<Integer> testusers,
 			String taskname) throws Exception {
 		List<Integer> users = DBInterface.getUsers();
+		System.out.println("total users: "+users.size());
 		List<Integer> finalusers = new ArrayList<Integer>();
 		
 		for(int u = 0; u < users.size(); u++) {
@@ -816,6 +822,13 @@ public class PreCompClient {
 	}
 	
 	public static void main(String[] args) throws Exception {
+		//set configurations
+		Config conf;
+		conf = new VMConfig();
+		// conf = new BigDawgConfig();
+		// conf = new ModisConfig();
+		conf.setConfig();
+		
 		if(args.length < 1) throw new Exception("No parameters passed!"); // nothing to do!
 		if(args.length != 8) throw new Exception("Only "+args.length+" parameters passed! Need 8.");
 		

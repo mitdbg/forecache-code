@@ -16,6 +16,11 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
+import configurations.BigDawgConfig;
+import configurations.Config;
+import configurations.ModisConfig;
+import configurations.VMConfig;
+
 import backend.disk.NiceTilePacker;
 import backend.util.NiceTile;
 
@@ -31,6 +36,13 @@ public class BigDawgClient {
 	public static int backend_port = 8080;
 
 	public static void main(String[] args) throws Exception {
+		//set configurations
+		Config conf;
+		conf = new VMConfig();
+		// conf = new BigDawgConfig();
+		// conf = new ModisConfig();
+		conf.setConfig();
+		
 		int port = Integer.parseInt(args[0]);
 		backend_port = Integer.parseInt(args[1]);
 		server = new Server(port);
