@@ -3,7 +3,14 @@ package configurations;
 import utils.DBInterface;
 
 public class ModisConfig extends Config {
-
+	public ModisConfig() {
+		super(DBConnector.SCIDB);
+	}
+	
+	public ModisConfig(DBConnector db) {
+		super(db);
+	}
+	
 	public void setConfig() {
 		DBInterface.nice_tile_cache_dir = "/home/leilani/nice_tile_cache";
 		//DBInterface.nice_tile_cache_dir = "/home/leilani/vertica_nice_tile_cache";

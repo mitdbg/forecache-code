@@ -21,6 +21,7 @@ import org.opencv.core.Core;
 
 import configurations.BigDawgConfig;
 import configurations.Config;
+import configurations.DBConnector;
 import configurations.ModisConfig;
 import configurations.VMConfig;
 
@@ -66,6 +67,7 @@ public class PreCompThread {
 	public static int histmax = 10;
 	public static int deflmbuflen = 0; // default is don't use lru cache
 	public static int neighborhood = 1; // default neighborhood from which to pick candidates
+	public static Config conf;
 
 
 	public static void setupServer(int port) throws Exception {
@@ -98,7 +100,6 @@ public class PreCompThread {
 		// tell java where opencv is
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		//set configurations
-		Config conf;
 		conf = new VMConfig();
 		// conf = new BigDawgConfig();
 		// conf = new ModisConfig();
@@ -137,9 +138,18 @@ public class PreCompThread {
 		
 		// initialize pre-comp cache manager
 		pcManager = new PredictionManager();
-		PreCompNiceTileBuffer pcbuf = new PreCompNiceTileBuffer(scidbapi);
-		PreCompNiceTileLruBuffer pclrubuf = new PreCompNiceTileLruBuffer(scidbapi,
+		
+		PreCompNiceTileBuffer pcbuf;
+		PreCompNiceTileLruBuffer pclrubuf;
+		if(conf.getDB() == DBConnector.BIGDAWG) {
+			pcbuf = new PreCompNiceTileBuffer(scidbapi);
+			pclrubuf = new PreCompNiceTileLruBuffer(scidbapi,
 				lmbuflen,pcbuf.isBuilt);
+		} else {
+			pcbuf = new PreCompNiceTileBuffer(scidbapi);
+			pclrubuf = new PreCompNiceTileLruBuffer(scidbapi,
+				lmbuflen,pcbuf.isBuilt);
+		}
 		initializeCacheManagers(pcManager,pcbuf,pclrubuf);
 		
 		//logfile for timing results

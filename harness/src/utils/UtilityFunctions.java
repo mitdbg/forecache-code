@@ -16,6 +16,11 @@ import backend.util.ParamsMap;
 import backend.util.TileKey;
 
 public class UtilityFunctions {
+	//if it's just an array name, the query shouldn't contain any parentheses
+	public static boolean isScidbArray(String query) {
+		return query.contains("(");
+	}
+	
 	public static CacheLevel getCacheLevel(String level) {
 		for(CacheLevel candidate : CacheLevel.values()) {
 			if(level.equals(candidate.toString())) return candidate;

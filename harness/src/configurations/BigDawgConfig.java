@@ -4,6 +4,16 @@ import utils.DBInterface;
 
 public class BigDawgConfig extends Config {
 
+	public BigDawgConfig() {
+		super(DBConnector.BIGDAWG);
+	}
+	
+	/*
+	public BigDawgConfig(DBConnector db) {
+		super(db);
+	}
+	*/
+	
 	public void setConfig() {
 		DBInterface.nice_tile_cache_dir = "/home/gridsan/lbattle/forecache-code/data/nice_tile_cache";
 		//DBInterface.nice_tile_cache_dir = "/home/gridsan/lbattle/forecache-code/data/vertica_nice_tile_cache";

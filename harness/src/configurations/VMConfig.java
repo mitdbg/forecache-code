@@ -4,6 +4,14 @@ import utils.DBInterface;
 
 public class VMConfig extends Config {
 
+	public VMConfig() {
+		super();
+	}
+	
+	public VMConfig(DBConnector db) {
+		super(db);
+	}
+	
 	public void setConfig() {
 		DBInterface.nice_tile_cache_dir = "/home/leibatt/projects/user_study/scalar_backend/nice_tile_cache";
 		//DBInterface.nice_tile_cache_dir = "/home/leibatt/projects/user_study/scalar_backend/vertica_nice_tile_cache";
