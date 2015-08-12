@@ -3,6 +3,8 @@ package frontend;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.UUID;
 
 import javax.servlet.RequestDispatcher;
@@ -71,6 +73,22 @@ public class BigDawgMimicClient {
 			users = new UserMap();
 		}
 		
+		// used to enable cross-domain AJAX calls
+		private void fixHeaders(HttpServletResponse response) {
+		    response.setHeader("Access-Control-Allow-Origin", "*");
+		    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, POST, TRACE, OPTIONS");
+		    response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+		    response.setHeader("Access-Control-Max-Age", "86400");
+		    
+		  //Tell the browser what requests we allow.
+		    response.setHeader("Allow", "GET, HEAD, POST, TRACE, OPTIONS");
+		    //System.out.println("fixing headers to allow CORS");
+		}
+		
+		protected void doOptions(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		    fixHeaders(response);
+		}
+		
 		/*
 
 		protected synchronized void fetchFirstTile(String user, HttpServletRequest request,
@@ -96,7 +114,7 @@ public class BigDawgMimicClient {
 			String recordName = request.getParameter("recordName");
 
 			String jobid = wq.queueNewJob(user, k, aggWindow, recordName, tile_id);
-			response.getWriter().println("\""+jobid+"\"");
+			response.getWriter().print(jobid);
 		}
 
 		protected synchronized void getJobResult(String user, HttpServletRequest request,
@@ -105,15 +123,15 @@ public class BigDawgMimicClient {
 			String data = wq.getJobResults(jobid);
 			if(data == null) {
 				if(wq.checkJobFail(jobid)) { // job failed
-					response.getWriter().println("\""+fail+"\"");
+					response.getWriter().print(fail);
 				} else { // not ready yet
-					response.getWriter().println("\""+wait+"\"");
+					response.getWriter().print(wait);
 				}
 			} else { // results ready
 				//response.getOutputStream().write(data,0,data.length);
 				//NiceTile t = NiceTilePacker.unpackNiceTile(data);
 				//String toSend = NiceTilePacker.makeJson(t);
-				response.getWriter().println(data);
+				response.getWriter().print(data);
 			}
 		}
 
@@ -121,19 +139,20 @@ public class BigDawgMimicClient {
 			// generate a unique user id and send it back to the browser
 			return UUID.randomUUID().toString();
 		}
-
-		protected void doGet(HttpServletRequest request,
+		
+		protected void doPost(HttpServletRequest request,
 				HttpServletResponse response) throws ServletException, IOException {
 
 			response.setContentType("text/html");
 			response.setStatus(HttpServletResponse.SC_OK);
-
+			fixHeaders(response);
 			String user = request.getParameter("user");
 
 			String getUser = request.getParameter("guid");
 			if(getUser != null) {
+				System.out.println("received guid request");
 				user = getNewUserId();
-				response.getWriter().println("\""+user+"\"");
+				response.getWriter().print(user);
 			}
 			users.put(user);
 
@@ -146,17 +165,19 @@ public class BigDawgMimicClient {
 
 			String ft = request.getParameter("ft");
 			if(ft != null) {
+				System.out.println("received ft request");
 				fetchTile(user,request,response);
 			}
 
 			String getResult = request.getParameter("gr");
 			if(getResult != null) {
+				System.out.println("received gr request.");
 				getJobResult(user,request,response);
 			}
 
 			String reset = request.getParameter("reset");
 			if(reset != null) {
-				response.getWriter().println();
+				response.getWriter().print("");
 			}
 
 			users.prune();

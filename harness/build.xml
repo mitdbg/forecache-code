@@ -32,6 +32,9 @@
         <pathelement location="lib/gson-2.3.jar"/>
         <pathelement location="lib/guava-16.0.1.jar"/>
         <pathelement location="lib/scidb4j.jar"/>
+        <pathelement location="lib/jackson-annotations-2.6.1.jar"/>
+        <pathelement location="lib/jackson-core-2.6.1.jar"/>
+        <pathelement location="lib/jackson-databind-2.6.1.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
@@ -173,6 +176,24 @@
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>
+
+    <target name="BigDawgMimicClient">
+        <java classname="frontend.BigDawgMimicClient" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="10080 10015"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+
+    <target name="MimicPreCompThread">
+        <java classname="backend.MimicPreCompThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="10015 0 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
     <target name="ml-lru0n1">
         <java classname="backend.PreCompThread" failonerror="true" fork="yes">
             <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>

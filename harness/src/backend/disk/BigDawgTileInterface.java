@@ -11,8 +11,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -36,30 +38,64 @@ public class BigDawgTileInterface {
 	public DiskNiceTileBuffer simulation_buffer;
 	public static String url = "localhost";
 	public static int port = 8080;
+	private Map<String,Boolean> isBuilt;
+	
+	public BigDawgTileInterface() {
+		this.isBuilt = new HashMap<String,Boolean>();
+	}
+	
+	public String buildArrayName(String recordName, int aggWindow) {
+		return "FC_wf"+recordName+"_window"+aggWindow;
+	}
+	
+	// shortcut function to check if a zoom level is available,
+	// and to build it if it's not built yet
+	public synchronized boolean checkAndBuild(String recordName, int aggWindow) throws Exception {
+		if(!checkForArray(recordName, aggWindow)) return buildZoomLevel(recordName,aggWindow);
+		return true;
+	}
 	
 	// does the array exist in SciDB?
-	public boolean checkForArray(String recordName,int aggWindow) throws Exception {
-		String query = "ARRAY(show(FC_wf"+recordName+"_window"+aggWindow+"))";
-		BigDawgResponseObject obj  = parseBDJsonObject(sendRequest(query));
-		return obj.tuples.length > 0;
+	public synchronized boolean checkForArray(String recordName,int aggWindow) throws Exception {
+		String arrayName = buildArrayName(recordName,aggWindow);
+		if(this.isBuilt.containsKey(arrayName)) {
+			return this.isBuilt.get(arrayName);
+		}
+		String query = "ARRAY(show("+arrayName+"))";
+		String result = sendRequest(query);
+		BigDawgResponseObject obj = null;
+		try {
+			obj  = parseBDJsonObject(result);
+			this.isBuilt.put(arrayName, obj.tuples.length > 0);
+		} catch(Exception e) {
+			System.out.println("could not parse JSON object");
+			e.printStackTrace();
+		}
+		return (obj != null) && (obj.tuples.length > 0);
 	}
 	
 	// did we successfully build the zoom level?
-	public boolean buildZoomLevel(String recordName, int aggWindow) throws Exception {
-		String query = "ARRAY(subarray(store(regrid(apply(filter(slice(waveform_signal_table,RecordName,"+recordName+"),not(is_nan(signal))),msec,msec),"+aggWindow+",avg(signal) as avg_signal),FC_wf"+recordName+"_window"+aggWindow+"),0,0))";
+	public synchronized boolean buildZoomLevel(String recordName, int aggWindow) throws Exception {
+		String arrayName = buildArrayName(recordName,aggWindow);
+		String query = "ARRAY(subarray(store(regrid(apply(filter(slice(waveform_signal_table,RecordName,"+recordName+"),not(is_nan(signal))),msec,msec),"+aggWindow+",avg(signal) as avg_signal),"+arrayName+"),0,1))";
 		BigDawgResponseObject obj  = parseBDJsonObject(sendRequest(query));
 		return obj.tuples.length > 0;
 	}
 	
-	public String getRawTile(int tileID, int k, String recordName, int aggWindow) throws Exception {
-		int low = tileID*k;
-		int high = tileID*k+k-1;
-		String query = "ARRAY(subarray(apply(FC_wf"+recordName+"_window"+aggWindow+",msec2,msec), "+low+","+high+"))";
-		return sendRequest(query);
+	// get the raw big dawg output for this particular tile
+	public synchronized String getRawTile(int tileID, int k, String recordName, int aggWindow) throws Exception {
+		if(checkAndBuild(recordName,aggWindow)) {
+			int low = tileID*k;
+			int high = tileID*k+k-1;
+			String query = "ARRAY(subarray(apply(FC_wf"+recordName+"_window"+aggWindow+",msec2,msec), "+low+","+high+"))";
+			return sendRequest(query);
+		} else {
+			throw new Exception("Could not build zoom level!");
+		}
 	}
 	
 	// should be able to successfully send queries to BigDAWG
-	public String sendRequest(String query) throws Exception {
+	public synchronized String sendRequest(String query) throws Exception {
 		String urlstring = "http://"+url+":"+port+"/bigdawg/query";
 		String urlparams = "{\"query\":\""+query+"\"}";
 		byte[] postData = urlparams.getBytes(StandardCharsets.UTF_8);
@@ -137,7 +173,7 @@ public class BigDawgTileInterface {
 	}
 	
 	/*
-	 * Need to be able to parse the data, so I can do calculations and make predictions!
+	 * Need to be able to parse the raw big dawg output, so I can do calculations and make predictions!
 	 */
 	public BigDawgResponseObject parseBDJsonObject(String jsonstring) {
 		BigDawgResponseObject obj = null;
@@ -160,7 +196,7 @@ public class BigDawgTileInterface {
 		return obj;
 	}
 	
-	// used for deserialization of the JSON data
+	// used for deserialization of the JSON data from big dawg
 	public static class BigDawgResponseObject {
 		public String message;
 		public Integer responseCode;
