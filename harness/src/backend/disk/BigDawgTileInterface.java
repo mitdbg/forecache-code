@@ -77,7 +77,7 @@ public class BigDawgTileInterface {
 	// did we successfully build the zoom level?
 	public synchronized boolean buildZoomLevel(String recordName, int aggWindow) throws Exception {
 		String arrayName = buildArrayName(recordName,aggWindow);
-		String query = "ARRAY(subarray(store(regrid(apply(filter(slice(waveform_signal_table,RecordName,"+recordName+"),not(is_nan(signal))),msec,msec),"+aggWindow+",avg(signal) as avg_signal),"+arrayName+"),0,1))";
+		String query = "ARRAY(subarray(store(regrid(apply(filter(slice(waveform_signal_table,RecordName,"+recordName+"),not(is_nan(signal))),msec,msec),"+aggWindow+",avg(signal) as avg_signal,min(msec) as msec),"+arrayName+"),0,1))";
 		BigDawgResponseObject obj  = parseBDJsonObject(sendRequest(query));
 		return obj.tuples.length > 0;
 	}
