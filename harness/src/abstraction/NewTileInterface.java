@@ -42,6 +42,8 @@ public abstract class NewTileInterface {
 	// assumes all data types are strings
 	public abstract boolean getRawTile(String query, ColumnBasedNiceTile tile);
 	
+	public abstract String getRawData(String query);
+	
 	public abstract List<String> getQueryDataTypes(String query);
 	
 	public abstract Class<?> getColumnTypeInJava(String typeName);

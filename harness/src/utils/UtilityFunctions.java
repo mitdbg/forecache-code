@@ -16,6 +16,19 @@ import backend.util.ParamsMap;
 import backend.util.TileKey;
 
 public class UtilityFunctions {
+	// takes a list of strings, and slaps the strings together to make one big string
+	public static String consolidateStrings(List<String> list) {
+		if(list.size() == 0) {
+			return null; // if list is empty, return null instead of empty string
+		}
+		StringBuilder sb = new StringBuilder();
+		sb.append(list.get(0));
+		for(int i = 1; i < list.size(); i++) {
+			sb.append(System.getProperty("line.separator")).append(list.get(i));
+		}
+		return sb.toString();
+	}
+	
 	//if it's just an array name, the query shouldn't contain any parentheses
 	public static boolean isScidbArray(String query) {
 		return query.contains("(");

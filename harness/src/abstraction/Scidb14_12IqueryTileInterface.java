@@ -7,17 +7,19 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import utils.UtilityFunctions;
+
 import backend.util.NiceTile;
 import backend.util.Params;
 
 import configurations.DBConnector;
 
-public class Scidb14_12IqueryTileInterface extends NewTileInterface {
+public class Scidb14_12IqueryTileInterface extends Scidb14_12TileInterface {
 	protected String scidbVersion = "14.12";
 	protected String outputFormat = "tsv+";
 			
 	public Scidb14_12IqueryTileInterface() {
-		super(DBConnector.SCIDB);
+		super();
 	}
 
 	@Override
@@ -61,169 +63,50 @@ public class Scidb14_12IqueryTileInterface extends NewTileInterface {
 	public boolean getRawTile(String query, ColumnBasedNiceTile tile) {
 		return getRawTileHelper(query,tile,true);
 	}
+	
+	// just gets the data as a gigantic string.
+	// probably won't be used with scidb connectors
+	public String getRawData(String query) {
+		List<String> rawData = new  ArrayList<String>();
+		String[] cmd = buildCmd(query);
+		// print command
+		//UtilityFunctions.printStringArray(cmd);
+		//System.out.println();
 
-	@Override
-	public List<String> getQueryDataTypes(String query) {
-		String showQuery = generateShowQuery(query);
-		ColumnBasedNiceTile t = new ColumnBasedNiceTile();
-		getRawTile(showQuery,t);
-		int schema_index = t.getIndex("schema");
-		String schema = (String) t.get(schema_index, 0);
-		List<String> dataTypes = parseSchemaForDataTypes(schema);
-		return dataTypes;
+		Process proc;
+		try {
+			proc = Runtime.getRuntime().exec(cmd);
+			/*
+		// only uncomment this if things aren't working
+		BufferedReader ebr = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+		for (String line; (line = ebr.readLine()) != null;) {
+			System.out.println(line);
+		}
+			 */
+			//long start = System.currentTimeMillis();
+			BufferedReader br = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+			for (String line; (line = br.readLine()) != null;) {
+				rawData.add(line);
+			}
+			return UtilityFunctions.consolidateStrings(rawData);
+		} catch (IOException e) {
+			System.out.println("Error occurred while reading query output.");
+			e.printStackTrace();
+		}
+		/*
+		for(int i = 0; i < tile.attributes.size(); i++) {
+			System.out.print(tile.attributes.get(i)+"\t");
+			System.out.println(tile.data.get(i).size());
+		}
+		 */
+		//long end = System.currentTimeMillis();
+		//System.out.println("time to build: "+(end - start) +"ms");
+		return null;
 	}
-
-	@Override
-	public Class<?> getColumnTypeInJava(String typeName) {
-		if(typeName.equals("bool")) return Boolean.class;
-		else if (typeName.equals("string")) return String.class;
-		else if(typeName.equals("char")) return Character.class;
-		//else if(typeName.equals("datetime")) return String.class;
-		else if (typeName.equals("double")) return Double.class;
-		else if (typeName.equals("float")) return Float.class;
-		else if (typeName.substring(0,3).equals("int")) return Integer.class;
-		else if (typeName.substring(0,4).equals("uint")) return Long.class;
-		else return String.class;
-	}
-
 
 	/************* For Precomputation ***************/
 
-	@Override
-	public boolean buildZoomLevel(View v, TileStructure ts, int zoomLevel) {
-		String query = generateRetrieveZoomLevelQuery(v,ts,zoomLevel);
-		String storeQuery = generateStoreQuery(getZoomLevelName(v,ts,zoomLevel),query);
-		return executeQuery(storeQuery);
-	}
-
-	@Override
-	public boolean buildTile(View v, TileStructure ts, ColumnBasedNiceTile tile, NewTileKey id) {
-		String query = generateRetrieveTileQuery(v,ts,id);
-		String storeQuery = generateStoreQuery(getTileName(v,ts,id),query);
-		return getTile(storeQuery,tile);
-	}
-
-	@Override
-	public boolean retrieveStoredTile(View v, TileStructure ts, ColumnBasedNiceTile tile, NewTileKey id) {
-		String query = generateRetrieveTileQuery(v,ts,id);
-		return getTile(query,tile);
-	}
-
-
 	/************* Helper Functions ***************/
-
-
-	protected String generateRetrieveTileQuery(View v, TileStructure ts,NewTileKey id) {
-		String query = getZoomLevelName(v,ts,id.zoom);
-		int[] highs = new int[ts.tileWidths.length];
-		int[] lows = new int[ts.tileWidths.length];
-		for(int i = 0; i < ts.tileWidths.length; i++) {
-			lows[i] = ts.tileWidths[i]*id.dimIndices[i];
-			highs[i] = lows[i] + ts.tileWidths[i] - 1;
-		}
-		return generateSubarrayQuery(query,lows,highs);
-	}
-
-	protected String generateRetrieveZoomLevelQuery(View v, TileStructure ts, int zoom) {
-		String query = v.getQuery();
-		int[] aggWindow = ts.aggregationWindows[zoom];
-		Iterator<String> summaryFunctions = v.getSummaryFunctions();
-		return generateRegridQuery(query,aggWindow,summaryFunctions);
-	}
-
-	protected String generateSubarrayQuery(String query, int[] lows, int[] highs) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("subarray(").append(query);
-		for(int i = 0; i < lows.length; i++) {
-			sb.append(",").append(lows[i]);
-		}
-		for(int i = 0; i < highs.length; i++) {
-			sb.append(",").append(highs[i]);
-		}
-		sb.append(")");
-		return sb.toString();
-	}
-
-	// execute SciDB regrid statement given the aggregatino windows and summary functions
-	protected String generateRegridQuery(String query, int[] aggWindow, Iterator<String> summaryFunctions) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("regrid(").append(query);
-		for(int i = 0; i < aggWindow.length; i++) {
-			sb.append(",").append(aggWindow[i]);
-		}
-		while(summaryFunctions.hasNext()) {
-			sb.append(",").append(summaryFunctions.next());
-		}
-		sb.append(")");
-		return sb.toString();
-	}
-
-	// get the SciDB schema for this query
-	protected String generateShowQuery(String query) {
-		String escapedQuery = query.replace("'", "\\'");
-		return "show('"+escapedQuery+"','afl')";
-	}
-
-	//store the result of this query at the given store name
-	protected String generateStoreQuery(String storeName, String query) {
-		return "store("+query+","+storeName+")";
-	}
-
-	// given an array name, performs a scan on the array
-	protected String generateScanQueryForArray(String arrayName) {
-		return "scan("+arrayName+")";
-	}
-
-	// get attribute description for the given array name:
-	// <name,type_id,nullable>[No]
-	//No = sequence id
-	protected String generateAttributesQueryForArray(String arrayName) {
-		return "attributes("+arrayName+")";
-	}
-
-	// get dimension descriptions for the given array name:
-	// <name,start,length,chunk_interval,chunk_overlap,low,high,type>[No]
-	//No = sequence id
-	protected String generateDimensionsQueryForArray(String arrayName) {
-		return "dimensions("+arrayName+")";
-	}
-	
-	// given a scidb dimensions definition, gets the data types
-	// TODO: make this function find datatypes, instead of assuming all dims are int64
-	public List<String> parseSchemaDimensionsForDataTypes(String dimensions) {
-		List<String> dataTypes = new ArrayList<String>();
-		int totalDimensions = dimensions.split("=").length - 1;
-		for(int i = 0; i < totalDimensions; i++) {
-			dataTypes.add("int64");
-		}
-		return dataTypes;
-	}
-	
-	// given a scidb attributes definition, gets the data types
-	public List<String> parseSchemaAttributesForDataTypes(String attributes) {
-		List<String> dataTypes = new ArrayList<String>();
-		String[] toParse = attributes.split(",");
-		for(int i = 0; i < toParse.length; i++) {
-			String sub = toParse[i];
-			String dataType = sub.split(":")[1].trim().split(" ")[0];
-			dataTypes.add(dataType);
-		}
-		return dataTypes;
-	}
-	
-	// parses a scidb schema for both the dimension and attribute data types
-	public List<String> parseSchemaForDataTypes(String schema) {
-		List<String> dataTypes = new ArrayList<String>();
-		int attributesStart = schema.indexOf("<");
-		int attributesEnd = schema.indexOf(">");
-		int dimsStart = schema.indexOf("[");
-		int dimsEnd = schema.indexOf("]");
-		String attributes = schema.substring(attributesStart+1,attributesEnd);
-		String dimensions = schema.substring(dimsStart+1,dimsEnd);
-		dataTypes.addAll(parseSchemaDimensionsForDataTypes(dimensions));
-		dataTypes.addAll(parseSchemaAttributesForDataTypes(attributes));
-		return dataTypes;
-	}
 	
 	// executes tile and retrieves output as a tile
 	// assumes data types have been specified in tile
@@ -348,11 +231,14 @@ public class Scidb14_12IqueryTileInterface extends NewTileInterface {
 			System.out.println(c);
 		}
 		System.out.println();
-		System.out.println(tile.get(0, 0));
-		System.out.println(tile.get(1, 0));
-		System.out.println(tile.get(2, 0));
-		System.out.println(tile.get(3, 0));
-		System.out.println(tile.get(4, 0));
+		
+		// prints the entire dataset
+		for(int j = 0; j < tile.getSize(); j++) {
+			for(int i = 0; i < tile.attributes.size(); i++) {
+				System.out.println(tile.get(i, 0));
+			}
+			System.out.println();
+		}
 	}
 	
 	

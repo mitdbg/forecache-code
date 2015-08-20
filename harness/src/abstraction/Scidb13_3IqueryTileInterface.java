@@ -53,10 +53,13 @@ public class Scidb13_3IqueryTileInterface extends Scidb14_12IqueryTileInterface 
 			System.out.println(c);
 		}
 		System.out.println();
-		System.out.println(tile.get(0, 0));
-		System.out.println(tile.get(1, 0));
-		System.out.println(tile.get(2, 0));
-		System.out.println(tile.get(3, 0));
-		System.out.println(tile.get(4, 0));
+		
+		// prints the entire dataset
+		for(int j = 0; j < tile.getSize(); j++) {
+			for(int i = 0; i < tile.attributes.size(); i++) {
+				System.out.println(tile.get(i, 0));
+			}
+			System.out.println();
+		}
 	}
 }
