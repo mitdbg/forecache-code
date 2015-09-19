@@ -1,6 +1,14 @@
 .classpath
 .project
 gt_updated.csv
+
+new_harness/lib/libsvm-master/
+new_harness/bin
+new_harness/images
+new_harness/forecache_metadata
+new_harness/.settings
+new_harness/sigMap_k100.ser
+
 harness/lib/libsvm-master/
 harness/bin
 harness/images
