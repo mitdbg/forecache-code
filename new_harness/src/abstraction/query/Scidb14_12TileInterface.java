@@ -1,8 +1,10 @@
 package abstraction.query;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import abstraction.util.ColumnBasedNiceTile;
 import abstraction.util.NewTileKey;
@@ -68,6 +70,17 @@ public class Scidb14_12TileInterface extends NewTileInterface {
 		String schema = (String) t.get(schema_index, 0);
 		List<String> dataTypes = parseSchemaForDataTypes(schema);
 		return dataTypes;
+	}
+	
+	@Override
+	public Map<String,List<Integer>> getDimensionBoundaries(String query) {
+		String showQuery = generateShowQuery(query);
+		ColumnBasedNiceTile t = new ColumnBasedNiceTile();
+		getRawTile(showQuery,t);
+		int schema_index = t.getIndex("schema");
+		String schema = (String) t.get(schema_index, 0);
+		Map<String,List<Integer>> boundaryMap = parseSchemaForDimensionBoundaries(schema);
+		return boundaryMap;
 	}
 	
 	@Override
@@ -228,6 +241,30 @@ public class Scidb14_12TileInterface extends NewTileInterface {
 	
 	// given a scidb dimensions definition, gets the data types
 	// TODO: make this function find datatypes, instead of assuming all dims are int64
+	public Map<String,List<Integer>> parseSchemaDimensionsForBoundaries(String dimensions) {
+		Map<String,List<Integer>> boundaryMap = new HashMap<String,List<Integer>>();
+		int totalDimensions = dimensions.split("=").length - 1;
+		String[] tokens = dimensions.split(",");
+		int base = 0;
+		for(int i = 0; i < totalDimensions; i++,base+=3) {
+			String first = tokens[base];
+			String[] name_tokens = first.split("=");
+			String name = name_tokens[0];
+			String[] boundary_tokens = name_tokens[1].split(":");
+			int low = Integer.parseInt(boundary_tokens[0]);
+			int high = Integer.parseInt(boundary_tokens[1]);
+			//int chunk_width = Integer.parseInt(tokens[base+1]);
+			//int chunk_overlap = Integer.parseInt(tokens[base+2]);
+			List<Integer> temp = new ArrayList<Integer>();
+			temp.add(low);
+			temp.add(high);
+			boundaryMap.put(name,temp);
+		}
+		return boundaryMap;
+	}
+	
+	// given a scidb dimensions definition, gets the data types
+	// TODO: make this function find datatypes, instead of assuming all dims are int64
 	public List<String> parseSchemaDimensionsForDataTypes(String dimensions) {
 		List<String> dataTypes = new ArrayList<String>();
 		int totalDimensions = dimensions.split("=").length - 1;
@@ -247,6 +284,16 @@ public class Scidb14_12TileInterface extends NewTileInterface {
 			dataTypes.add(dataType);
 		}
 		return dataTypes;
+	}
+	
+	// parses a scidb schema for both the dimension and attribute data types
+	public Map<String,List<Integer>> parseSchemaForDimensionBoundaries(String schema) {
+		Map<String,List<Integer>> boundaryMap = null;
+		int dimsStart = schema.indexOf("[");
+		int dimsEnd = schema.indexOf("]");
+		String dimensions = schema.substring(dimsStart+1,dimsEnd);
+		boundaryMap = parseSchemaDimensionsForBoundaries(dimensions);
+		return boundaryMap;
 	}
 	
 	// parses a scidb schema for both the dimension and attribute data types

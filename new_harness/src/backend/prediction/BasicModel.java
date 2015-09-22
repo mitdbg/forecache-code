@@ -4,31 +4,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import utils.DBInterface;
-import utils.UserRequest;
-import utils.UtilityFunctions;
-import backend.disk.DiskNiceTileBuffer;
-import backend.disk.OldScidbTileInterface;
-import backend.disk.TileInterface;
-import backend.memory.MemoryNiceTileBuffer;
-import backend.util.Direction;
-import backend.util.Model;
-import backend.util.NiceTile;
-import backend.util.NiceTileBuffer;
-import backend.util.ParamsMap;
-import backend.util.TileKey;
+import abstraction.util.Model;
+import abstraction.util.NewNewTileKey;
+import abstraction.util.NewTileKey;
 
 public class BasicModel {
 	protected int len;
 	protected TileHistoryQueue history = null;
-	protected ParamsMap paramsMap; // for checking if predictions are actual tiles
-	protected NiceTileBuffer membuf;
-	protected NiceTileBuffer diskbuf;
-	protected TileInterface scidbapi;
 	protected boolean useDistanceCorrection = true;
 	public static final double defaultprob = .00000000001; // default assigned confidence value
-	public static final int defaultlen = 4; // default history length
-	public List<TileKey> roi = null;
+	public List<NewNewTileKey> roi = null;
 	protected Model m = null;
 	
 
@@ -46,22 +31,22 @@ public class BasicModel {
 		return this.len;
 	}
 	
-	public void computeSignaturesInParallel(List<TileKey> ids) {}
+	public void computeSignaturesInParallel(List<NewTileKey> ids) {}
 	
-	public List<TileKey> orderCandidates(List<TileKey> candidates) {
+	public List<NewTileKey> orderCandidates(List<NewTileKey> candidates) {
 		//long a = System.currentTimeMillis();
 		updateRoi();
 		//long b = System.currentTimeMillis();
-		List<TileKey> htrace = history.getHistoryTrace(len);
+		List<NewTileKey> htrace = history.getHistoryTrace(len);
 		if(htrace.size() == 0) {
-			return new ArrayList<TileKey>();
+			return new ArrayList<NewTileKey>();
 		}
-		TileKey prev = htrace.get(htrace.size() - 1);
-		List<TileKey> myresult = new ArrayList<TileKey>();
+		NewTileKey prev = htrace.get(htrace.size() - 1);
+		List<NewTileKey> myresult = new ArrayList<NewTileKey>();
 		List<TilePrediction> order = new ArrayList<TilePrediction>();
 		computeSignaturesInParallel(candidates);
 		// for each direction, compute confidence
-		for(TileKey key : candidates) {
+		for(NewTileKey key : candidates) {
 			TilePrediction tp = new TilePrediction(this.m);
 			tp.id = key;
 			tp.confidence = computeConfidence(key, htrace);
@@ -91,28 +76,28 @@ public class BasicModel {
 	}
 	
 	//TODO: override these to do ROI predictions
-	public Double computeConfidence(TileKey id, List<TileKey> htrace) {
+	public Double computeConfidence(NewTileKey id, List<NewTileKey> htrace) {
 		return defaultprob;
 	}
 	
-	public Double computeDistance(TileKey id, List<TileKey> htrace) {
+	public Double computeDistance(NewTileKey id, List<NewTileKey> htrace) {
 		return null;
 	}
 	
 	// gets ordering of directions by confidence and returns topk viable options
-	public List<TileKey> predictTiles(int topk) {
-		List<TileKey> myresult = new ArrayList<TileKey>();
+	public List<NewTileKey> predictTiles(int topk) {
+		List<NewTileKey> myresult = new ArrayList<NewTileKey>();
 
 		// do we have access to the last request?
-		List<TileKey> htrace = history.getHistoryTrace(len);
+		List<NewTileKey> htrace = history.getHistoryTrace(len);
 		if(htrace.size() == 0) {
 			return myresult;
 		}
 		List<DirectionPrediction> order = predictOrder(htrace);
-		TileKey last = htrace.get(htrace.size()-1);
+		NewTileKey last = htrace.get(htrace.size()-1);
 		for(int i = 0; i < order.size(); i++) {
 			DirectionPrediction dp = order.get(i);
-			TileKey val = this.DirectionToTile(last, dp.d);
+			NewTileKey val = this.DirectionToTile(last, dp.d);
 			if(val != null) {
 				myresult.add(val);
 				//System.out.println(val);
@@ -129,11 +114,11 @@ public class BasicModel {
 		return myresult;
 	}
 	
-	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
+	public List<DirectionPrediction> predictOrder(List<NewTileKey> htrace) {
 		return predictOrder(htrace,false);
 	}
 	
-	public List<DirectionPrediction> predictOrder(List<TileKey> htrace, boolean reverse) {
+	public List<DirectionPrediction> predictOrder(List<NewTileKey> htrace, boolean reverse) {
 		List<DirectionPrediction> order = new ArrayList<DirectionPrediction>();
 		//long start = System.currentTimeMillis();
 		// for each direction, compute confidence
@@ -158,11 +143,11 @@ public class BasicModel {
 		return order;
 	}
 	
-	public double computeConfidence(Direction d, List<TileKey> htrace) {
+	public double computeConfidence(Direction d, List<NewTileKey> htrace) {
 		return defaultprob;
 	}
 	
-	public NiceTile getTile(TileKey key) {
+	public NiceTile getTile(NewTileKey key) {
 		NiceTile t = membuf.getTile(key);
 		if(t == null) {
 			t = diskbuf.getTile(key);
@@ -173,7 +158,7 @@ public class BasicModel {
 		return t;
 	}
 	
-	public TileKey DirectionToTile(TileKey prev, Direction d) {
+	public NewTileKey DirectionToTile(NewTileKey prev, Direction d) {
 		int[] tile_id = prev.id.clone();
 		int x = tile_id[0];
 		int y = tile_id[1];
@@ -221,7 +206,7 @@ public class BasicModel {
 			tile_id[1] =y+1;
 			break;
 		}
-		TileKey key = new TileKey(tile_id,zoom);
+		NewTileKey key = new NewTileKey(tile_id,zoom);
 		//System.out.println("last access: ("+prev.tile_id+", "+prev.zoom+")");
 		if(!this.paramsMap.allKeys.containsKey(key)) {
 			return null;
@@ -249,15 +234,15 @@ public class BasicModel {
 		return dirstring;
 	}
 	
-	public String buildDirectionStringFromKey(List<TileKey> trace) {
+	public String buildDirectionStringFromKey(List<NewTileKey> trace) {
 		if(trace.size() < 2) {
 			return "";
 		}
 		String dirstring = "";
 		int i = 1;
-		TileKey n = trace.get(0);
+		NewTileKey n = trace.get(0);
 		while(i < trace.size()) {
-			TileKey p = n;
+			NewTileKey p = n;
 			n = trace.get(i);
 			Direction d = UtilityFunctions.getDirection(p,n);
 			if(d != null) {
@@ -268,20 +253,20 @@ public class BasicModel {
 		return dirstring;
 	}
 	
-	public static TileKey getKeyFromRequest(UserRequest request) {
+	public static NewTileKey getKeyFromRequest(UserRequest request) {
 		int[] id = UtilityFunctions.parseTileIdInteger(request.tile_id);
-		return new TileKey(id,request.zoom);
+		return new NewTileKey(id,request.zoom);
 	}
 	
-	public List<TileKey> getCandidates(double maxDist) {
-		TileKey last = this.history.getLast();
-		if(last == null) return new ArrayList<TileKey>();
+	public List<NewTileKey> getCandidates(double maxDist) {
+		NewTileKey last = this.history.getLast();
+		if(last == null) return new ArrayList<NewTileKey>();
 		return getCandidates(last,maxDist);
 	}
 	
-	public List<TileKey> getCandidates(TileKey current, double maxDist) {
-		List<TileKey> candidates = new ArrayList<TileKey>();
-		for(TileKey pcand : this.paramsMap.allKeysSet) {
+	public List<NewTileKey> getCandidates(NewTileKey current, double maxDist) {
+		List<NewTileKey> candidates = new ArrayList<NewTileKey>();
+		for(NewTileKey pcand : this.paramsMap.allKeysSet) {
 			double dist = UtilityFunctions.manhattanDist(pcand, current);
 			if((dist <= maxDist) && (dist > 0)) { // don't include the tile itself
 				candidates.add(pcand);
@@ -289,7 +274,7 @@ public class BasicModel {
 		}
 		
 		// include everything that is already in the cache
-		//candidates.addAll(this.membuf.getAllTileKeys());
+		//candidates.addAll(this.membuf.getAllNewTileKeys());
 
 		return candidates;
 	}

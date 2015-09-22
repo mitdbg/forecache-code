@@ -1,6 +1,7 @@
 package abstraction.query;
 
 import java.util.List;
+import java.util.Map;
 
 import abstraction.util.ColumnBasedNiceTile;
 import abstraction.util.NewTileKey;
@@ -52,6 +53,8 @@ public abstract class NewTileInterface {
 	public abstract String getRawData(String query);
 	
 	public abstract List<String> getQueryDataTypes(String query);
+	
+	public abstract Map<String,List<Integer>> getDimensionBoundaries(String query);
 	
 	public abstract Class<?> getColumnTypeInJava(String typeName);
 	

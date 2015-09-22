@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -102,6 +103,19 @@ public class BigDawgScidbTileInterface extends Scidb14_12TileInterface {
 		String schema = (String) t.get(schema_index, 0);
 		List<String> dataTypes = parseSchemaForDataTypes(schema);
 		return dataTypes;
+	}
+	
+	@Override
+	public Map<String,List<Integer>> getDimensionBoundaries(String query) {
+		query = removeBigDawgWrapper(query);
+		String showQuery = generateShowQuery(query);
+		String bdq = addBigDawgWrapper(showQuery);
+		ColumnBasedNiceTile t = new ColumnBasedNiceTile();
+		getRawTile(bdq,t);
+		int schema_index = t.getIndex("schema");
+		String schema = (String) t.get(schema_index, 0);
+		Map<String,List<Integer>> boundaryMap = parseSchemaForDimensionBoundaries(schema);
+		return boundaryMap;
 	}
 	
 	/************* For Precomputation ***************/
