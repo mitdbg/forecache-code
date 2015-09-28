@@ -7,6 +7,9 @@ public interface NiceTileBuffer {
 	// is this tile currently located in storage?
 	public boolean peek(TileKey id);
 	
+	// set the max limit for tile storage
+	public void setStorageMax(int totalStorage);
+	
 	// retrieve a tile from storage
 	public NiceTile getTile(TileKey id);
 	

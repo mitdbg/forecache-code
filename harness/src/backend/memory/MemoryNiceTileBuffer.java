@@ -86,6 +86,7 @@ public class MemoryNiceTileBuffer implements NiceTileBuffer {
 	
 	@Override
 	public synchronized void insertTile(NiceTile tile) {
+		if(this.storagemax == 0) return;
 		if(!this.storage.containsKey(tile.id)) {
 			//int tilesize = tile.getDataSize();
 			// make room for new tile in storage

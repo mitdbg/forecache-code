@@ -6,6 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import configurations.BigDawgConfig;
+import configurations.Config;
+import configurations.ModisConfig;
+import configurations.VMConfig;
+
 import backend.util.Direction;
 import backend.util.DirectionClass;
 import backend.util.History;
@@ -94,6 +99,18 @@ public class Client {
 
 	}
 	
+	public static void waitForServer() throws Exception {
+		for(int i = 0; i < 10000; i++) {
+			if(!checkReady()) {
+				//System.out.println("not ready... waiting 100ms");
+				Thread.sleep(100);
+			} else {
+				//System.out.println("continuing on...");
+				break;
+			}
+		}
+	}
+	
 	// only test specific users, but train on all users
 	public static void crossValidation(String taskname, String[] models, List<Integer> testusers, int[] predictions,
 			ModelAccuracy[] ma, boolean usePhases) throws Exception {
@@ -139,15 +156,7 @@ public class Client {
 				int zoom = ur.zoom;
 				//System.out.println("tile id: '" +tile_id+ "'");
 				//Thread.sleep(100);
-				for(int i = 0; i < 10000; i++) {
-					if(!checkReady()) {
-						//System.out.println("not ready... waiting 100ms");
-						Thread.sleep(100);
-					} else {
-						//System.out.println("continuing on...");
-						break;
-					}
-				}
+				waitForServer();
 				durations[r] = sendRequest(tile_id,zoom,tile_hash);
 				avg_duration += durations[r];
 			}
@@ -552,7 +561,7 @@ public class Client {
 
 	public static long sendRequest(String tile_id, int zoom, String hashed_query) throws Exception {
 		String urlstring = "http://"+backend_host+":"+backend_port+"/"+backend_root + "/"
-				+ "?" + buildUrlParams(hashed_query, tile_id, zoom);
+				+ "?fetch&" + buildUrlParams(hashed_query, tile_id, zoom);
 		URL geturl = null;
 		HttpURLConnection connection = null;
 		BufferedReader reader = null;
@@ -573,12 +582,18 @@ public class Client {
 		try {
 			connection = (HttpURLConnection) geturl.openConnection();
 			diff = System.currentTimeMillis();
-			reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-			while((line = reader.readLine()) != null) {
-				sbuffer.append(line);
+			InputStream is = connection.getInputStream();
+			ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+			
+			int nRead;
+			byte[] data = new byte[16384];
+
+			while ((nRead = is.read(data, 0, data.length)) != -1) {
+			  buffer.write(data, 0, nRead);
 			}
+
+			buffer.flush();
 			diff = System.currentTimeMillis() - diff;
-			reader.close();
 			result = sbuffer.toString();
 			//System.out.println("tile ("+tile_id+", "+zoom+") result length: " + result.length());
 			if(result.equals("error")) {
@@ -766,6 +781,13 @@ public class Client {
 	}
 
 	public static void main(String[] args) throws Exception {
+		//set configurations
+		Config conf;
+		conf = new VMConfig();
+		// conf = new BigDawgConfig();
+		// conf = new ModisConfig();
+		conf.setConfig();
+		
 		int[] user_ids = null;
         String[] tasknames = null;
         String[][] models = null;

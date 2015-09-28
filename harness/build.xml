@@ -12,6 +12,9 @@
     <path id="OpenCV-2.4.9.userclasspath">
         <pathelement location="../../../../../usr/local/share/OpenCV/java/opencv-249.jar"/>
     </path>
+    <!--<path id="GoogleProtobuf.userclasspath">
+        <pathelement location="../../../../../usr/local/share/java/protobuf-java.jar"/>
+    </path>-->
     <path id="ScalarPrefetch.classpath">
         <pathelement location="bin"/>
         <pathelement location="lib/libsvm-master/java/libsvm.jar"/>
@@ -23,10 +26,15 @@
         <pathelement location="lib/jetty-all-9.1.3.v20140225.jar"/>
         <pathelement location="lib/berkeleylm.jar"/>
         <path refid="OpenCV-2.4.9.userclasspath"/>
+        <!--<path refid="GoogleProtobuf.userclasspath"/>-->
         <pathelement location="lib/imgscalr-lib-4.2.jar"/>
         <pathelement location="lib/kd.jar"/>
         <pathelement location="lib/gson-2.3.jar"/>
         <pathelement location="lib/guava-16.0.1.jar"/>
+        <pathelement location="lib/scidb4j.jar"/>
+        <pathelement location="lib/jackson-annotations-2.6.1.jar"/>
+        <pathelement location="lib/jackson-core-2.6.1.jar"/>
+        <pathelement location="lib/jackson-databind-2.6.1.jar"/>
     </path>
     <target name="init">
         <mkdir dir="bin"/>
@@ -55,6 +63,8 @@
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>
+
+
     <target name="ngram">
         <java classname="frontend.Client" failonerror="true" fork="yes">
             <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram2-ngram3-ngram4-ngram5-ngram6-ngram7-ngram8-ngram9-ngram10 8-8-8-8-8-8-8-8-8"/>
@@ -85,9 +95,66 @@
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>
+
+
+    <target name="ml-pc-ngram">
+        <java classname="frontend.PreCompClient" failonerror="true" fork="yes">
+            <!--<arg line="10015 28 task1 server-disk ngram2-ngram3 8-8 false-false"/>-->
+            <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 server-disk ngram2-ngram3-ngram4-ngram5-ngram6-ngram7-ngram8-ngram9-ngram10 8-8-8-8-8-8-8-8-8 1-1-1-1-1-1-1-1-1 false-false-false-false-false-false-false-false-false"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ml-pc-existing">
+        <java classname="frontend.PreCompClient" failonerror="true" fork="yes">
+            <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 server-disk momentum2-hotspot2 8-8 1-1 false-false"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ml-pc-sigs">
+        <java classname="frontend.PreCompClient" failonerror="true" fork="yes">
+            <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 server-disk histogram-normal 8-8 1-1 false-false"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ml-pc-sigs2">
+        <java classname="frontend.PreCompClient" failonerror="true" fork="yes">
+            <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 server-disk sift-dsift 8-8 1-1 false-false"/>
+            <!--<arg line="10015 28 task1 server-disk sift 8 1 false"/>-->
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ml-pc-hybrid">
+        <java classname="frontend.PreCompClient" failonerror="true" fork="yes">
+            <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 server-disk ngram3,sift 4,4 1 true"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+
+    <target name="cc2-sigs">
+        <java classname="frontend.CachingClient" failonerror="true" fork="yes">
+            <!-- <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram3,sift 4,4 true 2"/> -->
+            <arg line="8000 28 task1 histogram-normal 8-8 false-false 2"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="cc2-hybrid">
+        <java classname="frontend.CachingClient" failonerror="true" fork="yes">
+            <!-- <arg line="10015 151,148,121,124,144,139,140,134,141,138,132,123,137,146,145,135,150 task1,task2,task3 ngram3,sift 4,4 true 2"/> -->
+            <arg line="8000 28 task1 ngram3,sift 4,4 true 2"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
     <target name="BuildSignaturesOffline">
         <java classname="backend.BuildSignaturesOffline" failonerror="true" fork="yes">
             <jvmarg line="-Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="BuildTilesOffline">
+        <java classname="backend.BuildTilesOffline" failonerror="true" fork="yes">
+            <jvmarg line="-Xmx1024m -Djava.library.path='/usr/local/share/java'"/>
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>
@@ -109,6 +176,60 @@
             <classpath refid="ScalarPrefetch.classpath"/>
         </java>
     </target>
+
+    <target name="BigDawgMimicClient">
+        <java classname="frontend.BigDawgMimicClient" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="10080 10015"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+
+    <target name="MimicPreCompThread">
+        <java classname="backend.MimicPreCompThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="10015 0 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
+    <target name="ml-lru0n1">
+        <java classname="backend.PreCompThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="10015 0 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ml-lru2n1">
+        <java classname="backend.PreCompThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="10015 2 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ml-lru4n1">
+        <java classname="backend.PreCompThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="10015 4 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ml-lru8n1">
+        <java classname="backend.PreCompThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="10015 8 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+    <target name="ml-lru16n1">
+        <java classname="backend.PreCompThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="10015 16 1"/>
+            <classpath refid="ScalarPrefetch.classpath"/>
+        </java>
+    </target>
+
     <target name="lru0n1">
         <java classname="backend.MainThread" failonerror="true" fork="yes">
             <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>

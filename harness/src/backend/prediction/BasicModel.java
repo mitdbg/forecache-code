@@ -9,9 +9,12 @@ import utils.UserRequest;
 import utils.UtilityFunctions;
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.OldScidbTileInterface;
+import backend.disk.TileInterface;
 import backend.memory.MemoryNiceTileBuffer;
 import backend.util.Direction;
+import backend.util.Model;
 import backend.util.NiceTile;
+import backend.util.NiceTileBuffer;
 import backend.util.ParamsMap;
 import backend.util.TileKey;
 
@@ -19,17 +22,18 @@ public class BasicModel {
 	protected int len;
 	protected TileHistoryQueue history = null;
 	protected ParamsMap paramsMap; // for checking if predictions are actual tiles
-	protected MemoryNiceTileBuffer membuf;
-	protected DiskNiceTileBuffer diskbuf;
-	protected OldScidbTileInterface scidbapi;
+	protected NiceTileBuffer membuf;
+	protected NiceTileBuffer diskbuf;
+	protected TileInterface scidbapi;
 	protected boolean useDistanceCorrection = true;
 	public static final double defaultprob = .00000000001; // default assigned confidence value
 	public static final int defaultlen = 4; // default history length
 	public List<TileKey> roi = null;
+	protected Model m = null;
 	
 
-	public BasicModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, 
-			DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len) {
+	public BasicModel(TileHistoryQueue ref, NiceTileBuffer membuf, 
+			NiceTileBuffer diskbuf,TileInterface api, int len) {
 		this.history = ref; // reference to (syncrhonized) global history object
 		this.membuf = membuf;
 		this.diskbuf = diskbuf;
@@ -42,8 +46,12 @@ public class BasicModel {
 		return this.len;
 	}
 	
+	public void computeSignaturesInParallel(List<TileKey> ids) {}
+	
 	public List<TileKey> orderCandidates(List<TileKey> candidates) {
+		//long a = System.currentTimeMillis();
 		updateRoi();
+		//long b = System.currentTimeMillis();
 		List<TileKey> htrace = history.getHistoryTrace(len);
 		if(htrace.size() == 0) {
 			return new ArrayList<TileKey>();
@@ -51,9 +59,10 @@ public class BasicModel {
 		TileKey prev = htrace.get(htrace.size() - 1);
 		List<TileKey> myresult = new ArrayList<TileKey>();
 		List<TilePrediction> order = new ArrayList<TilePrediction>();
+		computeSignaturesInParallel(candidates);
 		// for each direction, compute confidence
 		for(TileKey key : candidates) {
-			TilePrediction tp = new TilePrediction();
+			TilePrediction tp = new TilePrediction(this.m);
 			tp.id = key;
 			tp.confidence = computeConfidence(key, htrace);
 			tp.distance = computeDistance(key,htrace);
@@ -63,15 +72,17 @@ public class BasicModel {
 			}
 			order.add(tp);
 		}
+		//long c = System.currentTimeMillis();
 		Collections.sort(order);
 		for(int i = 0; i < order.size(); i++) {
 			TilePrediction tp = order.get(i);
 			myresult.add(tp.id);
-			//System.out.print(tp+" ");
-			//System.out.println(id);
+			//System.out.print(tp+" "+tp.physicalDistance+" ");
+			//System.out.println(tp.id);
 		}
 		//System.out.println();
-
+		//long d = System.currentTimeMillis();
+		//System.out.println("roi:sort-"+(d-c)+",predict-"+(c-b)+",roi-"+(b-a));
 		return myresult;
 	}
 	

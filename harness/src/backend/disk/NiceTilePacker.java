@@ -99,6 +99,24 @@ public class NiceTilePacker {
 	}
 	
 	/******* Custom Tile Serialization ******/
+	public static byte[] packNiceTile(NiceTile t) {
+		//long start = System.currentTimeMillis();
+		byte[] tileKey = packTileKey(t.id);
+		byte[] attributes = packAttributes(t.attributes);
+		byte[] extrema = packExtrema(t.extrema);
+		byte[] data = packData(t.data);
+		byte[] packedTile = new byte[tileKey.length+attributes.length+extrema.length+data.length];
+		int offset = 0;
+		System.arraycopy(tileKey, 0, packedTile, offset, tileKey.length);
+		offset+=tileKey.length;
+		System.arraycopy(attributes,0,packedTile,offset,attributes.length);
+		offset+=attributes.length;
+		System.arraycopy(extrema, 0, packedTile, offset, extrema.length);
+		offset +=extrema.length;
+		System.arraycopy(data,0,packedTile,offset,data.length);
+		return packedTile;
+	}
+	
 	//[row1col1,row1col2,row1col3,...,row2col1,row2col2,row3col3,...,row3col1,...]
 	public static byte[] packData(double[] data) {
 		//long start = System.currentTimeMillis();
@@ -119,18 +137,18 @@ public class NiceTilePacker {
 		//long start = System.currentTimeMillis();
 		byte[] result = new byte[doubleSize*(1+key.id.length+1+key.weights.length+1)];
 		ByteBuffer buffer = ByteBuffer.wrap(result);
-		int i = 0;
-		buffer.putDouble(i,key.id.length);
-		i ++;
-		for(int count = 0; count < key.id.length;count++,i++) {
-			buffer.putDouble(i*doubleSize,key.id[count]);
+		int offset = 0;
+		buffer.putDouble(offset,key.id.length);
+		offset+= doubleSize;
+		for(int count = 0; count < key.id.length;count++,offset += doubleSize) {
+			buffer.putDouble(offset,key.id[count]);
 		}
-		buffer.putDouble(i*doubleSize,key.weights.length);
-		i++;
-		for(int count = 0; count < key.weights.length;count++,i++) {
-			buffer.putDouble(i*doubleSize,key.weights[count]);
+		buffer.putDouble(offset,key.weights.length);
+		offset += doubleSize;
+		for(int count = 0; count < key.weights.length;count++,offset += doubleSize) {
+			buffer.putDouble(offset,key.weights[count]);
 		}
-		buffer.putDouble(i,key.zoom);
+		buffer.putDouble(offset,key.zoom);
 		//long end = System.currentTimeMillis();
 		//totalTime += 1.0*(end- start);
 		return result;
@@ -147,7 +165,9 @@ public class NiceTilePacker {
 		for(int count = 0; count< extrema.length;count++,i+=2) {
 			buffer.putDouble(i*doubleSize,extrema[count][0]);
 			buffer.putDouble((i+1)*doubleSize,extrema[count][1]);
+			//System.out.println("recording min: "+extrema[count][0]+", max: "+extrema[count][1]);
 		}
+		//System.out.println();
 		//long end = System.currentTimeMillis();
 		//totalTime += 1.0*(end- start);
 		return result;
@@ -157,14 +177,14 @@ public class NiceTilePacker {
 	public static byte[] packAttributes(String[] attributes) {
 		//long start = System.currentTimeMillis();
 		StringBuilder builder = new StringBuilder();
-		double[] lengths = new double[attributes.length];
+		int[] lengths = new int[attributes.length];
 		for(int i = 0; i < attributes.length; i++) {
 			builder.append(attributes[i]);
 			lengths[i] = attributes[i].length();
 		}
 		try {
 			String finalString = builder.toString();
-			byte[] finalBytes = finalString.getBytes("utf-8");
+			byte[] finalBytes = finalString.getBytes("ISO-8859-1");
 			byte[] result = new byte[doubleSize*(attributes.length+1)+finalBytes.length];
 			ByteBuffer buffer = ByteBuffer.wrap(result);
 			int offset = 0;
@@ -226,21 +246,21 @@ public class NiceTilePacker {
 		//long start = System.currentTimeMillis();
 		ByteBuffer buffer = ByteBuffer.wrap(rawdata);
 		int[] id = new int[(int) buffer.getDouble(offset)];
-		//System.out.println("id len: "+id.length);
+		//System.out.println("id len: "+buffer.getDouble(offset)+", offset: "+offset);
 		offset += doubleSize;
 		for(int i = 0; i < id.length; i++, offset += doubleSize) {
 			id[i] = (int) buffer.getDouble(offset);
-			//System.out.println("dim: "+id[i]);
+			//System.out.println("dim: "+id[i]+", offset: "+offset);
 		}
 		double[] weights = new double[(int)buffer.getDouble(offset)];
 		//System.out.println("weights len: "+weights.length);
 		offset += doubleSize;
 		for(int i = 0; i < weights.length; i++,offset += doubleSize) {
 			weights[i] = buffer.getDouble(offset);
-			//System.out.println("weight: "+weights[i]);
+			//System.out.println("weight: "+weights[i]+", offset: "+offset);
 		}
 		int zoom = (int) buffer.getDouble(offset);
-		//System.out.println("zoom: "+buffer.getDouble(offset));
+		//System.out.println("zoom: "+buffer.getDouble(offset)+", offset: "+offset);
 		offset += doubleSize; // the next item will be one double away
 		TileKey key = new TileKey(id,zoom);
 		key.weights = weights;
@@ -254,12 +274,14 @@ public class NiceTilePacker {
 	public static int unpackAttributes(byte[] rawdata, int offset, NiceTile t) {
 		//long start = System.currentTimeMillis();
 		ByteBuffer buffer = ByteBuffer.wrap(rawdata);
+		//System.out.println("num attrs: "+buffer.getDouble(offset)+", offset: "+offset);
 		String[] attributes = new String[(int) buffer.getDouble(offset)];
 		offset += doubleSize;
 		int[] attrlens = new int[attributes.length];
 		for(int i = 0; i < attributes.length; i++, offset+=doubleSize) {
 			//get string length in bytes
 			attrlens[i] = (int) buffer.getDouble(offset);
+			//System.out.println("attr size: "+buffer.getDouble(offset)+", offset: "+offset);
 		}
 		for(int i = 0; i < attributes.length; i++) {
 			byte[] attrdata = new byte[attrlens[i]];
@@ -270,6 +292,7 @@ public class NiceTilePacker {
 			}
 			try {
 				attributes[i] = new String(attrdata,"utf-8");
+				//System.out.println("attribute:"+attributes[i]);
 			} catch (UnsupportedEncodingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -284,6 +307,7 @@ public class NiceTilePacker {
 	public static int unpackExtrema(byte[] rawdata, int offset, NiceTile t) {
 		//long start = System.currentTimeMillis();
 		ByteBuffer buffer = ByteBuffer.wrap(rawdata);
+		//System.out.println("size: "+buffer.getDouble(offset));
 		double[][] extrema = new double [(int) buffer.getDouble(offset)][];
 		offset += doubleSize;
 		//System.out.println("extrema length: "+extrema.length);
@@ -303,6 +327,7 @@ public class NiceTilePacker {
 		//long start = System.currentTimeMillis();
 		ByteBuffer buffer = ByteBuffer.wrap(rawdata);
 		int count = (rawdata.length - offset + 1) / doubleSize;
+		//System.out.println("count: "+count);
 		if(count < 0) count = 0;
 		double[] result = new double[count];
 		int i = 0;

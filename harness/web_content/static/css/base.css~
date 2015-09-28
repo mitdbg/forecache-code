@@ -1,0 +1,124 @@
+/*
+#sql-query-form label {
+	display: block;
+}
+*/
+
+/* adjust the tutorial images so they stand out on the page.
+filter:alpha is for IE8 and earlier */
+/*
+.tutorial-overlay {
+	background-color:#000000;
+} 
+img.tutorial-image {
+	opacity:0.9;
+	filter:alpha(opacity=90);
+}
+*/
+/* do I want this to be block? */
+#option-buttons {
+	display: block;
+}
+
+
+
+/* remove any padding/borders from the g tags */
+g {
+	border: none;
+	padding:0pxs;
+	margin:0px;
+}
+
+g.xaxis path,g.yaxis path {
+	display: none;
+}
+
+/*center update menu items and add 5px padding */
+div.xlabel, div.ylabel, div.zlabel,div.colorscheme,#label-width,#label-height {
+	margin: 5px;
+	text-align: center;
+}
+
+/* center update menu submit button */
+div#update-submit-div {
+	text-align: center;
+}
+
+/* hide all the visualization components by default */
+#outer-aggplot, #aggplot, #map, #canvas, #aggplot-form, #resulting-plot-header, #nav, #answer-select, #histogram-container,
+canvas#hist1, canvas#hist2, #loading_image, #legend, #zoom-disable-div {
+	display: none;
+}
+
+/* show disable zoom div in line with directional buttons */
+#zoom-disable-div.show {
+	display: inline;
+}
+
+/* show the plot, and make position relative to confine the click rectangle to this div. 
+	Display inline-block to get the histograms in the right place */
+#aggplot.show {
+	display: inline-block;
+	position:relative;
+}
+
+/*
+ show these visualizatio components, and make them display block
+*/
+#aggplot-form.show,#resulting-plot-header.show, #map.show, #canvas.show,
+canvas#hist1.show, #loading_image.show {
+	display: block;
+}
+
+/* overlay a gray div over the visualization while it's still drawing */
+#canvas-overlay {
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	top: 0;
+	left: 0;
+	background-color: #000000;
+	opacity: 0.8;
+	z-index: 1000;
+}
+
+/* Make the svg click rectangle position absolute so it is positioned over the canvas */
+#svg_aggplot {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+/* add padding between answer selection checkbox area and visualization */
+#answer-select.show {
+	display: block;
+	padding: 20px 0px 0px;
+}
+
+/* add padding between the directional buttons and the visualization */
+#nav.show {
+	display: block;
+	padding: 0px 0px 20px;
+}
+
+/* adjust legend so it's next to visualization on the left side, 
+and add padding between the legend and visualization */
+#legend.show {
+	display: block;
+	float: left;
+	padding: 0px 30px 0px 0px;
+}
+
+/* fix up line thinkness, etc for legend */
+.legend-axis path,
+.legend-axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+/* controls the highlighting of the yes/no for answers to the user study */
+#answer-select-checked-yes.highlight,#answer-select-checked-no.highlight {
+	color: blue;
+	font-weight:bold;
+}

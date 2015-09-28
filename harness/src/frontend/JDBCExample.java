@@ -1,21 +1,21 @@
 package frontend;
 
-import org.scidb.jdbc.IResultSetWrapper;
-import org.scidb.jdbc.IStatementWrapper;
+//import org.scidb.jdbc.IResultSetWrapper;
+//import org.scidb.jdbc.IStatementWrapper;
 
-import utils.DBInterface;
+//import utils.DBInterface;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
+//import java.sql.Connection;
+//import java.sql.ResultSet;
+//import java.sql.ResultSetMetaData;
+//import java.sql.SQLException;
+//import java.sql.Statement;
 
 class JDBCExample
 {
   public static void main(String [] args) throws IOException
-  {
+  {/*
     try
     {
       Class.forName("org.scidb.jdbc.Driver");
@@ -62,5 +62,6 @@ class JDBCExample
       System.out.println(e);
     }
   System.exit(0);
+  */
   }
 }

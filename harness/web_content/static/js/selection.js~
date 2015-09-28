@@ -1,0 +1,7 @@
+$(document).ready(function() {
+	$('#select-all-button').on('click',function() {
+		$('.selectionThumbnail:checkbox').each(function() {
+            		this.checked = true;                        
+        	});
+	});
+});

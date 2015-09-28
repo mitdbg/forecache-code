@@ -1,0 +1,4 @@
+/* don't let people click on disabled navigation tabs */
+.nav > li.disabled {
+	pointer-events: none;
+}

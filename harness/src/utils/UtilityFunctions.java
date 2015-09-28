@@ -6,6 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import frontend.CacheLevel;
+
 import backend.util.Direction;
 import backend.util.DirectionClass;
 import backend.util.Model;
@@ -14,6 +16,31 @@ import backend.util.ParamsMap;
 import backend.util.TileKey;
 
 public class UtilityFunctions {
+	// takes a list of strings, and slaps the strings together to make one big string
+	public static String consolidateStrings(List<String> list) {
+		if(list.size() == 0) {
+			return null; // if list is empty, return null instead of empty string
+		}
+		StringBuilder sb = new StringBuilder();
+		sb.append(list.get(0));
+		for(int i = 1; i < list.size(); i++) {
+			sb.append(System.getProperty("line.separator")).append(list.get(i));
+		}
+		return sb.toString();
+	}
+	
+	//if it's just an array name, the query shouldn't contain any parentheses
+	public static boolean isScidbArray(String query) {
+		return query.contains("(");
+	}
+	
+	public static CacheLevel getCacheLevel(String level) {
+		for(CacheLevel candidate : CacheLevel.values()) {
+			if(level.equals(candidate.toString())) return candidate;
+		}
+		return null;
+	}
+	
 	public static Model getModelFromString(String modelName) {
 		if (modelName.equals("random")) {
 			return Model.RANDOM;

@@ -1,6 +1,10 @@
 package backend;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.Writer;
+import java.io.OutputStreamWriter;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,13 +25,18 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.opencv.core.Core;
 
+import configurations.BigDawgConfig;
+import configurations.Config;
+import configurations.ModisConfig;
+import configurations.VMConfig;
+
 import backend.disk.DiskNiceTileBuffer;
 import backend.disk.NiceTilePacker;
 import backend.disk.OldScidbTileInterface;
 import backend.disk.ScidbTileInterface;
 import backend.disk.VerticaTileInterface;
 import backend.memory.MemoryNiceTileBuffer;
-import backend.memory.NiceTileLruBuffer;
+import backend.memory.MemoryNiceTileLruBuffer;
 import backend.prediction.BasicModel;
 import backend.prediction.TestSVM;
 import backend.prediction.TileHistoryQueue;
@@ -56,10 +65,12 @@ public class MainThread {
 	public static VerticaTileInterface verticaapi;
 	public static int histmax = 10;
 	public static TileHistoryQueue hist;
-	public static NiceTileLruBuffer lmbuf;
+	public static MemoryNiceTileLruBuffer lmbuf;
 	public static TestSVM.SvmWrapper pclas;
 	public static boolean usePclas = false;
 	public static SignatureMap sigMap;
+	
+	public static BufferedWriter log;
 	
 	//server
 	public static Server server;
@@ -180,6 +191,7 @@ public class MainThread {
 			System.out.print(k+" ");
 		}
 		System.out.println();
+		System.out.println();
 		
 		Set<TileKey> oldKeys = new HashSet<TileKey>();
 		for(TileKey k : membuf.getAllTileKeys()) {
@@ -295,6 +307,14 @@ public class MainThread {
 
 	public static void main(String[] args) throws Exception {
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+		
+		//set configurations
+		Config conf;
+		conf = new VMConfig();
+		// conf = new BigDawgConfig();
+		// conf = new ModisConfig();
+		conf.setConfig();
+		
 		int port = defaultport;
 		int lmbuflen = deflmbuflen;
 		
@@ -319,7 +339,7 @@ public class MainThread {
 		scidbapi = new OldScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		newScidbapi = new ScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		verticaapi = new VerticaTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
-		lmbuf = new NiceTileLruBuffer(lmbuflen); // tracks the user's last x moves
+		lmbuf = new MemoryNiceTileLruBuffer(lmbuflen); // tracks the user's last x moves
 		hist = new TileHistoryQueue(histmax);
 		// load pre-computed signature map
 		sigMap = SignatureMap.getFromFile(BuildSignaturesOffline.defaultFilename);
@@ -328,6 +348,15 @@ public class MainThread {
 		setupModels();
 		trainModels();
 		pclas = TestSVM.buildSvmPhaseClassifier();
+		
+		//logfile for timing results
+		try {
+			log = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("perflog.csv")));
+		} catch (IOException e) {
+		    System.out.println("Couldn't open logfile");
+		    e.printStackTrace();
+		    return;
+		}  
 		
 		//start the server
 		setupServer(port);
@@ -495,57 +524,39 @@ public class MainThread {
 			return predictor == null || predictor.isDone();
 		}
 		
-		protected void doGet(HttpServletRequest request,
-				HttpServletResponse response) throws ServletException, IOException {
-			
-			response.setContentType("text/html");
-			response.setStatus(HttpServletResponse.SC_OK);
-			
-			String ready = request.getParameter("ready");
-			if(ready != null) {
-				response.getWriter().println(isReady());
+		protected void doReset(HttpServletRequest request,
+				HttpServletResponse response) {
+			System.out.println("reset");
+			//reset models for prediction
+			String useridstr = request.getParameter("user_ids");
+			String modelstr = request.getParameter("models");
+			String predictions = request.getParameter("predictions");
+			String usePhases = request.getParameter("usephases");
+			try {
+				reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"), (usePhases != null) && usePhases.equals("true"));
+				response.getWriter().println(done);
+			} catch (Exception e) {
+				System.out.println("error resetting");
+				e.printStackTrace();
+			}
+			//response.getWriter().println();
+		}
+		
+		protected void doGetFullAccuracy(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			if(hitslist.size() == 0) {
+				response.getWriter().println("[]");
 				return;
 			}
-			
-			String reset = request.getParameter("reset");
-			if(reset != null) {
-				System.out.println("reset");
-				//reset models for prediction
-				String useridstr = request.getParameter("user_ids");
-				String modelstr = request.getParameter("models");
-				String predictions = request.getParameter("predictions");
-				String usePhases = request.getParameter("usephases");
-				try {
-					reset(useridstr.split("_"),modelstr.split("_"), predictions.split("_"), (usePhases != null) && usePhases.equals("true"));
-					response.getWriter().println(done);
-				} catch (Exception e) {
-					System.out.println("error resetting");
-					e.printStackTrace();
-				}
-				//response.getWriter().println();
-				return;
+			String res = hitslist.get(0);
+			for(int i = 1; i < hitslist.size(); i++) {
+				res = res + ","+hitslist.get(i);
 			}
-			
-			String getfullaccuracy = request.getParameter("fullaccuracy");
-			if(getfullaccuracy !=null) {
-				if(hitslist.size() == 0) {
-					response.getWriter().println("[]");
-					return;
-				}
-				String res = hitslist.get(0);
-				for(int i = 1; i < hitslist.size(); i++) {
-					res = res + ","+hitslist.get(i);
-				}
-				response.getWriter().println(res);
-				return;
-			}
-			
-			String getaccuracy = request.getParameter("accuracy");
-			if(getaccuracy != null) {
-				double accuracy = getAccuracy();
-				response.getWriter().println(accuracy);
-				return;
-			}
+			response.getWriter().println(res);
+		}
+		
+		protected void doFetch(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
 			
 			String zoom = request.getParameter("zoom");
 			String tile_id = request.getParameter("tile_id");
@@ -561,14 +572,96 @@ public class MainThread {
 				predictor = new FutureTask<Object>(new PredictionTask(),null);
 				executorService.submit(predictor);
 				// send the response
-				//System.out.println("json: "+NiceTilePacker.makeJson(t));
-				//response.getWriter().println(NiceTilePacker.packData(t.data));
-				response.getWriter().println(NiceTilePacker.makeJson(t));
-				
+				//long s = System.currentTimeMillis();
+				byte[] toSend = NiceTilePacker.packNiceTile(t);
+				//long e = System.currentTimeMillis();
+				response.getOutputStream().write(toSend,0,toSend.length);
+				//long e2 = System.currentTimeMillis();
+				//String report= (e-s)+","+(e2-e)+","+toSend.length;
+				//System.out.println(report);
+				//log.write(report);
+				//log.newLine();
+				//log.flush();
 			} catch (Exception e) {
 				response.getWriter().println(error);
 				System.out.println("error occured while fetching tile");
 				e.printStackTrace();
+			}
+		}
+		
+		protected void doAddHistory(HttpServletRequest request,
+				HttpServletResponse response) {
+			
+			String zoom = request.getParameter("zoom");
+			String tile_id = request.getParameter("tile_id");
+			String threshold = request.getParameter("threshold");
+			String reverse = UtilityFunctions.unurlify(tile_id); // undo urlify
+			int[] id = UtilityFunctions.parseTileIdInteger(reverse);
+			int z = Integer.parseInt(zoom);
+			TileKey key = new TileKey(id,z);
+			
+			// get the tile, so we can put it in the history
+			NiceTile t = lmbuf.getTile(key); // check lru cache
+			if(t == null) { // not in user's last x moves. check mem cache
+				t = membuf.getTile(key);
+				if(t == null) { // not cached, get it from disk in DBMS
+					t = new NiceTile();
+					t.id = key;
+					newScidbapi.getStoredTile(DBInterface.arrayname, t);
+				}
+			}
+			
+			hist.addRecord(t); // keep track
+			lmbuf.insertTile(t);
+			
+			// pre-emptively cache, just in case
+			predictor = new FutureTask<Object>(new PredictionTask(),null);
+			executorService.submit(predictor);
+		}
+		
+		protected void doGet(HttpServletRequest request,
+				HttpServletResponse response) throws ServletException, IOException {
+			
+			response.setContentType("text/html");
+			response.setStatus(HttpServletResponse.SC_OK);
+			
+			String ready = request.getParameter("ready");
+			if(ready != null) {
+				response.getWriter().println(isReady());
+				return;
+			}
+			
+			String reset = request.getParameter("reset");
+			if(reset != null) {
+				doReset(request,response);
+				return;
+			}
+			
+			String getfullaccuracy = request.getParameter("fullaccuracy");
+			if(getfullaccuracy !=null) {
+				doGetFullAccuracy(request,response);
+				return;
+			}
+			
+			String getaccuracy = request.getParameter("accuracy");
+			if(getaccuracy != null) {
+				double accuracy = getAccuracy();
+				response.getWriter().println(accuracy);
+				return;
+			}
+			
+			String fetch = request.getParameter("fetch");
+			if(fetch != null) {
+				//System.out.println("doing tile fetch.");
+				doFetch(request,response);
+				return;
+			}
+			
+			String addhistory = request.getParameter("addhistory");
+			if(addhistory != null) {
+				//System.out.println("adding to history...");
+				doAddHistory(request,response);
+				return;
 			}
 		}
 		
@@ -582,6 +675,8 @@ public class MainThread {
 			int z = Integer.parseInt(zoom);
 			TileKey key = new TileKey(id,z);
 			
+			//System.out.println("tile to predict: "+key);
+			//System.out.println("last request: "+hist.getLast());
 			boolean found = false;
 			NiceTile t = lmbuf.getTile(key); // check lru cache
 			if(t == null) { // not in user's last x moves. check mem cache
@@ -692,6 +787,12 @@ public class MainThread {
 		
 		public void destroy() {
 			executorService.shutdown();
+			try {
+				log.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 	}

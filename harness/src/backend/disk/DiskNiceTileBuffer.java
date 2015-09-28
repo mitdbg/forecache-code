@@ -20,7 +20,7 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 	
 	private Map<TileKey,TimePair> timeMap; // for finding things in the queue
 	private PriorityQueue<TimePair> lruQueue; // for identifying lru tiles in storage
-	private final long storagemax;
+	private long storagemax;
 	private long size;
 	private final long DEFAULTMAX = 30304315430L; // default buffer size
 	private final int initqueuesize = 50;
@@ -39,7 +39,7 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 		this.timeMap = new HashMap<TileKey,TimePair>();
 		this.size = 0;
 		this.storagemax = this.DEFAULTMAX;
-		init(); // check cache root for existing tiles
+		//init(); // check cache root for existing tiles
 	}
 	
 	public DiskNiceTileBuffer(String cache_root_dir, String hashed_query, String threshold, int storagemax) throws Exception {
@@ -57,6 +57,11 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 		this.size = 0;
 		this.storagemax = storagemax;
 		init(); // check cache root for existing tiles
+	}
+	
+	public synchronized void setStorageMax(int newmax) {
+		this.clear();
+		this.storagemax = newmax;
 	}
 
 	@Override
@@ -88,6 +93,7 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 
 	@Override
 	public synchronized void insertTile(NiceTile tile) {
+		if(this.storagemax == 0) return;
 		TileKey id = tile.id;
 		if(!peek(id)) {
 			// make room for new tile in storage
@@ -145,7 +151,7 @@ public class DiskNiceTileBuffer implements NiceTileBuffer {
 					insert_time_pair(t.id); // add to lru metadata
 					currsize++;
 					//System.out.println("using " + currsize + " bytes out of " + storagemax);
-					//System.out.println("inserting tile in disk based cache: '"+tileidstring+"',"+zoom);
+					System.out.println("inserting tile in disk based cache: '"+t.id+"'");
 				}
 			}
 		}

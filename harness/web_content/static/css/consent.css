@@ -1,0 +1,11 @@
+form#done-button {
+	text-align: center;
+}
+
+#consent-div input {
+	float: none;
+	vertical-align: middle;
+	margin-right: 6px;
+	margin-top: -2px;
+}
+
