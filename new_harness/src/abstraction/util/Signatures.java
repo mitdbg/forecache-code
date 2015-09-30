@@ -24,13 +24,18 @@ import org.opencv.features2d.FeatureDetector;
 import org.opencv.highgui.Highgui;
 import org.opencv.core.CvType;
 
-import backend.disk.DiskNiceTileBuffer;
 
 import com.google.gson.Gson;
 
 import edu.wlu.cs.levy.CG.KDTree;
 import edu.wlu.cs.levy.CG.KeyDuplicateException;
 import edu.wlu.cs.levy.CG.KeySizeException;
+
+import abstraction.prediction.DefinedTileView;
+import abstraction.query.NewTileInterface;
+import abstraction.tile.Column;
+import abstraction.tile.ColumnBasedNiceTile;
+import abstraction.util.NewTileKey;
 
 public class Signatures {
 	public static double[] globalmin = {0,0,-1,-1,-1,0};
@@ -47,43 +52,30 @@ public class Signatures {
 	public static String denseSiftString = "densesift";
 
 	/**************** Mean/Stddev ****************/
-	public static double[] getNormalSignature(byte[] input) {
-		return getNormalSignature(input,defaultindex);
+	public static double[] getNormalSignature(ColumnBasedNiceTile tile) {
+		return getNormalSignature(tile,defaultindex);
 	}
 	
-	public static double[] getNormalSignature(Tile tile) {
-		return getNormalSignature(tile.data,defaultindex);
-	}
-	
-	public static double[] getNormalSignature(byte[] input, int index) {
-		double [] x = getData(input);
-		return getNormalSignature(x,index);
-	}
-	
-	public static double[] getNormalSignature(NiceTile tile) {
-		return getNormalSignature(tile.data,defaultindex);
-	}
-	
-	public static double[] getNormalSignature(double[] x, int index) {
-		int rows = x.length / valcount; // total rows
+	public static double[] getNormalSignature(ColumnBasedNiceTile tile, int index) {
+		Column col = tile.getColumn(index);
+		int rows = col.getSize(); // total rows
 		double min = globalmin[index];
 		double max = globalmax[index];
 		double range = max - min;
 		double [] histogram = {0.0,0.0};
 		double sum = 0;
 
-		if(x.length > 0) {
-			//System.out.println("val: "+x[index]);
-		} else {
+		if((rows == 0) || (!col.isNumeric())) {
 			return histogram;
 		}
+		
 		for(int i = 0; i < rows; i++) {
-			sum += x[i*valcount+index];
+			sum += (Double) tile.get(index, i);
 		}
 		histogram[0] = sum / rows;
 		histogram[1] = 0;
 		for(int i = 0; i < rows; i++) {
-			double diff = x[i*valcount+index] - histogram[0];
+			double diff = ((Double) tile.get(index, i)) - histogram[0];
 			histogram[1] += Math.pow(diff, 2);
 		}
 		histogram[1] = Math.sqrt(histogram[1]/rows);
@@ -107,13 +99,13 @@ public class Signatures {
 	
 	/**************** Dense Sift ****************/
 	public static class DenseSiftSignature implements Callable<double[]> {
-		NiceTileBuffer diskbuf;
-		TileKey id;
+		DefinedTileView dtv;
+		NewTileKey id;
 		ConcurrentKDTree<Integer> vocabulary;
 		int vocabsize;
 		
-		public DenseSiftSignature(NiceTileBuffer diskbuf, TileKey id, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
-			this.diskbuf = diskbuf;
+		public DenseSiftSignature(DefinedTileView dtv, NewTileKey id, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+			this.dtv = dtv;
 			this.id = id;
 			this.vocabulary = vocabulary;
 			this.vocabsize = vocabsize;
@@ -121,16 +113,19 @@ public class Signatures {
 		
 		@Override
 		public double[] call() {
-			return buildDenseSiftSignature(this.diskbuf.getTile(this.id),this.vocabulary,this.vocabsize);
+			ColumnBasedNiceTile tile = new ColumnBasedNiceTile(this.id);
+			this.dtv.nti.getTile(dtv.v, dtv.ts, tile);
+			return buildDenseSiftSignature(tile,this.vocabulary,this.vocabsize);
 		}
 	}
 	
-	public static List<double[]> buildDenseSiftSignaturesInParallel(NiceTileBuffer diskbuf, List<TileKey> ids, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+	public static List<double[]> buildDenseSiftSignaturesInParallel(DefinedTileView dtv,
+			List<NewTileKey> ids, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
 		ExecutorService executor = Executors.newFixedThreadPool(3);
 		List<DenseSiftSignature> inputs = new ArrayList<DenseSiftSignature>();
 		List<double[]> finalResults = new ArrayList<double[]>();
-		for(TileKey id : ids) {
-			inputs.add(new DenseSiftSignature(diskbuf,id,vocabulary,vocabsize));
+		for(NewTileKey id : ids) {
+			inputs.add(new DenseSiftSignature(dtv,id,vocabulary,vocabsize));
 		}
 		List<Future<double[]>> results;
 		try {
@@ -150,7 +145,7 @@ public class Signatures {
 		return finalResults;
 	}
 	
-	public static double[] buildDenseSiftSignature(NiceTile tile, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+	public static double[] buildDenseSiftSignature(ColumnBasedNiceTile tile, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
 		Mat m = getDenseSiftDescriptorsForImage(tile);
 		return buildSiftSignature(m,vocabulary,vocabsize);
 	}
@@ -160,7 +155,7 @@ public class Signatures {
 	}
 	
 	// for general use
-	public static Mat getDenseSiftDescriptorsForImage(NiceTile tile) {
+	public static Mat getDenseSiftDescriptorsForImage(ColumnBasedNiceTile tile) {
 		Mat descriptors = readMat(denseSiftString,tile.id); // do we have the descriptors already?
 		if(descriptors != null) {
 			return descriptors;
@@ -187,13 +182,13 @@ public class Signatures {
 	
 	/**************** Sift ****************/
 	public static class SiftSignature implements Callable<double[]> {
-		NiceTileBuffer diskbuf;
-		TileKey id;
+		DefinedTileView dtv;
+		NewTileKey id;
 		ConcurrentKDTree<Integer> vocabulary;
 		int vocabsize;
 		
-		public SiftSignature(NiceTileBuffer diskbuf, TileKey id, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
-			this.diskbuf = diskbuf;
+		public SiftSignature(DefinedTileView dtv, NewTileKey id, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+			this.dtv = dtv;
 			this.id = id;
 			this.vocabulary = vocabulary;
 			this.vocabsize = vocabsize;
@@ -201,16 +196,18 @@ public class Signatures {
 		
 		@Override
 		public double[] call() {
-			return buildSiftSignature(this.diskbuf.getTile(this.id),this.vocabulary,this.vocabsize);
+			ColumnBasedNiceTile tile = new ColumnBasedNiceTile(this.id);
+			this.dtv.nti.getTile(dtv.v, dtv.ts, tile);
+			return buildSiftSignature(tile,this.vocabulary,this.vocabsize);
 		}
 	}
 	
-	public static List<double[]> buildSiftSignaturesInParallel(NiceTileBuffer diskbuf, List<TileKey> ids, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+	public static List<double[]> buildSiftSignaturesInParallel(DefinedTileView dtv, List<NewTileKey> ids, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
 		ExecutorService executor = Executors.newFixedThreadPool(3);
 		List<SiftSignature> inputs = new ArrayList<SiftSignature>();
 		List<double[]> finalResults = new ArrayList<double[]>();
-		for(TileKey id : ids) {
-			inputs.add(new SiftSignature(diskbuf,id,vocabulary,vocabsize));
+		for(NewTileKey id : ids) {
+			inputs.add(new SiftSignature(dtv,id,vocabulary,vocabsize));
 		}
 		List<Future<double[]>> results;
 		try {
@@ -230,7 +227,7 @@ public class Signatures {
 		return finalResults;
 	}
 	
-	public static double[] buildSiftSignature(NiceTile tile, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+	public static double[] buildSiftSignature(ColumnBasedNiceTile tile, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
 		Mat m = getSiftDescriptorsForImage(tile);
 		return buildSiftSignature(m,vocabulary,vocabsize);
 	}
@@ -275,7 +272,7 @@ public class Signatures {
 	}
 	
 	// for general use
-	public static Mat getSiftDescriptorsForImage(NiceTile tile) {
+	public static Mat getSiftDescriptorsForImage(ColumnBasedNiceTile tile) {
 		Mat descriptors = readMat(siftString,tile.id); // do we have the descriptors already?
 		if(descriptors != null) {
 			return descriptors;
@@ -319,24 +316,14 @@ public class Signatures {
 		return distance / 2;
 	}
 	
-	public static double[] getHistogramSignature(byte[] input) {
-		return getHistogramSignature(input,defaultindex,defaultbins);
+	public static double[] getHistogramSignature(ColumnBasedNiceTile tile) {
+
+		return getHistogramSignature(tile,defaultindex,defaultbins);
 	}
 	
-	public static double[] getHistogramSignature(Tile tile) {
-		return getHistogramSignature(tile.data);
-	}
-	
-	public static double[] getHistogramSignature(NiceTile tile) {
-		return getHistogramSignature(tile.data);
-	}
-	
-	public static double[] getHistogramSignature(double[] data) {
-		return getHistogramSignature(data,defaultindex,defaultbins);
-	}
-	
-	public static double[] getHistogramSignature(double[] x, int index, int bins) {
-		int rows = x.length / valcount; // total rows
+	public static double[] getHistogramSignature(ColumnBasedNiceTile tile, int index, int bins) {
+		Column col = tile.getColumn(index);
+		int rows = col.getSize(); // total rows
 		double min = globalmin[index];
 		double max = globalmax[index];
 		double [] histogram = new double[bins];
@@ -344,13 +331,11 @@ public class Signatures {
 		for(int i = 0; i < bins; i++) {
 			histogram[i] = 0.0;
 		}
-		if(x.length > 0) {
-			//System.out.println("val: "+x[index]);
-		} else {
+		if((rows == 0) || (!col.isNumeric())) {
 			return histogram;
 		}
 		for(int i = 0; i < rows; i++) {
-			double val = x[i*valcount+index];
+			double val = (Double) tile.get(index,i);
 			histogram[(int)((val - min) / binwidth)]++;
 		}
 		for(int i = 0; i < histogram.length; i++) {
@@ -364,39 +349,22 @@ public class Signatures {
 		return histogram;
 	}
 	
-	public static double[] getHistogramSignature(byte[] input, int index, int bins) {
-		double [] x = getData(input);
-		return getHistogramSignature(x,index,bins);
-		
-	}
-	
 	/**************** filtered Histograms ****************/
 	
-	public static double[] getFilteredHistogramSignature(Tile tile) {
-		return getFilteredHistogramSignature(tile.data);
+	public static double[] getFilteredHistogramSignature(ColumnBasedNiceTile tile) {
+		return getFilteredHistogramSignature(tile,defaultindex,defaultfilterindex,defaultfiltervals[0],defaultbins);
 	}
 	
-	public static double[] getFilteredHistogramSignature(NiceTile tile) {
-		return getFilteredHistogramSignature(tile.data);
-	}
-	
-	public static double[] getFilteredHistogramSignature(double[] input) {
-		return getFilteredHistogramSignature(input,defaultindex,defaultfilterindex,defaultfiltervals[0],defaultbins);
-	}
-	
-	public static double[] getFilteredHistogramSignature(byte[] input) {
-		return getFilteredHistogramSignature(input,defaultindex,defaultfilterindex,defaultfiltervals[0],defaultbins);
-	}
-	
-	public static double[] getFilteredHistogramSignature(double[] x, int index, int filterindex, double filtervalue, int bins) {
-		int rows = x.length / valcount; // total rows
+	public static double[] getFilteredHistogramSignature(ColumnBasedNiceTile tile, int index, int filterindex, double filtervalue, int bins) {
+		Column col = tile.getColumn(index);
+		int rows = col.getSize(); // total rows
 		double min = globalmin[index];
 		double max = globalmax[index];
 		double [] histogram = new double[bins];
 		double binwidth = (max - min) / bins;
 		for(int i = 0; i < rows; i++) {
-			double val = x[i*valcount+index];
-			double filter = x[i*valcount + filterindex];
+			double val = (Double) tile.get(index,i);
+			double filter = (Double) tile.get(filterindex,i);
 			if(filter == filtervalue) {
 				histogram[(int)((val - min) / binwidth)]++;
 			}
@@ -410,11 +378,6 @@ public class Signatures {
 		}
 		//System.out.println();
 		return histogram;
-	}
-	
-	public static double[] getFilteredHistogramSignature(byte[] input, int index, int filterindex, double filtervalue, int bins) {
-		double [] x = getData(input);
-		return getFilteredHistogramSignature(x,index,filterindex,filtervalue,bins);
 	}
 	
 	/******************general ********************/
@@ -448,7 +411,7 @@ public class Signatures {
 		return m;
 	}
 	
-	public static void writeMat(String sig, Mat toSave, TileKey id) {
+	public static void writeMat(String sig, Mat toSave, NewTileKey id) {
 		File directory = new File(defaultMetadataDir+sig+"/");
 		directory.mkdirs();
 		String filename = id.buildTileStringForFile();
@@ -470,7 +433,7 @@ public class Signatures {
 		}
 	}
 	
-	public static Mat readMat(String sig, TileKey id) {
+	public static Mat readMat(String sig, NewTileKey id) {
 		Mat returnval = null;
 		String filename = id.buildTileStringForFile();
 		File file = new File(defaultMetadataDir+sig+"/"+filename);

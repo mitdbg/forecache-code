@@ -2,7 +2,8 @@ package abstraction.storage;
 
 import java.util.List;
 
-import abstraction.util.ColumnBasedNiceTile;
+
+import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.NewTileKey;
 
 public abstract class TileBuffer {

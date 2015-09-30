@@ -1,7 +1,6 @@
 package backend.prediction.directional;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import edu.berkeley.nlp.lm.ArrayEncodedProbBackoffLm;
@@ -10,32 +9,24 @@ import edu.berkeley.nlp.lm.io.ArpaLmReader;
 import edu.berkeley.nlp.lm.map.NgramMap;
 import edu.berkeley.nlp.lm.values.ProbBackoffPair;
 
-import backend.disk.DiskNiceTileBuffer;
-import backend.disk.DiskTileBuffer;
-import backend.disk.OldScidbTileInterface;
-import backend.disk.TileInterface;
-import backend.memory.MemoryNiceTileBuffer;
-import backend.memory.MemoryTileBuffer;
 import backend.prediction.BasicModel;
 import backend.prediction.DirectionPrediction;
-import backend.prediction.TileHistoryQueue;
-import backend.util.Direction;
-import backend.util.Model;
-import backend.util.NiceTile;
-import backend.util.NiceTileBuffer;
-import backend.util.Signatures;
-import backend.util.TileKey;
+import abstraction.prediction.DefinedTileView;
+import abstraction.prediction.SessionMetadata;
+import abstraction.util.Direction;
+import abstraction.util.Model;
+import abstraction.util.NewTileKey;
 
-import utils.UserRequest;
-import utils.UtilityFunctions;
+import abstraction.util.UserRequest;
+import abstraction.util.UtilityFunctions;
 
 public class NGramDirectionalModel extends BasicModel {
 	protected static List<String> sentences;
 	protected static StringWordIndexer wordIndexer;
 	protected static ArrayEncodedProbBackoffLm<String> lm;
 
-	public NGramDirectionalModel(TileHistoryQueue ref, NiceTileBuffer membuf, NiceTileBuffer diskbuf,TileInterface api, int len) {
-		super(ref,membuf,diskbuf,api,len);
+	public NGramDirectionalModel(int len) {
+		super(len);
 		sentences = new ArrayList<String>();
 		setupNgramModel();
 		this.useDistanceCorrection = false;
@@ -53,34 +44,35 @@ public class NGramDirectionalModel extends BasicModel {
 	
 	// computes an ordering of all directions using confidence values
 	@Override
-	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
-		return super.predictOrder(htrace,true);
+	public List<DirectionPrediction> predictOrder(SessionMetadata md, DefinedTileView dtv, List<NewTileKey> htrace) {
+		return super.predictOrder(md,dtv,htrace,true);
 	}
 	
 	@Override
-	public Double computeConfidence(TileKey id, List<TileKey> trace) {
-		List<TileKey> traceCopy = new ArrayList<TileKey>();
+	public Double computeConfidence(SessionMetadata md, DefinedTileView dtv, NewTileKey id, List<NewTileKey> trace) {
+		List<NewTileKey> traceCopy = new ArrayList<NewTileKey>();
 		traceCopy.addAll(trace);
-		TileKey prev = traceCopy.get(traceCopy.size() - 1);
-		//List<TileKey> path = UtilityFunctions.buildPath2(prev, id); // build a path to this key
-		List<TileKey> path = UtilityFunctions.buildPath(prev, id); // build a path to this key
-		return computeConfidenceForPath(path,traceCopy);
+		NewTileKey prev = traceCopy.get(traceCopy.size() - 1);
+		//List<NewTileKey> path = UtilityFunctions.buildPath2(prev, id); // build a path to this key
+		List<NewTileKey> path = UtilityFunctions.buildPath(prev, id); // build a path to this key
+		return computeConfidenceForPath(md,dtv,path,traceCopy);
 	}
 	
 	@Override
-	public Double computeDistance(TileKey id, List<TileKey> trace) {
+	public Double computeDistance(SessionMetadata md, DefinedTileView dtv, NewTileKey id, List<NewTileKey> trace) {
 		return null;
 	}
 	
-	public Double computeConfidenceForPath(List<TileKey> path, List<TileKey> traceCopy) {
+	public Double computeConfidenceForPath(SessionMetadata md, DefinedTileView dtv,
+			List<NewTileKey> path, List<NewTileKey> traceCopy) {
 		List<Direction> dirPath = UtilityFunctions.buildDirectionPath(path);
 		if(dirPath.size() == 1) {
-			return computeConfidence(dirPath.get(0),traceCopy);
+			return computeConfidence(md,dtv,dirPath.get(0),traceCopy);
 		}
 		double prob = 0;
 		for(int i = 0; i < dirPath.size(); i++) {
 			Direction d = dirPath.get(i);
-			prob += computeConfidence(d,traceCopy); // log probabilities
+			prob += computeConfidence(md,dtv,d,traceCopy); // log probabilities
 			traceCopy.remove(0);
 			traceCopy.add(path.get(i+1));
 		}
@@ -89,15 +81,16 @@ public class NGramDirectionalModel extends BasicModel {
 	}
 	
 	// average confidence across all directions in the path for this tile
-	public Double computeConfidenceForPath2(List<TileKey> path, List<TileKey> traceCopy) {
+	public Double computeConfidenceForPath2(SessionMetadata md, DefinedTileView dtv,
+			List<NewTileKey> path, List<NewTileKey> traceCopy) {
 		List<Direction> dirPath = UtilityFunctions.buildDirectionPath(path);
 		if(dirPath.size() == 1) {
-			return computeConfidence(dirPath.get(0),traceCopy);
+			return computeConfidence(md,dtv,dirPath.get(0),traceCopy);
 		}
 		double prob = 0;
 		for(int i = 0; i < dirPath.size(); i++) {
 			Direction d = dirPath.get(i);
-			prob += computeConfidence(d,traceCopy);
+			prob += computeConfidence(md,dtv,d,traceCopy);
 			traceCopy.remove(0);
 			traceCopy.add(path.get(i+1));
 		}
@@ -105,7 +98,7 @@ public class NGramDirectionalModel extends BasicModel {
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<TileKey> trace) {
+	public double computeConfidence(SessionMetadata md, DefinedTileView dtv, Direction d, List<NewTileKey> trace) {
 		String p = buildDirectionStringFromKey(trace);
 		p += " " + d.getWord();
 		//System.out.println("dirstring: \""+p +"\"");
@@ -120,14 +113,14 @@ public class NGramDirectionalModel extends BasicModel {
 	
 	//want sentences now, not words
 	@Override
-	public String buildDirectionStringFromKey(List<TileKey> trace) {
+	public String buildDirectionStringFromKey(List<NewTileKey> trace) {
 		if(trace.size() < 2) {
 			return "";
 		}
 		String dirstring = "";
 		int i = 1;
-		TileKey n = trace.get(0);
-		TileKey p = n;
+		NewTileKey n = trace.get(0);
+		NewTileKey p = n;
 		n = trace.get(i);
 		Direction d = UtilityFunctions.getDirection(p,n);
 		if(d != null) {

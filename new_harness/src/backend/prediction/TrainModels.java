@@ -6,8 +6,8 @@ import backend.prediction.directional.HotspotDirectionalModel;
 import backend.prediction.directional.MarkovChainDirectionalModel;
 import backend.prediction.directional.NGramDirectionalModel;
 
-import utils.DBInterface;
-import utils.UserRequest;
+import abstraction.util.DBInterface;
+import abstraction.util.UserRequest;
 
 public class TrainModels {
 	public static String defaulttaskname = "task1";

@@ -1,5 +1,7 @@
 package abstraction.prediction;
 
+import abstraction.util.SignatureMap;
+
 /**
  * @author leibatt
  * used to store the necessary metadata for a given caching layer

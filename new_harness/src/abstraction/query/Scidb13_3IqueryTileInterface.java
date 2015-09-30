@@ -2,7 +2,9 @@ package abstraction.query;
 
 import java.util.List;
 
-import abstraction.util.ColumnBasedNiceTile;
+import abstraction.tile.ColumnBasedNiceTile;
+
+
 
 public class Scidb13_3IqueryTileInterface extends Scidb14_12IqueryTileInterface {
 	//NOTE: SciDB 13.3 does *not* support tsv output format for iquery!!!!

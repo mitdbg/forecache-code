@@ -12,16 +12,14 @@ import libsvm.svm_model;
 import libsvm.svm_node;
 import libsvm.svm_parameter;
 import libsvm.svm_problem;
-import backend.util.Direction;
-import backend.util.DirectionClass;
-import backend.util.History;
-import backend.util.ModelAccuracy;
-import backend.util.TileKey;
-import utils.DBInterface;
-import utils.ExplorationPhase;
-import utils.TraceMetadata;
-import utils.UserRequest;
-import utils.UtilityFunctions;
+import abstraction.util.Direction;
+import abstraction.util.DirectionClass;
+import abstraction.util.NewTileKey;
+import abstraction.util.DBInterface;
+import abstraction.util.ExplorationPhase;
+import abstraction.util.TraceMetadata;
+import abstraction.util.UserRequest;
+import abstraction.util.UtilityFunctions;
 
 public class TestSVM {
 
@@ -35,11 +33,11 @@ public class TestSVM {
 		Map<String,Integer> LabelsToInts;
 		List<String> IntsToLabels;
 		
-		public double[] getFeatures(List<TileKey> history) {
+		public double[] getFeatures(List<NewTileKey> history) {
 			if(history.size() == 0) return new double[]{0,0,0,0,0,0};
-			TileKey last = history.get(history.size()-1);
-			int x = last.id[0];
-			int y = last.id[1];
+			NewTileKey last = history.get(history.size()-1);
+			int x = last.dimIndices[0];
+			int y = last.dimIndices[1];
 			int zoom = last.zoom;
 			int incount = 0;
 			int outcount = 0;
@@ -63,12 +61,12 @@ public class TestSVM {
 		}
 		
 		// get the label name for the predicted class
-		public String predictLabel(List<TileKey> history) {
+		public String predictLabel(List<NewTileKey> history) {
 			return IntsToLabels.get(predict(history));
 		}
 		
 		// get the ID of the predicted class
-		public int predict(List<TileKey> history) {
+		public int predict(List<NewTileKey> history) {
 			double[] features = getFeatures(history);
 			int[] labels = new int[model.nr_class];
 			svm.svm_get_labels(model, labels);

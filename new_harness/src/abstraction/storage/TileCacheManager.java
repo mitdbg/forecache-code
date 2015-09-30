@@ -2,8 +2,9 @@ package abstraction.storage;
 
 import java.util.List;
 
+
 import abstraction.query.NewTileInterface;
-import abstraction.util.ColumnBasedNiceTile;
+import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.NewTileKey;
 import abstraction.util.TileStructure;
 import abstraction.util.View;

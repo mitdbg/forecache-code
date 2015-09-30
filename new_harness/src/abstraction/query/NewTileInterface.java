@@ -3,7 +3,8 @@ package abstraction.query;
 import java.util.List;
 import java.util.Map;
 
-import abstraction.util.ColumnBasedNiceTile;
+
+import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.NewTileKey;
 import abstraction.util.TileStructure;
 import abstraction.util.View;

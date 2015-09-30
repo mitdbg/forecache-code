@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -21,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import configurations.DBConnector;
 
 import abstraction.query.Scidb14_12IqueryTileInterface.AttributesDataPair;
-import abstraction.util.ColumnBasedNiceTile;
+import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.NewTileKey;
 import abstraction.util.TileStructure;
 import abstraction.util.View;

@@ -6,47 +6,41 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import backend.disk.DiskNiceTileBuffer;
-import backend.disk.DiskTileBuffer;
-import backend.disk.OldScidbTileInterface;
-import backend.disk.TileInterface;
-import backend.memory.MemoryNiceTileBuffer;
-import backend.memory.MemoryTileBuffer;
+import abstraction.prediction.DefinedTileView;
+import abstraction.prediction.SessionMetadata;
 import backend.prediction.DirectionPrediction;
-import backend.prediction.TileHistoryQueue;
-import backend.util.Direction;
-import backend.util.Model;
-import backend.util.NiceTileBuffer;
-import backend.util.TileKey;
+import abstraction.util.Direction;
+import abstraction.util.Model;
+import abstraction.util.NewTileKey;
+import abstraction.util.UtilityFunctions;
 
-import utils.UserRequest;
+import abstraction.util.UserRequest;
 
 public class HotspotDirectionalModel extends MomentumDirectionalModel {
-	protected Map<TileKey,Integer> hotspots;
+	protected Map<NewTileKey,Integer> hotspots;
 	public static final int defaulthotspotlen = 5;
 	public static final double maxdistance = 2.0;
 	protected int hotspotlen;
 	
-	public HotspotDirectionalModel(TileHistoryQueue ref, NiceTileBuffer membuf, NiceTileBuffer diskbuf,TileInterface api, int len) {
-		super(ref,membuf,diskbuf,api,len);
-		this.hotspots = new HashMap<TileKey,Integer>();
+	public HotspotDirectionalModel(int len) {
+		super(len);
+		this.hotspots = new HashMap<NewTileKey,Integer>();
 		this.hotspotlen = defaulthotspotlen;
 		this.m = Model.HOTSPOT;
 	}
 	
-	public HotspotDirectionalModel(TileHistoryQueue ref, NiceTileBuffer membuf, NiceTileBuffer diskbuf,TileInterface api, int len, int hotspotlen) {
-		this(ref,membuf,diskbuf,api,len);
+	public HotspotDirectionalModel(int len, int hotspotlen) {
+		this(len);
 		this.hotspotlen = hotspotlen;
-		this.m = Model.HOTSPOT;
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<TileKey> trace) {
-		Direction hotDirection = this.getHotDirection(trace.get(trace.size()-1));
+	public double computeConfidence(SessionMetadata md, DefinedTileView dtv, Direction d, List<NewTileKey> trace) {
+		Direction hotDirection = this.getHotDirection(dtv,trace.get(trace.size()-1));
 		if(d == hotDirection) {
 			return 1.0001;
 		} else {
-			double confidence = super.computeConfidence(d, trace);
+			double confidence = super.computeConfidence(md,dtv,d, trace);
 			if(confidence > 1.0) {
 				return 1.0;
 			}
@@ -56,18 +50,19 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 	
 	// computes an ordering of all directions using confidence values
 	@Override
-	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
+	public List<DirectionPrediction> predictOrder(SessionMetadata md, DefinedTileView dtv,
+			List<NewTileKey> htrace) {
 		List<DirectionPrediction> order = new ArrayList<DirectionPrediction>();
 		long start = System.currentTimeMillis();
 		
 		// see if hotspots will influence decision
 		Direction hotdirection = null;
 		if((htrace != null) && (htrace.size() > 0)) {
-			hotdirection = this.getHotDirection(htrace.get(htrace.size()-1));
+			hotdirection = this.getHotDirection(dtv, htrace.get(htrace.size()-1));
 		}
 		
 		// for each direction, compute confidence
-		this.getVotes(htrace); // check the history
+		this.getVotes(md,htrace); // check the history
 		DirectionPrediction max = null;
 		double maxscore = 0;
 		for(Direction d : Direction.values()) {
@@ -113,9 +108,9 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 	}
 	
 	public void truncateHotspots() {
-		List<TileKey> topk = new ArrayList<TileKey>();
+		List<NewTileKey> topk = new ArrayList<NewTileKey>();
 		List<Integer> scores = new ArrayList<Integer>();
-		for(TileKey key : hotspots.keySet()) {
+		for(NewTileKey key : hotspots.keySet()) {
 			int score = hotspots.get(key);
 			//System.out.println("key: "+key+", count: "+score);
 
@@ -123,11 +118,11 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 				topk.add(key);
 				scores.add(score);
 			} else {
-				TileKey currentkey = key;
+				NewTileKey currentkey = key;
 				for(int i = 0; i < topk.size(); i++) {
 					if(score > scores.get(i)) {
 						//store current to temporary variables
-						TileKey temp = currentkey;
+						NewTileKey temp = currentkey;
 						int tempscore = score;
 						
 						// replace current with old
@@ -156,7 +151,7 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 	
 	public void updateHotspots(List<UserRequest> trace) {
 		for(UserRequest request: trace) {
-			TileKey hottile = MarkovDirectionalModel.getKeyFromRequest(request);
+			NewTileKey hottile = MarkovDirectionalModel.getKeyFromRequest(request);
 			Integer count = hotspots.get(hottile);
 			if(count == null) {
 				hotspots.put(hottile, 1);
@@ -166,11 +161,11 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 		}
 	}
 	
-	protected Direction getHotDirection(TileKey prevkey) {
-		TileKey minkey = null;
+	protected Direction getHotDirection(DefinedTileView dtv, NewTileKey prevkey) {
+		NewTileKey minkey = null;
 		double mindist = 0;
-		for(TileKey key : hotspots.keySet()) {
-			double currdist = prevkey.getDistance(key);
+		for(NewTileKey key : hotspots.keySet()) {
+			double currdist = UtilityFunctions.manhattanDist(prevkey, key);
 			if(currdist <= maxdistance) {
 				if((minkey == null) || (currdist < mindist)) {
 					mindist = currdist;
@@ -178,10 +173,10 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 				}
 			}
 		}
-		return getClose(prevkey, minkey);
+		return getClose(dtv, prevkey, minkey);
 	}
 	
-	protected Direction getClose(TileKey prev, TileKey goal) {
+	protected Direction getClose(DefinedTileView dtv, NewTileKey prev, NewTileKey goal) {
 		Direction d = null;
 		if(goal == null) { // nothing was close enough
 			return d;
@@ -189,9 +184,9 @@ public class HotspotDirectionalModel extends MomentumDirectionalModel {
 
 		double mindist = 0;
 		for(Direction candidate : Direction.values()) {
-			TileKey candidatekey = this.DirectionToTile(prev, candidate); // moving from prev
+			NewTileKey candidatekey = this.DirectionToTile(dtv,prev, candidate); // moving from prev
 			if(candidatekey != null) {
-				double currdist = goal.getDistance(candidatekey);
+				double currdist = UtilityFunctions.manhattanDist(goal, candidatekey);
 				if((d == null) || (currdist < mindist)) { // does this make progress towards the goal?
 					mindist = currdist;
 					d = candidate;

@@ -4,36 +4,35 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import backend.disk.DiskNiceTileBuffer;
-import backend.disk.DiskTileBuffer;
-import backend.disk.OldScidbTileInterface;
-import backend.memory.MemoryNiceTileBuffer;
-import backend.memory.MemoryTileBuffer;
+import abstraction.prediction.DefinedTileView;
+import abstraction.prediction.SessionMetadata;
+import abstraction.util.Model;
 import backend.prediction.BasicModel;
 import backend.prediction.DirectionPrediction;
-import backend.prediction.TileHistoryQueue;
-import backend.util.Direction;
-import backend.util.TileKey;
+import abstraction.util.Direction;
+import abstraction.util.NewTileKey;
 
-import utils.UserRequest;
-import utils.UtilityFunctions;
+import abstraction.util.UserRequest;
+import abstraction.util.UtilityFunctions;
 
 public class MarkovDirectionalModel extends BasicModel {
 	protected Map<String,MDMNode> condprobs;
 	
-	public MarkovDirectionalModel(TileHistoryQueue ref, MemoryNiceTileBuffer membuf, DiskNiceTileBuffer diskbuf,OldScidbTileInterface api, int len) {
-		super(ref,membuf,diskbuf,api,len);
+	public MarkovDirectionalModel(int len) {
+		super(len);
 		condprobs = new HashMap<String,MDMNode>();
 		this.useDistanceCorrection = false;
+		this.m = Model.NGRAM;
 	}
 	
 	@Override
-	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
-		return super.predictOrder(htrace,true);
+	public List<DirectionPrediction> predictOrder(SessionMetadata md, DefinedTileView dtv, List<NewTileKey> htrace) {
+		return super.predictOrder(md,dtv,htrace,true);
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<TileKey> trace) {
+	public double computeConfidence(SessionMetadata md, DefinedTileView dtv,
+			Direction d, List<NewTileKey> trace) {
 		if(trace.size() <= 1) { // if there is no prior direction
 			return computeBaseProb(d);
 		}
@@ -50,14 +49,14 @@ public class MarkovDirectionalModel extends BasicModel {
 			} else { // find longest relevant prefix and extrapolate
 				// get the last direction taken
 				Direction subd = UtilityFunctions.getDirection(trace.get(nextlast),trace.get(last));
-				prior = computeConfidence(subd,trace.subList(1, trace.size()));
+				prior = computeConfidence(md,dtv,subd,trace.subList(1, trace.size()));
 				return computeBaseProb(d) * prior;
 			}
 			
 		} else { // find longest relevant prefix and extrapolate
 			// get the last direction taken
 			Direction subd = UtilityFunctions.getDirection(trace.get(nextlast),trace.get(last));
-			prior = computeConfidence(subd,trace.subList(1, trace.size()));
+			prior = computeConfidence(md,dtv,subd,trace.subList(1, trace.size()));
 			return computeBaseProb(d) * prior;
 		}
 	}
@@ -153,14 +152,14 @@ public class MarkovDirectionalModel extends BasicModel {
 		}
 	}
 	
-	public void predictTest() {
-		if(this.history == null) {
+	public void predictTest(SessionMetadata md, DefinedTileView dtv) {
+		if(md.history == null) {
 			return;
 		}
 		long start = System.currentTimeMillis();
-		List<TileKey> htrace = history.getHistoryTrace(this.len);
+		List<NewTileKey> htrace = md.history.getHistoryTrace(this.len);
 		String dirstring = buildDirectionStringFromKey(htrace);
-		TileKey prediction = null;
+		NewTileKey prediction = null;
 		System.out.println("dirstring: "+dirstring);
 		for(int i = 0; i < dirstring.length(); i++) {
 			String sub = dirstring.substring(i);
@@ -181,7 +180,7 @@ public class MarkovDirectionalModel extends BasicModel {
 				if(end >= htrace.size()) {
 					end = htrace.size() - 1;
 				}
-				prediction = this.DirectionToTile(htrace.get(end),d);
+				prediction = this.DirectionToTile(dtv,htrace.get(end),d);
 				if(prediction != null) {
 					break;
 				}

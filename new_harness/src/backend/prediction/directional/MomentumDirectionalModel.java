@@ -5,27 +5,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import utils.UserRequest;
-import utils.UtilityFunctions;
-import backend.disk.DiskNiceTileBuffer;
-import backend.disk.DiskTileBuffer;
-import backend.disk.OldScidbTileInterface;
-import backend.disk.TileInterface;
-import backend.memory.MemoryNiceTileBuffer;
-import backend.memory.MemoryTileBuffer;
+import abstraction.util.UtilityFunctions;
+import abstraction.prediction.DefinedTileView;
+import abstraction.prediction.SessionMetadata;
 import backend.prediction.BasicModel;
 import backend.prediction.DirectionPrediction;
-import backend.prediction.TileHistoryQueue;
-import backend.util.Direction;
-import backend.util.Model;
-import backend.util.NiceTileBuffer;
-import backend.util.TileKey;
+import abstraction.util.Direction;
+import abstraction.util.Model;
+import abstraction.util.NewTileKey;
 
 public class MomentumDirectionalModel extends BasicModel {
 	protected Map<Character,Double> votes;
 	
-	public MomentumDirectionalModel(TileHistoryQueue ref, NiceTileBuffer membuf, NiceTileBuffer diskbuf,TileInterface api, int len){
-		super(ref,membuf,diskbuf,api,len);
+	public MomentumDirectionalModel(int len) {
+		super(len);
 		this.votes = new HashMap<Character,Double>();
 		this.useDistanceCorrection = false;
 		this.m = Model.MOMENTUM;
@@ -33,29 +26,30 @@ public class MomentumDirectionalModel extends BasicModel {
 	
 	// computes an ordering of all directions using confidence values
 	@Override
-	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
-		getVotes(htrace); // update our voting system;
-		return super.predictOrder(htrace,true);
+	public List<DirectionPrediction> predictOrder(SessionMetadata md, DefinedTileView dtv, List<NewTileKey> htrace) {
+		getVotes(md,htrace); // update our voting system;
+		return super.predictOrder(md,dtv,htrace,true);
 	}
 	
 	@Override
-	public Double computeConfidence(TileKey id, List<TileKey> trace) {
-		getVotes(trace); // update our voting system;
-		List<TileKey> traceCopy = new ArrayList<TileKey>();
+	public Double computeConfidence(SessionMetadata md, DefinedTileView dtv, NewTileKey id, List<NewTileKey> trace) {
+		getVotes(md,trace); // update our voting system;
+		List<NewTileKey> traceCopy = new ArrayList<NewTileKey>();
 		traceCopy.addAll(trace);
-		TileKey prev = traceCopy.get(traceCopy.size() - 1);
-		//List<TileKey> path = UtilityFunctions.buildPath2(prev, id); // build a path to this key
-		List<TileKey> path = UtilityFunctions.buildPath(prev, id); // build a path to this key
-		return computeConfidenceForPath(path,traceCopy);
+		NewTileKey prev = traceCopy.get(traceCopy.size() - 1);
+		//List<NewTileKey> path = UtilityFunctions.buildPath2(prev, id); // build a path to this key
+		List<NewTileKey> path = UtilityFunctions.buildPath(prev, id); // build a path to this key
+		return computeConfidenceForPath(md,dtv,path,traceCopy);
 	}
 	
 	@Override
-	public Double computeDistance(TileKey id, List<TileKey> trace) {
+	public Double computeDistance(SessionMetadata md, DefinedTileView dtv, NewTileKey id, List<NewTileKey> trace) {
 		return null;
 	}
 	
 	// probability of entire path to this tile
-	public Double computeConfidenceForPath(List<TileKey> path, List<TileKey> traceCopy) {
+	public Double computeConfidenceForPath(SessionMetadata md, DefinedTileView dtv,
+			List<NewTileKey> path, List<NewTileKey> traceCopy) {
 		List<Direction> dirPath = UtilityFunctions.buildDirectionPath(path);
 		//System.out.print("path for "+path.get(path.size()-1)+":");
 		//for(Direction d : dirPath) {
@@ -64,12 +58,12 @@ public class MomentumDirectionalModel extends BasicModel {
 		//System.out.println();
 		
 		if(dirPath.size() == 1) {
-			return Math.log(computeConfidence(dirPath.get(0),traceCopy));
+			return Math.log(computeConfidence(md,dtv,dirPath.get(0),traceCopy));
 		}
 		double prob = 0;
 		for(int i = 0; i < dirPath.size(); i++) {
 			Direction d = dirPath.get(i);
-			prob += Math.log(computeConfidence(d,traceCopy)); // log probabilities
+			prob += Math.log(computeConfidence(md,dtv,d,traceCopy)); // log probabilities
 			traceCopy.remove(0);
 			traceCopy.add(path.get(i+1));
 		}
@@ -78,16 +72,16 @@ public class MomentumDirectionalModel extends BasicModel {
 	}
 	
 	// average confidence across all directions in the path for this tile
-	public Double computeConfidenceForPath2(List<TileKey> path, List<TileKey> traceCopy) {
+	public Double computeConfidenceForPath2(SessionMetadata md, DefinedTileView dtv,List<NewTileKey> path, List<NewTileKey> traceCopy) {
 		List<Direction> dirPath = UtilityFunctions.buildDirectionPath(path);
 		if(dirPath.size() == 1) {
-			return computeConfidence(dirPath.get(0),traceCopy);
+			return computeConfidence(md,dtv,dirPath.get(0),traceCopy);
 		}
 		double prob = 0;
 		int count = dirPath.size();
 		for(int i = 0; i < dirPath.size(); i++) {
 			Direction d = dirPath.get(i);
-			prob += computeConfidence(d,traceCopy);
+			prob += computeConfidence(md,dtv,d,traceCopy);
 			traceCopy.remove(0);
 			traceCopy.add(path.get(i+1));
 		}
@@ -95,7 +89,8 @@ public class MomentumDirectionalModel extends BasicModel {
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<TileKey> trace) {
+	public double computeConfidence(SessionMetadata md, DefinedTileView dtv,
+			Direction d, List<NewTileKey> trace) {
 		Double score = this.votes.get(d.getVal().charAt(0));
 		double confidence = 0.0;
 		if(score != null) {
@@ -108,9 +103,9 @@ public class MomentumDirectionalModel extends BasicModel {
 		return confidence;
 	}
 	
-	public void getVotes(List<TileKey> trace) {
+	public void getVotes(SessionMetadata md, List<NewTileKey> trace) {
 		this.votes.clear();
-		if(this.history == null) {
+		if(md.history == null) {
 			return;
 		}
 		

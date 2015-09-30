@@ -4,24 +4,17 @@ import java.util.List;
 
 import org.opencv.core.Mat;
 
-import backend.disk.DiskNiceTileBuffer;
-import backend.disk.OldScidbTileInterface;
-import backend.disk.TileInterface;
-import backend.memory.MemoryNiceTileBuffer;
-import backend.prediction.TileHistoryQueue;
-import backend.util.Model;
-import backend.util.NiceTile;
-import backend.util.NiceTileBuffer;
-import backend.util.SignatureMap;
-import backend.util.Signatures;
-import backend.util.TileKey;
+import abstraction.util.Model;
+import abstraction.prediction.DefinedTileView;
+import abstraction.prediction.SessionMetadata;
+import abstraction.tile.ColumnBasedNiceTile;
+import abstraction.util.Signatures;
+import abstraction.util.NewTileKey;
 
 public class DenseSiftSignatureModel extends SiftSignatureModel{
 	
-	public DenseSiftSignatureModel(TileHistoryQueue ref, NiceTileBuffer membuf, 
-			NiceTileBuffer diskbuf,TileInterface api, int len,
-			SignatureMap sigMap) {
-		super(ref,membuf,diskbuf,api,len, sigMap);
+	public DenseSiftSignatureModel(int len) {
+		super(len);
 		this.m = Model.DSIFT;
 	}
 	
@@ -39,16 +32,16 @@ public class DenseSiftSignatureModel extends SiftSignatureModel{
 	}
 	
 	@Override
-	public double[] buildSignatureFromKey(TileKey id) {
-		//NiceTile tile = getTile(id);
-		NiceTile tile = diskbuf.getTile(id);
+	public double[] buildSignatureFromKey(DefinedTileView dtv, NewTileKey id) {
+		ColumnBasedNiceTile tile = new ColumnBasedNiceTile(id);
+		dtv.nti.getTile(dtv.v, dtv.ts, tile);
 		return Signatures.buildDenseSiftSignature(tile, vocab, defaultVocabSize);
 	}
 	
 	@Override
-	public void computeSignaturesInParallel(List<TileKey> ids) {
+	public void computeSignaturesInParallel(SessionMetadata md, DefinedTileView dtv, List<NewTileKey> ids) {
 		//long a = System.currentTimeMillis();
-		 List<double[]> sigs =  Signatures.buildDenseSiftSignaturesInParallel(diskbuf,ids, vocab, vocabSize);
+		 List<double[]> sigs =  Signatures.buildDenseSiftSignaturesInParallel(dtv,ids, vocab, vocabSize);
 		 for(int i = 0; i < sigs.size(); i++) {
 			 histograms.put(ids.get(i), sigs.get(i));
 		 }

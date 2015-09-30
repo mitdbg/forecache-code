@@ -1,6 +1,6 @@
 package backend.prediction;
 
-import backend.util.Direction;
+import abstraction.util.Direction;
 
 public class DirectionPrediction implements Comparable<DirectionPrediction> {
 	public Direction d;

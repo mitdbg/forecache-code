@@ -1,11 +1,11 @@
 package backend.prediction;
 
-import backend.util.DistanceModifiers;
-import backend.util.Model;
-import backend.util.TileKey;
+import abstraction.util.DistanceModifiers;
+import abstraction.util.Model;
+import abstraction.util.NewTileKey;
 
 public class TilePrediction implements Comparable<TilePrediction> {
-	public TileKey id;
+	public NewTileKey id;
 	public Double confidence = null;
 	public Double distance = null;
 	public Double physicalDistance = 1.0;

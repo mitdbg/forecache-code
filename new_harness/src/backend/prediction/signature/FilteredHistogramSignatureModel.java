@@ -2,44 +2,40 @@ package backend.prediction.signature;
 
 import java.util.List;
 
-import backend.disk.DiskNiceTileBuffer;
-import backend.disk.OldScidbTileInterface;
-import backend.disk.TileInterface;
-import backend.memory.MemoryNiceTileBuffer;
-import backend.prediction.TileHistoryQueue;
-import backend.util.Direction;
-import backend.util.Model;
-import backend.util.NiceTileBuffer;
-import backend.util.SignatureMap;
-import backend.util.Signatures;
-import backend.util.TileKey;
+import abstraction.prediction.DefinedTileView;
+import abstraction.prediction.SessionMetadata;
+import abstraction.util.Direction;
+import abstraction.util.Model;
+import abstraction.util.SignatureType;
+import abstraction.util.Signatures;
+import abstraction.util.NewTileKey;
 
 public class FilteredHistogramSignatureModel extends HistogramSignatureModel {
 
-	public FilteredHistogramSignatureModel(TileHistoryQueue ref, NiceTileBuffer membuf, 
-			NiceTileBuffer diskbuf,TileInterface api, int len, SignatureMap sigMap) {
-		super(ref,membuf,diskbuf,api,len, sigMap);
+	public FilteredHistogramSignatureModel(int len) {
+		super(len);
 		this.m = Model.FHISTOGRAM;
 	}
 	
 	@Override
-	public double[] getSignature(TileKey id) {
-		double[] sig = this.sigMap.getSignature(id, Model.FHISTOGRAM);
+	public double[] getSignature(SessionMetadata md, DefinedTileView dtv, NewTileKey id) {
+		double[] sig = dtv.sigMap.getSignature(id, SignatureType.FHISTOGRAM);
 		if(sig == null) sig = new double[Signatures.defaultbins];
 		return sig;
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<TileKey> htrace) {
+	public double computeConfidence(SessionMetadata md, DefinedTileView dtv,
+			Direction d, List<NewTileKey> htrace) {
 		double confidence = 0.0;
-		TileKey pkey = htrace.get(htrace.size()-1);
+		NewTileKey pkey = htrace.get(htrace.size()-1);
 		/*
 		NiceTile orig = null;
 		if(pkey != null) {
 			orig = getTile(pkey);
 		}
 		*/
-		TileKey ckey = this.DirectionToTile(pkey, d);
+		NewTileKey ckey = this.DirectionToTile(dtv,pkey, d);
 		/*
 		NiceTile candidate = null;
 		if(ckey != null) {
@@ -48,9 +44,9 @@ public class FilteredHistogramSignatureModel extends HistogramSignatureModel {
 		
 		if(candidate != null && orig != null) {
 		*/
-		for(TileKey roiKey : roi) {
-			confidence += Signatures.chiSquaredDistance(getSignature(ckey),
-					getSignature(roiKey));
+		for(NewTileKey roiKey : roi) {
+			confidence += Signatures.chiSquaredDistance(getSignature(md,dtv,ckey),
+					getSignature(md,dtv,roiKey));
 		}
 			//System.out.println(ckey+" with confidence: "+dp.confidence);
 		//}
@@ -61,13 +57,14 @@ public class FilteredHistogramSignatureModel extends HistogramSignatureModel {
 	}
 	
 	@Override
-	public Double computeDistance(TileKey id, List<TileKey> htrace) {
+	public Double computeDistance(SessionMetadata md, DefinedTileView dtv,
+			NewTileKey id, List<NewTileKey> htrace) {
 		double distance = 0.0;
 		//NiceTile candidate = getTile(id);
-		for(TileKey roiKey : roi) {
+		for(NewTileKey roiKey : roi) {
 			//NiceTile rtile = getTile(roiKey);
-			distance += Signatures.chiSquaredDistance(getSignature(id),
-					getSignature(roiKey));
+			distance += Signatures.chiSquaredDistance(getSignature(md,dtv,id),
+					getSignature(md,dtv,roiKey));
 			//distance += Signatures.chiSquaredDistance(Signatures.getFilteredHistogramSignature(candidate),
 			//		Signatures.getFilteredHistogramSignature(rtile));
 		}

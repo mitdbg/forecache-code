@@ -5,27 +5,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.opencv.core.Core;
 import org.opencv.core.Mat;
 
-import edu.wlu.cs.levy.CG.KDTree;
 
-import utils.DBInterface;
-import utils.UtilityFunctions;
-import backend.disk.DiskNiceTileBuffer;
-import backend.disk.OldScidbTileInterface;
-import backend.disk.TileInterface;
-import backend.memory.MemoryNiceTileBuffer;
+import abstraction.prediction.DefinedTileView;
+import abstraction.prediction.SessionMetadata;
+import abstraction.tile.ColumnBasedNiceTile;
+import abstraction.util.DBInterface;
+import abstraction.util.UtilityFunctions;
 import backend.prediction.DirectionPrediction;
-import backend.prediction.TileHistoryQueue;
-import backend.util.Direction;
-import backend.util.Model;
-import backend.util.NiceTile;
-import backend.util.NiceTileBuffer;
-import backend.util.SignatureMap;
-import backend.util.Signatures;
-import backend.util.Signatures.ConcurrentKDTree;
-import backend.util.TileKey;
+import abstraction.util.Direction;
+import abstraction.util.Model;
+import abstraction.util.Signatures;
+import abstraction.util.Signatures.ConcurrentKDTree;
+import abstraction.util.NewTileKey;
 
 public class SiftSignatureModel extends BasicSignatureModel {
 	
@@ -33,36 +26,37 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	public int vocabSize;
 	protected boolean haveRealRoi = false;
 	ConcurrentKDTree<Integer> vocab = null;
-	protected Map<TileKey,double[]> histograms;
+	protected Map<NewTileKey,double[]> histograms;
 
-	public SiftSignatureModel(TileHistoryQueue ref, NiceTileBuffer membuf, 
-			NiceTileBuffer diskbuf,TileInterface api, int len,
-			SignatureMap sigMap) {
-		super(ref,membuf,diskbuf,api,len,sigMap);
-		this.histograms = new HashMap<TileKey,double[]>();
+	public SiftSignatureModel(int len) {
+		super(len);
+		this.histograms = new HashMap<NewTileKey,double[]>();
 		this.vocabSize = defaultVocabSize;
 		this.m = Model.SIFT;
 	}
 	
 	@Override
-	public List<DirectionPrediction> predictOrder(List<TileKey> htrace) {
-		updateRoi(scidbapi); // make sure we're using the most recent ROI
-		return super.predictOrder(htrace,false); // don't reverse the order here
+	public List<DirectionPrediction> predictOrder(SessionMetadata md, DefinedTileView dtv,
+			List<NewTileKey> htrace) {
+		updateRoi(md,dtv); // make sure we're using the most recent ROI
+		return super.predictOrder(md,dtv,htrace,false); // don't reverse the order here
 	}
 	
 	@Override
-	public double computeConfidence(Direction d, List<TileKey> trace) {
+	public double computeConfidence(SessionMetadata md, DefinedTileView dtv,
+			Direction d, List<NewTileKey> trace) {
 		double confidence = 0.0;
-		TileKey prev = trace.get(trace.size() - 1);
-		TileKey ckey = this.DirectionToTile(prev, d);
+		NewTileKey prev = trace.get(trace.size() - 1);
+		NewTileKey ckey = this.DirectionToTile(dtv,prev, d);
 		if(ckey == null) {
 			return defaultprob;
 		}
 		//double[] vocabhist = buildSignature(ckey);
-		for(TileKey roiKey : roi) {
+		for(NewTileKey roiKey : roi) {
 			//double[] roihist = histograms.get(roiKey);
 			//confidence += Signatures.chiSquaredDistance(vocabhist, roihist);
-			confidence += Signatures.chiSquaredDistance(getSignature(ckey), getSignature(roiKey));
+			confidence += Signatures.chiSquaredDistance(getSignature(md,dtv,ckey),
+					getSignature(md,dtv,roiKey));
 		}
 
 		if(confidence < defaultprob) {
@@ -72,18 +66,21 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	}
 	
 	@Override
-	public Double computeConfidence(TileKey id, List<TileKey> htrace) {
+	public Double computeConfidence(SessionMetadata md, DefinedTileView dtv,
+			NewTileKey id, List<NewTileKey> htrace) {
 		return null;
 	}
 	
 	@Override
-	public Double computeDistance(TileKey id, List<TileKey> htrace) {
+	public Double computeDistance(SessionMetadata md, DefinedTileView dtv,
+			NewTileKey id, List<NewTileKey> htrace) {
 		double distance = 0.0;
 		//double[] vocabhist = buildSignature(id);
-		for(TileKey roiKey : roi) {
+		for(NewTileKey roiKey : roi) {
 			//double[] roihist = histograms.get(roiKey);
 			//distance += Signatures.chiSquaredDistance(vocabhist, roihist);
-			distance += Signatures.chiSquaredDistance(getSignature(id), getSignature(roiKey));
+			distance += Signatures.chiSquaredDistance(getSignature(md,dtv,id),
+					getSignature(md,dtv,roiKey));
 		}
 
 		if(distance < defaultprob) {
@@ -93,9 +90,9 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	}
 	
 	@Override
-	public void computeSignaturesInParallel(List<TileKey> ids) {
+	public void computeSignaturesInParallel(SessionMetadata md, DefinedTileView dtv, List<NewTileKey> ids) {
 		//long a = System.currentTimeMillis();
-		 List<double[]> sigs =  Signatures.buildSiftSignaturesInParallel(diskbuf,ids, vocab, vocabSize);
+		 List<double[]> sigs =  Signatures.buildSiftSignaturesInParallel(dtv,ids, vocab, vocabSize);
 		 for(int i = 0; i < sigs.size(); i++) {
 			 histograms.put(ids.get(i), sigs.get(i));
 		 }
@@ -103,17 +100,18 @@ public class SiftSignatureModel extends BasicSignatureModel {
 		 //System.out.println("parallel:"+(b-a));
 	}
 	
-	public double[] getSignature(TileKey id) {
+	@Override
+	public double[] getSignature(SessionMetadata md, DefinedTileView dtv, NewTileKey id) {
 		//double[] sig = this.sigMap.getSignature(id, Model.SIFT);
-		double[] sig = buildSignature(id);
+		double[] sig = buildSignature(dtv, id);
 		return sig;
 	}
 	
 	// stores the histograms
-	public double[] buildSignature(TileKey id) {
+	public double[] buildSignature(DefinedTileView dtv, NewTileKey id) {
 		double[] signature = histograms.get(id);
 		if(signature == null) {
-			signature = buildSignatureFromKey(id);
+			signature = buildSignatureFromKey(dtv,id);
 			histograms.put(id, signature);
 		}
 		return signature;
@@ -124,36 +122,32 @@ public class SiftSignatureModel extends BasicSignatureModel {
 		return Signatures.buildSiftSignature(d, vocab, vocabSize);
 	}
 	
-	public double[] buildSignatureFromKey(TileKey id) {
+	public double[] buildSignatureFromKey(DefinedTileView dtv, NewTileKey id) {
 		//NiceTile tile = getTile(id);
-		NiceTile tile = diskbuf.getTile(id);
+		ColumnBasedNiceTile tile = new ColumnBasedNiceTile(id);
+		dtv.nti.getTile(dtv.v, dtv.ts, tile);
 		return Signatures.buildSiftSignature(tile, vocab, vocabSize);
 	}
 	
 	
 	@Override
-	public void updateRoi() {
-		updateRoi(scidbapi);
-	}
-	
-	
-	// don't use for now
-	public void updateRoi(TileInterface scidbapi) {
+	public void updateRoi(SessionMetadata md, DefinedTileView dtv) {
 		//long s = System.currentTimeMillis();
-		if(haveRealRoi && !history.newRoi()) return; // nothing to update
-		else if (!haveRealRoi && history.newRoi()) haveRealRoi = true; // now we have a real ROI
+		if(haveRealRoi && !md.history.newRoi()) return; // nothing to update
+		else if (!haveRealRoi && md.history.newRoi()) haveRealRoi = true; // now we have a real ROI
 		
-		List<TileKey> roi = history.getLastRoi();
-		List<TileKey> finalRois = new ArrayList<TileKey>();
+		List<NewTileKey> roi = md.history.getLastRoi();
+		List<NewTileKey> finalRois = new ArrayList<NewTileKey>();
 		histograms.clear(); // these histograms are now obsolete
 		this.roi = roi;
 		List<Mat> all_descriptors = new ArrayList<Mat>();
 		int rows = 0;
 		int cols = 0;
-		for(TileKey id : roi) { // for each tile in the ROI
+		for(NewTileKey id : roi) { // for each tile in the ROI
 			long a = System.currentTimeMillis();
 			//NiceTile t = getTile(id);
-			NiceTile t = diskbuf.getTile(id);
+			ColumnBasedNiceTile t = new ColumnBasedNiceTile(id);
+			dtv.nti.getTile(dtv.v, dtv.ts, t);
 			//System.out.println("size of t: "+t.getSize()+", time to get t: "+(System.currentTimeMillis()-a));
 			//Mat d = Signatures.getSiftDescriptorsForImage(getTile(id));
 			Mat d = Signatures.getSiftDescriptorsForImage(t);
@@ -184,7 +178,7 @@ public class SiftSignatureModel extends BasicSignatureModel {
 /*
 			if(vocabSize < defaultVocabSize) {
 				for(int i = 0; i < roi.size(); i++) {
-					TileKey rkey = roi.get(i);
+					NewTileKey rkey = roi.get(i);
 					System.out.print(rkey.buildTileStringForFile()+ "-");
 					System.out.print(all_descriptors.get(i).rows()+" ");
 				}
@@ -196,12 +190,12 @@ public class SiftSignatureModel extends BasicSignatureModel {
 			if(all_descriptors.size() < 3) {
 				for(int i = 0; i < all_descriptors.size(); i++) {
 					Mat d = all_descriptors.get(i);
-					TileKey id = roi.get(i);
+					NewTileKey id = roi.get(i);
 					double[] signature = buildSignatureFromMat(d);
 					histograms.put(id, signature); // save for later use
 				}
 			} else {
-				Signatures.buildSiftSignaturesInParallel(diskbuf, roi, vocab, vocabSize);
+				Signatures.buildSiftSignaturesInParallel(dtv, roi, vocab, vocabSize);
 			}
 			
 		}
@@ -209,11 +203,12 @@ public class SiftSignatureModel extends BasicSignatureModel {
 	}
 	
 	public static void main(String[] args) {
+		/*
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 		String idstr = "[0, 0]";
 		int zoom = 1;
 		int[] tile_id = UtilityFunctions.parseTileIdInteger(idstr);
-		TileKey id = new TileKey(tile_id,zoom);
+		NewTileKey id = new NewTileKey(tile_id,zoom);
 		int vocabSize = defaultVocabSize;
 		OldScidbTileInterface scidbapi = new OldScidbTileInterface(DBInterface.defaultparamsfile,DBInterface.defaultdelim);
 		Mat descriptors = Signatures.getSiftDescriptorsForImage(scidbapi.getNiceTile(id));
@@ -237,5 +232,6 @@ public class SiftSignatureModel extends BasicSignatureModel {
 		Mat test = Signatures.readMat(Signatures.siftString,id);
 		System.out.println(test.get(0, 120)[0]+","+test.get(27,59)[0]);
 		//System.out.println(descriptors.get(0, 120)[0]+","+descriptors.get(27,59)[0]);
+		 */
 	}
 }

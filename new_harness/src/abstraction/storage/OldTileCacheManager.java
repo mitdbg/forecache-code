@@ -6,9 +6,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+
 import abstraction.ProgressMap;
 import abstraction.query.NewTileInterface;
-import abstraction.util.ColumnBasedNiceTile;
+import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.NewTileKey;
 import abstraction.util.TileStructure;
 import abstraction.util.View;

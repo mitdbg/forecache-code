@@ -7,9 +7,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+
+import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.UtilityFunctions;
 
-import abstraction.util.ColumnBasedNiceTile;
 import abstraction.util.TileStructure;
 import abstraction.util.View;
 

@@ -5,7 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import abstraction.util.ColumnBasedNiceTile;
+
+import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.NewTileKey;
 
 /**

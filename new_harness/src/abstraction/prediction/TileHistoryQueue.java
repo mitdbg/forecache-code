@@ -3,9 +3,10 @@ package abstraction.prediction;
 import java.util.ArrayList;
 import java.util.List;
 
+
+import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.UserRequest;
 
-import abstraction.util.ColumnBasedNiceTile;
 import abstraction.util.NewTileKey;
 
 /**
