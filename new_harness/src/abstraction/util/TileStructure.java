@@ -29,6 +29,28 @@ public class TileStructure implements java.io.Serializable {
 		return -1;
 	}
 	
+	public NewTileKey getCoarserTile(NewTileKey original, int zoom) {
+		if(zoom < original.zoom) {
+			NewTileKey parent = original.copy();
+			parent.zoom = zoom;
+			// calculate the raw data position
+			for(int i = 0; i < parent.dimIndices.length; i++) {
+				// unroll the tile widths
+				// tile id -> position in aggregated points
+				parent.dimIndices[i] *= tileWidths[i];
+
+				// unroll the aggregation widths
+				// position in aggregated points -> position in raw data points
+				parent.dimIndices[i] *= aggregationWindows[original.zoom][i];
+				
+				// calculate the proper position at the coarser zoom level
+				parent.dimIndices[i] /= aggregationWindows[parent.zoom][i];
+			}
+			return parent;
+		}
+		return original;
+	}
+	
 	// returns the structure as a json object
 	// in case the client needs it to track user stuff
 	public String toJson() {

@@ -1,5 +1,7 @@
 package abstraction.util;
 
+import java.util.Arrays;
+
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -20,6 +22,12 @@ public class NewTileKey implements java.io.Serializable {
 	public NewTileKey(int[] id, int zoom) {
 		this.dimIndices = id;
 		this.zoom = zoom;
+	}
+	
+	public NewTileKey copy() {
+		NewTileKey copy = new NewTileKey(Arrays.copyOf(this.dimIndices, this.dimIndices.length),
+								this.zoom);
+		return copy;
 	}
 	
 	public String buildTileString() {

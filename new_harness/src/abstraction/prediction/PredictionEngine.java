@@ -4,13 +4,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.Future;
 
 import backend.prediction.BasicModel;
 import backend.prediction.TestSVM;
-import backend.prediction.TileHistoryQueue;
 import backend.prediction.TrainModels;
 import backend.prediction.directional.HotspotDirectionalModel;
 import backend.prediction.directional.MomentumDirectionalModel;
@@ -25,9 +25,6 @@ import abstraction.util.Model;
 import abstraction.util.NewTileKey;
 
 public class PredictionEngine {
-	public int histmax = 10;
-	public TileHistoryQueue hist;
-
 	public TestSVM.SvmWrapper phaseClassifier;
 	public boolean use_phase_classifier = false;
 
@@ -37,49 +34,64 @@ public class PredictionEngine {
 	public List<String> hitslist = new ArrayList<String>();
 
 	// General Model variables
-	public int deflmbuflen = 0; // default is don't use lru cache
-	public int defaultpredictions = 0;
-	public int defaulthistorylength = 4;
-	public int defaultport = 8080;
-	public int[] allocatedStorage; // storage per model
-	public int totalStorage = 0;
-	public int defaultstorage = 0; // default storage per model
-	public int neighborhood = 1; // default neighborhood from which to pick candidates
+	public int[] allocatedStorage; // storage allocated per model
+	public int neighborhood = -1;
 
-	public Model[] modellabels = {Model.MOMENTUM};
-	public int[] historylengths = {defaulthistorylength};
-	public String taskname = "task1";
-	public int[] user_ids = {28};
+	public Model[] modellabels = null;
+	public int[] historylengths = null;
+	public String taskname = null;
+	public int[] user_ids = null;
 
 	// global model objects	
-	public BasicModel[] all_models;
-
-	//server
-	public RunnableFuture<?> predictor = null;
+	public BasicModel[] models;
+	public List<PredictionTask> modelTasks = null;
 
 	public PredictionEngine() {
 		phaseClassifier = TestSVM.buildSvmPhaseClassifier();
 	}
-
-	public synchronized void cancelPredictorJob() throws Exception {
-		if(predictor !=null) {
-			// try to cancel the job
-			for(int i = 0; (i < 10) && !predictor.isDone(); i++) {
-				predictor.cancel(true);
-			}
-			if(!predictor.isDone()) {
-				throw new Exception("Could not cancel predictor job!!!");
-			}
+	
+	public void update_allocations(SessionMetadata md) {
+		if(use_phase_classifier) {
+			AnalysisPhase phase = phaseClassifier.predictAnalysisPhase(md.history.getHistoryTrace(2)); // only need last 2 tiles requests
+			AllocationStrategy currentStrategy = md.allocationStrategyMap.get(phase);
+			allocatedStorage = currentStrategy.allocations;
 		}
 	}
-
-	public synchronized void runPredictor(ExecutorService executorService) {
-		predictor = new FutureTask<Object>(new PredictionTask(),null);
-		executorService.submit(predictor);
-	}
-
-	public synchronized boolean isReady() {
-		return (predictor == null) || (predictor.isDone());
+	
+	// returns a set of unique tile keys
+	public synchronized Map<NewTileKey,Boolean> getPredictions(ExecutorService executorService,
+			SessionMetadata md, DefinedTileView dtv, int maxDist) {
+		// get the current allocation strategy
+		update_allocations(md);
+		
+		// run the recommendation models
+		// note: futures are returned in the same order as the original PredictionTask objects
+		List<Future<List<NewTileKey>>> results = getPredictionsHelper(executorService,
+														md,dtv, maxDist);
+		
+		// consolidate the recommendations
+		Map<NewTileKey,Boolean> predictions = new HashMap<NewTileKey,Boolean>();
+		for(int i = 0; i < results.size(); i++) {
+			Future<List<NewTileKey>> future = results.get(i);
+			try {
+				List<NewTileKey> fresults = future.get();
+				int count = 0; // only add what has been allocated to this model
+				for(int j = 0; (count < allocatedStorage[i]) && (j < fresults.size()); j++) {
+					NewTileKey prediction = fresults.get(j);
+					// was not in the map previously
+					if(predictions.put(prediction,true) == null) {
+						count++;
+					}
+				}
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (ExecutionException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return predictions;
 	}
 
 	public double getAccuracy() {
@@ -102,36 +114,40 @@ public class PredictionEngine {
 	}
 	
 	public void setupModels() {
-		all_models = new BasicModel[modellabels.length];
+		models = new BasicModel[modellabels.length];
+		modelTasks = new ArrayList<PredictionTask>();
 		for(int i = 0; i < modellabels.length; i++) {
 			Model label = modellabels[i];
 			switch(label) {
-				case NGRAM: all_models[i] = new NGramDirectionalModel(hist,buf,diskbuf,dbapi,historylengths[i]);
+				case NGRAM: models[i] = new NGramDirectionalModel(historylengths[i]);
 				break;
-				case RANDOM: all_models[i] = new RandomDirectionalModel(hist,buf,diskbuf,dbapi,historylengths[i]);
+				case RANDOM: models[i] = new RandomDirectionalModel(historylengths[i]);
 				break;
-				case HOTSPOT: all_models[i] = new HotspotDirectionalModel(hist,buf,diskbuf,dbapi,historylengths[i],HotspotDirectionalModel.defaulthotspotlen);
+				case HOTSPOT: models[i] = new HotspotDirectionalModel(historylengths[i],HotspotDirectionalModel.defaulthotspotlen);
 				break;
-				case MOMENTUM: all_models[i] = new MomentumDirectionalModel(hist,buf,diskbuf,dbapi,historylengths[i]);
+				case MOMENTUM: models[i] = new MomentumDirectionalModel(historylengths[i]);
 				break;
-				case NORMAL: all_models[i] = new NormalSignatureModel(hist,buf,diskbuf,dbapi,historylengths[i],sigMap);
+				case NORMAL: models[i] = new NormalSignatureModel(historylengths[i]);
 				break;
-				case HISTOGRAM: all_models[i] = new HistogramSignatureModel(hist,buf,diskbuf,dbapi,historylengths[i],sigMap);
+				case HISTOGRAM: models[i] = new HistogramSignatureModel(historylengths[i]);
 				break;
-				case FHISTOGRAM: all_models[i] = new FilteredHistogramSignatureModel(hist,buf,diskbuf,dbapi,historylengths[i],sigMap);
+				case FHISTOGRAM: models[i] = new FilteredHistogramSignatureModel(historylengths[i]);
 				break;
-				case SIFT: all_models[i] = new SiftSignatureModel(hist,buf,diskbuf,dbapi,historylengths[i],sigMap);
+				case SIFT: models[i] = new SiftSignatureModel(historylengths[i]);
 				break;
-				case DSIFT: all_models[i] = new DenseSiftSignatureModel(hist,buf,diskbuf,dbapi,historylengths[i],sigMap);
+				case DSIFT: models[i] = new DenseSiftSignatureModel(historylengths[i]);
 				default://do nothing, will fail if we get here
 			}
+			 PredictionTask newTask = new PredictionTask();
+			 newTask.mid = i;
+			 modelTasks.add(newTask);
 		}
 	}
 	
 	public void trainModels() {
 		for(int i = 0; i < modellabels.length; i++) {
 			Model label = modellabels[i];
-			BasicModel mod = all_models[i];
+			BasicModel mod = models[i];
 			switch(label) {
 				case NGRAM: TrainModels.TrainNGramDirectionalModel(user_ids, taskname, (NGramDirectionalModel) mod);
 				break;
@@ -146,10 +162,10 @@ public class PredictionEngine {
 		//update_users(new String[]{});
 		//update_model_labels(new String[]{});
 		//update_allocations_from_string(new String[]{});
-		all_models = null;
+		models = null;
+		modelTasks = null;
 		use_phase_classifier = false;
 		neighborhood = 1;
-		predictor = null;
 		//defaultpredictions = Integer.parseInt(predictions);
 		//System.out.println("predictions: "+defaultpredictions);
 		
@@ -166,7 +182,7 @@ public class PredictionEngine {
 		//update_allocations2(allocations);
 		this.neighborhood = neighborhood;
 		this.use_phase_classifier = usePhase;
-		predictor = null;
+		modelTasks = null;
 		
 		//reset accuracy
 		cache_hits = 0;
@@ -184,7 +200,7 @@ public class PredictionEngine {
 		//update_allocations_from_string(predictions);
 		use_phase_classifier = usePhases;
 		neighborhood = Integer.parseInt(nstr);
-		predictor = null;
+		modelTasks = null;
 		//System.out.println("new neighborhood variable:"+neighborhood);
 		
 		//reset accuracy
@@ -195,11 +211,49 @@ public class PredictionEngine {
 		setupModels();
 		trainModels();
 	}
-
-	/*this thread is used to populate the main memory cache. It is triggered after each request*/
-	public class PredictionTask implements Runnable {
-		public synchronized void run() {
-			System.out.println();
+	
+	/********************* Helper Functions ************************/
+	protected List<Future<List<NewTileKey>>> getPredictionsHelper(ExecutorService executorService,
+			SessionMetadata md, DefinedTileView dtv, int maxDist) {
+		// candidate tiles to rank
+		List<NewTileKey> candidates = models[0].getCandidates(md, dtv, maxDist);
+		
+		// setup the supplementary data
+		for(int i = 0; i < modelTasks.size(); i++) {
+			PredictionTask task = modelTasks.get(i);
+			task.md = md;
+			task.dtv = dtv;
+			task.candidates = candidates;
+		}
+		
+		try {
+			// run the predictors
+			return executorService.invokeAll(modelTasks);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return new ArrayList<Future<List<NewTileKey>>>();
+	}
+	
+	protected int indexOf(Model[] mll, Model x) {
+		for(int i = 0; i < mll.length; i++) {
+			if(mll[i] == x) return i;
+		}
+		return -1;
+	}
+	
+	/********************* Nested Classes ************************/
+	/*this Task is used to make predictions. It is triggered after each request*/
+	public class PredictionTask implements Callable<List<NewTileKey>> {
+		public volatile int mid;
+		public volatile SessionMetadata md;
+		public volatile DefinedTileView dtv;
+		public volatile List<NewTileKey> candidates;
+		
+		public synchronized List<NewTileKey> call() {
+			BasicModel m = models[this.mid];
+			return m.orderCandidates(md, dtv, candidates);
 		}
 	}
 }

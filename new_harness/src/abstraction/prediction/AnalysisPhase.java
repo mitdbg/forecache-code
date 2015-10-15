@@ -1,9 +1,9 @@
 package abstraction.prediction;
 
-public enum ExplorationPhase {
+public enum AnalysisPhase {
 	FORAGING("Foraging"),NAVIGATION("Navigation"),SENSEMAKING("Sensemaking");
 	private String val;
-	ExplorationPhase(String val) {
+	AnalysisPhase(String val) {
 		this.val = val;
 	}
 	@Override

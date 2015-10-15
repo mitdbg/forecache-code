@@ -12,6 +12,7 @@ import libsvm.svm_model;
 import libsvm.svm_node;
 import libsvm.svm_parameter;
 import libsvm.svm_problem;
+import abstraction.prediction.AnalysisPhase;
 import abstraction.util.Direction;
 import abstraction.util.DirectionClass;
 import abstraction.util.NewTileKey;
@@ -63,6 +64,17 @@ public class TestSVM {
 		// get the label name for the predicted class
 		public String predictLabel(List<NewTileKey> history) {
 			return IntsToLabels.get(predict(history));
+		}
+		
+		public AnalysisPhase predictAnalysisPhase(List<NewTileKey> history) {
+			String label = predictLabel(history);
+			if(label.equals(AnalysisPhase.SENSEMAKING.toString())) {
+				return AnalysisPhase.SENSEMAKING;
+			} else if(label.equals(AnalysisPhase.FORAGING.toString())) {
+				return AnalysisPhase.FORAGING;
+			} else {
+				return AnalysisPhase.NAVIGATION;
+			}
 		}
 		
 		// get the ID of the predicted class

@@ -92,6 +92,11 @@ public class DefinedTileView {
 		return this.allKeys.containsKey(key);
 	}
 	
+	// get the corresponding tile at the coarser zoom level
+	public NewTileKey getCoarserTile(NewTileKey original, int zoomLevel) {
+		return this.ts.getCoarserTile(original, zoomLevel);
+	}
+	
 	/************************ Helper Functions *************************/
 
 	protected void initializeSignatureMap(String sigMapFile) {
