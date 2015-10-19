@@ -7,12 +7,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-import abstraction.ProgressMap;
 import abstraction.query.NewTileInterface;
+import abstraction.structures.NewTileKey;
+import abstraction.structures.ProgressMap;
+import abstraction.structures.TileStructure;
+import abstraction.structures.View;
 import abstraction.tile.ColumnBasedNiceTile;
-import abstraction.util.NewTileKey;
-import abstraction.util.TileStructure;
-import abstraction.util.View;
 
 public class OldTileCacheManager {
 	private Queue<NewTileKey> tileRequestQueue;

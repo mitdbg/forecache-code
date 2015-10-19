@@ -1,6 +1,6 @@
 package abstraction.storage;
 
-import abstraction.util.NewTileKey;
+import abstraction.structures.NewTileKey;
 
 public interface EvictionPolicy {
 	// called in insert function

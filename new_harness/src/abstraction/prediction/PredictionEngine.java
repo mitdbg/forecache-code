@@ -7,26 +7,25 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import backend.prediction.BasicModel;
-import backend.prediction.TestSVM;
-import backend.prediction.TrainModels;
-import backend.prediction.directional.HotspotDirectionalModel;
-import backend.prediction.directional.MomentumDirectionalModel;
-import backend.prediction.directional.NGramDirectionalModel;
-import backend.prediction.directional.RandomDirectionalModel;
-import backend.prediction.signature.DenseSiftSignatureModel;
-import backend.prediction.signature.FilteredHistogramSignatureModel;
-import backend.prediction.signature.HistogramSignatureModel;
-import backend.prediction.signature.NormalSignatureModel;
-import backend.prediction.signature.SiftSignatureModel;
-import abstraction.util.Model;
-import abstraction.util.NewTileKey;
+import abstraction.enums.Model;
+import abstraction.prediction.directional.HotspotDirectionalModel;
+import abstraction.prediction.directional.MomentumDirectionalModel;
+import abstraction.prediction.directional.NGramDirectionalModel;
+import abstraction.prediction.directional.RandomDirectionalModel;
+import abstraction.prediction.signature.DenseSiftSignatureModel;
+import abstraction.prediction.signature.FilteredHistogramSignatureModel;
+import abstraction.prediction.signature.HistogramSignatureModel;
+import abstraction.prediction.signature.NormalSignatureModel;
+import abstraction.prediction.signature.SiftSignatureModel;
+import abstraction.structures.DefinedTileView;
+import abstraction.structures.NewTileKey;
+import abstraction.structures.SessionMetadata;
 
 public class PredictionEngine {
-	public TestSVM.SvmWrapper phaseClassifier;
-	public boolean use_phase_classifier = false;
+	public SvmPhaseClassifier.SvmWrapper phaseClassifier;
 
 	//accuracy
 	public int total_requests = 0;
@@ -45,30 +44,38 @@ public class PredictionEngine {
 	// global model objects	
 	public BasicModel[] models;
 	public List<PredictionTask> modelTasks = null;
+	
+	ExecutorService threadPool;
+	int poolsize = 2;
 
 	public PredictionEngine() {
-		phaseClassifier = TestSVM.buildSvmPhaseClassifier();
+		phaseClassifier = SvmPhaseClassifier.buildSvmPhaseClassifier();
+	}
+	
+	public synchronized void init() {
+		this.threadPool = Executors.newFixedThreadPool(poolsize);
+	}
+	
+	public synchronized void shutdown() {
+		this.threadPool.shutdown();
 	}
 	
 	public void update_allocations(SessionMetadata md) {
-		if(use_phase_classifier) {
-			AnalysisPhase phase = phaseClassifier.predictAnalysisPhase(md.history.getHistoryTrace(2)); // only need last 2 tiles requests
-			AllocationStrategy currentStrategy = md.allocationStrategyMap.get(phase);
-			allocatedStorage = currentStrategy.allocations;
-		}
+		AnalysisPhase phase = phaseClassifier.predictAnalysisPhase(md.history.getHistoryTrace(2)); // only need last 2 tiles requests
+		AllocationStrategy currentStrategy = md.allocationStrategyMap.get(phase);
+		allocatedStorage = currentStrategy.allocations;
 	}
 	
 	// returns a set of unique tile keys
-	public synchronized Map<NewTileKey,Boolean> getPredictions(ExecutorService executorService,
-			SessionMetadata md, DefinedTileView dtv, int maxDist) {
+	public synchronized List<NewTileKey> getPredictions(SessionMetadata md,
+			DefinedTileView dtv, int maxDist) {
+		List<NewTileKey> values = new ArrayList<NewTileKey>();
 		// get the current allocation strategy
 		update_allocations(md);
 		
 		// run the recommendation models
 		// note: futures are returned in the same order as the original PredictionTask objects
-		List<Future<List<NewTileKey>>> results = getPredictionsHelper(executorService,
-														md,dtv, maxDist);
-		
+		List<Future<List<NewTileKey>>> results = getPredictionsHelper(md,dtv, maxDist);
 		// consolidate the recommendations
 		Map<NewTileKey,Boolean> predictions = new HashMap<NewTileKey,Boolean>();
 		for(int i = 0; i < results.size(); i++) {
@@ -81,6 +88,7 @@ public class PredictionEngine {
 					// was not in the map previously
 					if(predictions.put(prediction,true) == null) {
 						count++;
+						values.add(prediction);
 					}
 				}
 			} catch (InterruptedException e) {
@@ -91,7 +99,7 @@ public class PredictionEngine {
 				e.printStackTrace();
 			}
 		}
-		return predictions;
+		return values;
 	}
 
 	public double getAccuracy() {
@@ -164,7 +172,6 @@ public class PredictionEngine {
 		//update_allocations_from_string(new String[]{});
 		models = null;
 		modelTasks = null;
-		use_phase_classifier = false;
 		neighborhood = 1;
 		//defaultpredictions = Integer.parseInt(predictions);
 		//System.out.println("predictions: "+defaultpredictions);
@@ -176,12 +183,11 @@ public class PredictionEngine {
 	}
 	
 	public void reset(int[] users, String[] modelstrs, int[] allocations,
-			int neighborhood, boolean usePhase) {
+			int neighborhood) {
 		user_ids = users;
 		//update_model_labels(modelstrs);
 		//update_allocations2(allocations);
 		this.neighborhood = neighborhood;
-		this.use_phase_classifier = usePhase;
 		modelTasks = null;
 		
 		//reset accuracy
@@ -198,7 +204,6 @@ public class PredictionEngine {
 		//update_users(userstrs);
 		//update_model_labels(modelstrs);
 		//update_allocations_from_string(predictions);
-		use_phase_classifier = usePhases;
 		neighborhood = Integer.parseInt(nstr);
 		modelTasks = null;
 		//System.out.println("new neighborhood variable:"+neighborhood);
@@ -213,8 +218,8 @@ public class PredictionEngine {
 	}
 	
 	/********************* Helper Functions ************************/
-	protected List<Future<List<NewTileKey>>> getPredictionsHelper(ExecutorService executorService,
-			SessionMetadata md, DefinedTileView dtv, int maxDist) {
+	protected List<Future<List<NewTileKey>>> getPredictionsHelper(SessionMetadata md,
+			DefinedTileView dtv, int maxDist) {
 		// candidate tiles to rank
 		List<NewTileKey> candidates = models[0].getCandidates(md, dtv, maxDist);
 		
@@ -227,8 +232,8 @@ public class PredictionEngine {
 		}
 		
 		try {
-			// run the predictors
-			return executorService.invokeAll(modelTasks);
+			// run the predictors, wait for results
+			return this.threadPool.invokeAll(modelTasks);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

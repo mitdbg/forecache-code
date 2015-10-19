@@ -6,13 +6,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import abstraction.util.CacheLevel;
+import abstraction.enums.CacheLevel;
+import abstraction.enums.Direction;
+import abstraction.enums.DirectionClass;
+import abstraction.enums.Model;
+import abstraction.structures.NewTileKey;
+import abstraction.structures.UserRequest;
 
-import abstraction.util.Direction;
-import abstraction.util.DirectionClass;
-import abstraction.util.Model;
 
-import abstraction.util.NewTileKey;
 
 public class UtilityFunctions {
 	// takes a list of strings, and slaps the strings together to make one big string

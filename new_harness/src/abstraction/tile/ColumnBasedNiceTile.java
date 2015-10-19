@@ -4,7 +4,7 @@ import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 
-import abstraction.util.NewTileKey;
+import abstraction.structures.NewTileKey;
 
 
 public class ColumnBasedNiceTile implements java.io.Serializable {

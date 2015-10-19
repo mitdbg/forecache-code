@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 
-import abstraction.util.NewTileKey;
+import abstraction.structures.NewTileKey;
 
 public class MimicWorkQueue {
 	private String backend_host = "localhost";

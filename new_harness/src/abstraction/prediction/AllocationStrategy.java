@@ -1,6 +1,6 @@
 package abstraction.prediction;
 
-import abstraction.util.Model;
+import abstraction.enums.Model;
 
 public class AllocationStrategy {
 	public Model[] models;

@@ -22,10 +22,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import configurations.DBConnector;
 
 import abstraction.query.Scidb14_12IqueryTileInterface.AttributesDataPair;
+import abstraction.structures.NewTileKey;
+import abstraction.structures.TileStructure;
+import abstraction.structures.View;
 import abstraction.tile.ColumnBasedNiceTile;
-import abstraction.util.NewTileKey;
-import abstraction.util.TileStructure;
-import abstraction.util.View;
 
 public class BigDawgScidbTileInterface extends Scidb14_12TileInterface {
 	protected String host = "localhost";

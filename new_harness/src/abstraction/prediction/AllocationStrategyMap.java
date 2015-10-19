@@ -3,7 +3,7 @@ package abstraction.prediction;
 import java.util.HashMap;
 import java.util.Map;
 
-import abstraction.util.Model;
+import abstraction.enums.Model;
 
 public class AllocationStrategyMap {
 	protected Map<AnalysisPhase,AllocationStrategy> allocationMap;

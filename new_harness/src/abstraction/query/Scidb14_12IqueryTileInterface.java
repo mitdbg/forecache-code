@@ -8,11 +8,11 @@ import java.util.Iterator;
 import java.util.List;
 
 
+import abstraction.structures.TileStructure;
+import abstraction.structures.View;
 import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.UtilityFunctions;
 
-import abstraction.util.TileStructure;
-import abstraction.util.View;
 
 import configurations.DBConnector;
 
