@@ -1,0 +1,13 @@
+
+svg.forecache-vis {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+.forecache-axis path,
+.forecache-axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}

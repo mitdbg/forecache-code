@@ -1,0 +1,63 @@
+<html>
+<head>
+<META NAME="ROBOTS" CONTENT="NOINDEX">
+<META NAME="ROBOTS" CONTENT="NOFOLLOW">
+	<link rel="stylesheet" type="text/css" href="forecache_line_chart.css">
+	<title> Heatmap Test</title>
+    <script type="text/javascript" src="colorbrewer.js" charset="utf-8"></script>
+    <script type="text/javascript" src="jquery.js" charset="utf-8"></script>
+    <script type="text/javascript" src="d3.js" charset="utf-8"></script>
+    <script type="text/javascript" src="bigdawgvis.js" charset="utf-8"></script>
+    <script type="text/javascript" src="util.js" charset="utf-8"></script>
+    <script type="text/javascript" src="forecache_heatmap.js" charset="utf-8"></script>
+    <script type="text/javascript">
+/*
+      $(document).ready(function() {
+        $.getJSON("{{url_for('static',filename='data/diamonds.json')}}", function(jsondata) {
+          var MyScatterplot = BigDawgVis.Scatterplot;
+          var vis =
+          MyScatterplot.getVis($("#view"),{"xname":"carat","xlabel":"carat",
+                                "yname":"price","ylabel":"price",
+                                "zlabel":"cut","zname":"cut",
+                                "width":500},jsondata);
+          console.log(["vis id:",vis.attr("id")]);
+        });
+      });
+*/
+      $(document).ready(function() {
+        //d3.csv("ndsi_agg_7_18_2013_3_1_1_test.csv", function(csvdata) {
+        var t1 = new Date();
+        d3.csv("test_tiles/ndsi_agg_7_18_2013_3_1_1.csv", function(csvdata) {
+        //d3.csv("ndsi_test.csv", function(csvdata) {
+          var jsondata = {"table":csvdata};
+          var FC = ForeCacheHeatmap;
+          var t2 = new Date();
+          var vis =
+          FC.getVis($("#view"),{"xname":"longitude_e4ndsi_06_03_2013","xlabel":"lon",
+                                "yname":"latitude_e4ndsi_06_03_2013","ylabel":"lat",
+                                "zlabel":"avg_ndsi","zname":"avg_ndsi",
+                                "width":400,
+                                "height":400,
+                                "padding":{"left":50,"right":50,"top":50,"bottom":50}},jsondata);
+          console.log(["vis id:",vis.attr("id")]);
+          var t3 = new Date();
+          console.log(["data loading time",t2.getTime() - t1.getTime(),"rendering time",t3.getTime()-t2.getTime()]);
+
+        });
+      });
+
+    </script>
+</head>
+
+
+<body>
+  <div class="main">
+			<h1>Heatmap Test</h1>
+			<div id="content">
+         <div id="view" class="view"></div>
+			</div>
+	</div>
+</body>
+
+</html>
+

@@ -1,0 +1,54 @@
+<html>
+<head>
+<META NAME="ROBOTS" CONTENT="NOINDEX">
+<META NAME="ROBOTS" CONTENT="NOFOLLOW">
+	<link rel="stylesheet" type="text/css" href="forecache_line_chart.css">
+	<title> Scatterplot Test</title>
+    <script type="text/javascript" src="colorbrewer.js" charset="utf-8"></script>
+    <script type="text/javascript" src="jquery.js" charset="utf-8"></script>
+    <script type="text/javascript" src="d3.js" charset="utf-8"></script>
+    <script type="text/javascript" src="bigdawgvis.js" charset="utf-8"></script>
+    <script type="text/javascript" src="forecache_line_chart.js" charset="utf-8"></script>
+    <script type="text/javascript">
+/*
+      $(document).ready(function() {
+        $.getJSON("{{url_for('static',filename='data/diamonds.json')}}", function(jsondata) {
+          var MyScatterplot = BigDawgVis.Scatterplot;
+          var vis =
+          MyScatterplot.getVis($("#view"),{"xname":"carat","xlabel":"carat",
+                                "yname":"price","ylabel":"price",
+                                "zlabel":"cut","zname":"cut",
+                                "width":500},jsondata);
+          console.log(["vis id:",vis.attr("id")]);
+        });
+      });
+*/
+      $(document).ready(function() {
+        $.getJSON("diamonds_test.json", function(jsondata) {
+          var FC = ForeCacheLineChart;
+          var vis =
+          FC.getVis($("#view"),{"xname":"carat","xlabel":"carat",
+                                "yname":"price","ylabel":"price",
+                                "zlabel":"cut","zname":"cut",
+                                "width":500,
+                                "height":300,
+                                "padding":{"left":50,"right":50,"top":30,"bottom":30}},jsondata);
+          console.log(["vis id:",vis.attr("id")]);
+        });
+      });
+
+    </script>
+</head>
+
+
+<body>
+  <div class="main">
+			<h1>Scatterplot Test</h1>
+			<div id="content">
+         <div id="view" class="view"></div>
+			</div>
+	</div>
+</body>
+
+</html>
+

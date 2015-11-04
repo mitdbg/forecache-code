@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<style>
+canvas {
+    border: 1px dashed gray;
+}
+#results, #container {
+    display: inline-block;
+    margin: 15px;
+}
+p {
+    margin: 15px;
+}
+td {
+  border: 1px solid #bbb;
+}
+.header {
+  font-weight: bold;
+}
+</style>
+<body>
+<p id="user-agent"></p>
+<div id="container"></div>
+<table id="results">
+    <tr class="header">
+      <td>Circles</td>
+      <td>FPS</td>
+      <td>repaint [ms]</td>
+      <td>before render [ms]</td>
+      <td>during render [ms]</td>
+    </tr>
+</table>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<!--<script type="text/javascript" src="http://canvg.googlecode.com/svn/trunk/canvg.js"></script>-->
+<!--<script src="http://www.goodboydigital.com/pixijs/bunnymark/js/pixi.js"></script>-->
+<script src="pixi.js"></script>
+<script>
+//var tests = [25, 50, 150, 250, 500, 750, 5000];
+//var tests = [1000, 5000,10000,20000,50000,100000,250000,500000,1000000];
+//var tests = [500000,500000,500000,500000,100000,100000,100000,100000,50000,50000,50000,50000,10000,10000,10000,10000];
+//var tests = [10000,10000,10000,50000,50000,50000,100000,100000,100000,500000,500000,500000];
+var tests = [500000];
+
+// (x,y) = center of circle
+// assumes the first 4 parameters are always passed
+function getCircleTexture(x,y,radius,fillColor,lineColor,lineWidth,alpha) {
+  var configureAlpha = arguments.length == 7; // all parameters are included
+  var configureLine = arguments.length == 6; // line parameters are included
+  
+  var graph = new PIXI.Graphics();
+  graph.beginFill(fillColor);
+  if(configureAlpha) {
+    graph.lineStyle(lineWidth,lineColor,alpha);
+  } else if (configureLine) {
+    graph.lineStyle(lineWidth,lineColor);
+  }
+  graph.drawCircle(x,y,radius);
+  graph.endFill();
+ 
+  return graph.generateTexture();
+}
+
+// (x,y) = top left of rectancle
+// assumes the first 5 parameters are always passed
+function getRectTexture(x,y,width,height,fillColor,lineColor,lineWidth,alpha) {
+  var configureAlpha = arguments.length == 8; // all parameters are included
+  var configureLine = arguments.length == 7; // line parameters are included
+
+  var graph = new PIXI.Graphics();
+  graph.beginFill(colorString);
+  if(configureAlpha) {
+    graph.lineStyle(lineWidth,lineColor,alpha);
+  } else if (configureLine) {
+    graph.lineStyle(lineWidth,lineColor);
+  }
+  graph.drawRect(x,y,width,height);
+  graph.endFill();
+ 
+  //console.log(graph);
+  return graph.generateTexture();
+}
+
+function updateResults(count,beforeRender,afterRender,total) {
+  var repaint = total;
+  var tr = $("<tr>");
+  tr.append("<td>" + count + "</td>");
+  tr.append("<td>" + (1000/repaint).toFixed(2) + "</td>");
+  tr.append("<td>" + repaint.toFixed(2) + "</td>");
+  tr.append("<td>"+beforeRender+"</td>");
+  tr.append("<td>"+afterRender+"</td>");
+
+  $("#results").append(tr);
+}
+
+function test() {
+  var startTime = new Date().getTime();
+  var afterRender,beforeRender,total;
+  var count,
+      maxX = 500,
+      maxY = 400,
+      renderer,
+      container,
+      circleTexture,
+      circle,
+      i;
+
+  if (tests.length > 0) {
+    $("#container").empty();
+    count = tests.shift();
+  } else {
+    return;
+  }
+
+  renderer = new PIXI.CanvasRenderer(maxX, maxY, {backgroundColor:0xFFFFFF});
+  $("#container").append(renderer.view);
+
+  container = new PIXI.Container();
+  circleTexture = getCircleTexture(16,16,15,0xFF0000,0x000000,2);
+
+  for (i = 0; i < count; i++) {
+      circle = new PIXI.Sprite(circleTexture);
+      circle.position.x = maxX * Math.random();
+      circle.position.y = maxY * Math.random();
+      var scale = Math.random();
+      circle.scale.x = scale;
+      circle.scale.y = scale;
+      container.addChild(circle);
+  }
+
+  var midTime = new Date().getTime();
+  renderer.render(container);
+  var endTime = new Date().getTime();
+  total = endTime - startTime;
+  beforeRender = midTime - startTime;
+  afterRender = endTime - midTime;
+  updateResults(count, beforeRender,afterRender,total);
+  container.destroy(true);
+  circleTexture.destroy(true); // probably important, since we are generating the texture
+}
+
+$(document).ready(function() {
+  //$("#user-agent").text(navigator.userAgent);
+  while(tests.length > 0) {
+    test();
+  }
+});
+</script>
+</body>
+</html>
