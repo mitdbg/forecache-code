@@ -21,6 +21,9 @@ public abstract class NewTileInterface {
 	// if user doesn't define a tile structure, get the default
 	public abstract TileStructure buildDefaultTileStructure(View v);
 	
+	public abstract TileStructure buildTileStructure(View v, int aggregationWindow,
+			int tileWidth, int zoomLevels);
+	
 	// generates the name of the particular zoom level
 	public String getZoomLevelName(View v, TileStructure ts, int zoom) {
 		StringBuilder sb = new StringBuilder();
@@ -55,7 +58,7 @@ public abstract class NewTileInterface {
 	
 	public abstract List<String> getQueryDataTypes(String query);
 	
-	public abstract Map<String,List<Integer>> getDimensionBoundaries(String query);
+	public abstract DimensionBoundary getDimensionBoundaries(String query);
 	
 	public abstract Class<?> getColumnTypeInJava(String typeName);
 	
@@ -74,4 +77,11 @@ public abstract class NewTileInterface {
 	public abstract boolean retrieveStoredTile(View v, TileStructure ts, ColumnBasedNiceTile tile, NewTileKey id);
 
 	public abstract boolean retrieveTileFromStoredZoomLevel(View v, TileStructure ts, ColumnBasedNiceTile tile, NewTileKey id);
+
+	
+	/****************** Nested Classes *******************/
+	public static class DimensionBoundary {
+		public List<String> dimensions;
+		public Map<String,List<Integer>> boundaryMap;
+	}
 }

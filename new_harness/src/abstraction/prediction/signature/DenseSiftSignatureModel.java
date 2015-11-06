@@ -31,10 +31,8 @@ public class DenseSiftSignatureModel extends SiftSignatureModel{
 	}
 	
 	@Override
-	public double[] buildSignatureFromKey(DefinedTileView dtv, NewTileKey id) {
-		ColumnBasedNiceTile tile = new ColumnBasedNiceTile(id);
-		dtv.nti.getTile(dtv.v, dtv.ts, tile);
-		return Signatures.buildDenseSiftSignature(tile, vocab, defaultVocabSize);
+	public double[] buildSignatureFromTile(ColumnBasedNiceTile tile) {
+		return Signatures.buildDenseSiftSignature(tile, vocab, vocabSize);
 	}
 	
 	@Override
@@ -43,6 +41,17 @@ public class DenseSiftSignatureModel extends SiftSignatureModel{
 		 List<double[]> sigs =  Signatures.buildDenseSiftSignaturesInParallel(dtv,ids, vocab, vocabSize);
 		 for(int i = 0; i < sigs.size(); i++) {
 			 histograms.put(ids.get(i), sigs.get(i));
+		 }
+		 //long b = System.currentTimeMillis();
+		 //System.out.println("parallel:"+(b-a));
+	}
+	
+	@Override
+	public void computeSignaturesInParallel(List<ColumnBasedNiceTile> tiles) {
+		//long a = System.currentTimeMillis();
+		 List<double[]> sigs =  Signatures.buildDenseSiftSignaturesInParallel(tiles, vocab, vocabSize);
+		 for(int i = 0; i < sigs.size(); i++) {
+			 histograms.put(tiles.get(i).id, sigs.get(i));
 		 }
 		 //long b = System.currentTimeMillis();
 		 //System.out.println("parallel:"+(b-a));

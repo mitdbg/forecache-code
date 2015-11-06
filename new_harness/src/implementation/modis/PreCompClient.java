@@ -16,25 +16,15 @@ import configurations.Config;
 import configurations.ModisConfig;
 import configurations.VMConfig;
 
-import backend.BuildSignaturesOffline;
-import backend.PreCompThread;
-import backend.PredictionManager;
-import backend.disk.DiskNiceTileBuffer;
-import backend.disk.ScidbTileInterface;
-import backend.memory.MemoryNiceTileBuffer;
-import backend.memory.MemoryNiceTileLruBuffer;
-import backend.prediction.TileHistoryQueue;
-import backend.util.DirectionClass;
-import backend.util.ModelAccuracy;
-import backend.util.NiceTile;
-import backend.util.NiceTileBuffer;
-import backend.util.SignatureMap;
-import backend.util.TileKey;
-import utils.DBInterface;
-import utils.ExplorationPhase;
-import utils.TraceMetadata;
-import utils.UserRequest;
-import utils.UtilityFunctions;
+import abstraction.enums.CacheLevel;
+import abstraction.prediction.PredictionEngine;
+import abstraction.storage.TileCacheManager;
+import abstraction.structures.CacheLevelParameterManager;
+import abstraction.structures.NewTileKey;
+import abstraction.structures.UserRequest;
+import abstraction.tile.ColumnBasedNiceTile;
+import abstraction.util.DBInterface;
+import abstraction.util.UtilityFunctions;
 
 public class PreCompClient {
 	public static String backend_host = "localhost";
@@ -44,6 +34,7 @@ public class PreCompClient {
 	public static CacheLevelParameterManager clientParamsManager = null;
 	public static CacheLevelParameterManager memParamsManager = null;
 	public static CacheLevelParameterManager pcParamsManager = null;
+	
 	public static boolean useclient = false;
 	public static boolean usemem = false;
 	public static boolean usepc = false;
@@ -54,12 +45,11 @@ public class PreCompClient {
 	//for prediction
 	public static int deflmbuflen = 0; //default is don't use
 	public static int histmax = 10;
-	public static DiskNiceTileBuffer diskbuf;
-	public static PredictionManager clientManager;
-	public static ScidbTileInterface scidbapi;
-	public static TileHistoryQueue hist;
-	public static SignatureMap sigMap;
-	private static ExecutorService executorService;
+
+	public static PredictionEngine predictionEngine = null;
+	public static TileCacheManager cacheManager = null;
+	public static ExecutorService executorService;
+
 	
 	public static void initExecutorService() {
 		executorService = (ExecutorService) Executors.newFixedThreadPool(2);
@@ -67,10 +57,6 @@ public class PreCompClient {
 	
 	public static void shutdownExecutorService() {
 		executorService.shutdown();
-	}
-	
-	public static void cancelPredictions() throws Exception {
-		if(useclient) clientManager.cancelPredictorJob();
 	}
 		
 	public static void crossValidationMultiLevel() throws Exception {
@@ -150,10 +136,8 @@ public class PreCompClient {
 			//setup test case on frontend
 			if(useclient) {
 				// TODO: fill this in for multi-level follow-on work
-				clientManager.reset(trainlist, clientParamsManager.models[clientIndex],
-						clientParamsManager.allocations[clientIndex],
-						clientParamsManager.neighborhoods[clientIndex],
-						clientParamsManager.usePhases[clientIndex]);
+				predictionEngine.reset(taskname,trainlist, clientParamsManager.models[clientIndex],
+						-1);
 			}
 
 			// setup test case on backend
@@ -180,8 +164,8 @@ public class PreCompClient {
 				int zoom = ur.zoom;
 				//System.out.println("tile id: '" +tile_id+ "'");
 				
-				NiceTile toRetrieve = null;
-				TileKey tempKey = new TileKey(UtilityFunctions.parseTileIdInteger(tile_id),zoom);
+				ColumnBasedNiceTile toRetrieve = null;
+				NewTileKey tempKey = new NewTileKey(UtilityFunctions.parseTileIdInteger(tile_id),zoom);
 				long s = 0;
 				long e = 0;
 
@@ -268,9 +252,6 @@ public class PreCompClient {
 			*/
 			
 			// new printed content
-			TraceMetadata metadata = RequestLabeler.getLabels(trace);
-			List<DirectionClass> dirs = metadata.directionClasses;
-			List<ExplorationPhase> phases = metadata.explorationPhases;
 			for(int i = 0; i < trace.size(); i++) {
 				UserRequest request = trace.get(i);
 				int[] id = UtilityFunctions.parseTileIdInteger(request.tile_id);
@@ -783,24 +764,6 @@ public class PreCompClient {
 		return params;
 	}
 	
-	public static void initializeCacheManagers(PredictionManager manager,
-			NiceTileBuffer buf, NiceTileBuffer lmbuf) throws Exception {		
-		// initialize cache managers
-		manager.buf = buf;
-		manager.lmbuf = lmbuf; // tracks the user's last x moves
-		
-		manager.diskbuf = diskbuf; // just used for convenience
-		manager.dbapi = scidbapi;
-		manager.hist = hist;
-		
-		// load pre-computed signature map
-		manager.sigMap  = sigMap;
-		
-		//setup models for prediction
-		manager.setupModels();
-		manager.trainModels();
-	}
-	
 	public static void testsequence() throws Exception {
 		sendRequest("[0, 0]", 0, "123");
 		sendRequest("[0, 0]", 0, "123");
@@ -809,11 +772,11 @@ public class PreCompClient {
 		//sendRequest("[0, 2]", 3, "123");
 	}
 	
-	public static void addHistory(TileKey key) {
+	public static void addHistory(NewTileKey key) {
 		// get the tile, so we can put it in the history
-					NiceTile t = diskbuf.getTile(key);
+					ColumnBasedNiceTile t = diskbuf.getTile(key);
 					if(t == null) { // check dbms
-						t = new NiceTile();
+						t = new ColumnBasedNiceTile();
 						t.id = key;
 						scidbapi.getStoredTile(DBInterface.arrayname, t);
 					}

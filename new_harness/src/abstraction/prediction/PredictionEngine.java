@@ -23,23 +23,16 @@ import abstraction.prediction.signature.SiftSignatureModel;
 import abstraction.structures.DefinedTileView;
 import abstraction.structures.NewTileKey;
 import abstraction.structures.SessionMetadata;
+import abstraction.structures.SessionMetadata.ModelSetup;
 
 public class PredictionEngine {
 	public SvmPhaseClassifier.SvmWrapper phaseClassifier;
 
-	//accuracy
-	public int total_requests = 0;
-	public int cache_hits = 0;
-	public List<String> hitslist = new ArrayList<String>();
-
 	// General Model variables
 	public int[] allocatedStorage; // storage allocated per model
-	public int neighborhood = -1;
 
 	public Model[] modellabels = null;
 	public int[] historylengths = null;
-	public String taskname = null;
-	public int[] user_ids = null;
 
 	// global model objects	
 	public BasicModel[] models;
@@ -101,25 +94,6 @@ public class PredictionEngine {
 		}
 		return values;
 	}
-
-	public double getAccuracy() {
-		return 1.0 * cache_hits / total_requests;
-	}
-
-	public String getFullAccuracy() {
-		if(hitslist.size() == 0) {
-			return "[]";
-		}
-		String res = hitslist.get(0);
-		for(int i = 1; i < hitslist.size(); i++) {
-			res = res + ","+hitslist.get(i);
-		}
-		return res;
-	}
-
-	public String[] getFullAccuracyRaw() {
-		return hitslist.toArray(new String[hitslist.size()]);
-	}
 	
 	public void setupModels() {
 		models = new BasicModel[modellabels.length];
@@ -152,7 +126,7 @@ public class PredictionEngine {
 		}
 	}
 	
-	public void trainModels() {
+	public void trainModels(int[] user_ids, String taskname) {
 		for(int i = 0; i < modellabels.length; i++) {
 			Model label = modellabels[i];
 			BasicModel mod = models[i];
@@ -167,54 +141,30 @@ public class PredictionEngine {
 	}
 	
 	public void clear() {
-		//update_users(new String[]{});
-		//update_model_labels(new String[]{});
-		//update_allocations_from_string(new String[]{});
 		models = null;
 		modelTasks = null;
-		neighborhood = 1;
 		//defaultpredictions = Integer.parseInt(predictions);
 		//System.out.println("predictions: "+defaultpredictions);
-		
-		//reset accuracy
-		cache_hits = 0;
-		total_requests = 0;
-		hitslist.clear();
 	}
 	
-	public void reset(int[] users, String[] modelstrs, int[] allocations,
-			int neighborhood) {
-		user_ids = users;
-		//update_model_labels(modelstrs);
-		//update_allocations2(allocations);
-		this.neighborhood = neighborhood;
+	public void reset(String taskname, int[] users, String[] modelstrs, int baselen) {
 		modelTasks = null;
 		
-		//reset accuracy
-		cache_hits = 0;
-		total_requests = 0;
-		hitslist.clear();
-		
 		setupModels();
-		trainModels();
+		ModelSetup ms = SessionMetadata.parseModelStrings(modelstrs, baselen);
+		modellabels = ms.modellabels;
+		historylengths = ms.historylengths;
+		trainModels(users,null);
 	}
 	
-	public void reset(String[] userstrs, String[] modelstrs, String[] predictions,
-			String nstr,boolean usePhases) throws Exception {
-		//update_users(userstrs);
-		//update_model_labels(modelstrs);
-		//update_allocations_from_string(predictions);
-		neighborhood = Integer.parseInt(nstr);
+	public void reset(String taskname, String[] userstrs, String[] modelstrs, int baselen) throws Exception {
 		modelTasks = null;
-		//System.out.println("new neighborhood variable:"+neighborhood);
-		
-		//reset accuracy
-		cache_hits = 0;
-		total_requests = 0;
-		hitslist.clear();
 		
 		setupModels();
-		trainModels();
+		ModelSetup ms = SessionMetadata.parseModelStrings(modelstrs, baselen);
+		modellabels = ms.modellabels;
+		historylengths = ms.historylengths;
+		trainModels(SessionMetadata.parseUserStrings(userstrs),taskname);
 	}
 	
 	/********************* Helper Functions ************************/

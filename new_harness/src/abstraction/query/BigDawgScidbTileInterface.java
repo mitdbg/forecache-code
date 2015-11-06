@@ -40,11 +40,6 @@ public class BigDawgScidbTileInterface extends Scidb14_12TileInterface {
 		this.host = host;
 		this.port = port;
 	}
-	@Override
-	public TileStructure buildDefaultTileStructure(View v) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 	@Override
 	public synchronized boolean executeQuery(String query) {
@@ -107,7 +102,7 @@ public class BigDawgScidbTileInterface extends Scidb14_12TileInterface {
 	}
 	
 	@Override
-	public Map<String,List<Integer>> getDimensionBoundaries(String query) {
+	public DimensionBoundary getDimensionBoundaries(String query) {
 		query = removeBigDawgWrapper(query);
 		String showQuery = generateShowQuery(query);
 		String bdq = addBigDawgWrapper(showQuery);
@@ -115,8 +110,7 @@ public class BigDawgScidbTileInterface extends Scidb14_12TileInterface {
 		getRawTile(bdq,t);
 		int schema_index = t.getIndex("schema");
 		String schema = (String) t.get(schema_index, 0);
-		Map<String,List<Integer>> boundaryMap = parseSchemaForDimensionBoundaries(schema);
-		return boundaryMap;
+		return parseSchemaForDimensionBoundaries(schema);
 	}
 	
 	/************* For Precomputation ***************/

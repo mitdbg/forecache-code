@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Map;
 
 import abstraction.query.NewTileInterface;
+import abstraction.query.NewTileInterface.DimensionBoundary;
+import abstraction.storage.TileRetrievalHelper;
+import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.UtilityFunctions;
 
 
@@ -20,13 +23,16 @@ public class DefinedTileView {
 	public TileStructure ts;
 	public NewTileInterface nti;
 	public SignatureMap sigMap = null; // unique to this particular defined tile view
+	public TileRetrievalHelper trh = null;
 	protected String sigMapFile = null;
 	protected Map<NewTileKey,Boolean> allKeys = null;
-	protected Map<String,List<Integer>> boundaryMap = null;
+	protected DimensionBoundary dimbound = null;
 	protected double[][] tileCounts = null; // counts per dimension and zoom level
 	
+	// makes absolutely no assumptions about view or tile structure,
+	// and thus everything must be passed directly.
 	public DefinedTileView(View v, TileStructure ts, NewTileInterface nti,
-			String sigMapFile) {
+			String sigMapFile, String cache_path) {
 		this.v = v;
 		this.ts = ts;
 		this.nti = nti;
@@ -34,6 +40,22 @@ public class DefinedTileView {
 		this.sigMap = new SignatureMap();
 		this.sigMapFile = sigMapFile;
 		initializeSignatureMap(sigMapFile);
+		this.trh = new TileRetrievalHelper(cache_path);
+	}
+	
+	// assumes a generic tile structure and generates the tile structure
+	public DefinedTileView(View v, NewTileInterface nti, String sigMapFile, String cache_path) {
+		this(v,null,nti,sigMapFile,cache_path);
+		this.ts = nti.buildDefaultTileStructure(v);
+	}
+	
+	// assumes the same aggregation window and tile width for all dimensions.
+	// useful in the case of MODIS data, where these assumptions hold true.
+	// generates the tile structure given these parameters (and # of zoom levels).
+	public DefinedTileView(View v, NewTileInterface nti, int aggregationWindow,
+			int tileWidth, int zoomLevels, String sigMapFile, String cache_path) {
+		this(v,null,nti,sigMapFile,cache_path);
+		this.ts = nti.buildTileStructure(v,aggregationWindow,tileWidth,zoomLevels);
 	}
 	
 	public void saveSignatureMap() {
@@ -46,7 +68,7 @@ public class DefinedTileView {
 	
 	// gets array dimension boundaries from the tile interface
 	public synchronized void getBoundaries() {
-		this.boundaryMap = this.nti.getDimensionBoundaries(v.getQuery());
+		this.dimbound = this.nti.getDimensionBoundaries(v.getQuery());
 	}
 	
 	// returns a list of all tile keys. If the list doesn't exist yet,
@@ -91,6 +113,18 @@ public class DefinedTileView {
 	// get the corresponding tile at the coarser zoom level
 	public NewTileKey getCoarserTile(NewTileKey original, int zoomLevel) {
 		return this.ts.getCoarserTile(original, zoomLevel);
+	}
+	
+	// this function is a back door function used to quickly get tiles for
+	// metadata purposes
+	public ColumnBasedNiceTile getTileForMetadata(NewTileKey key) {
+		ColumnBasedNiceTile tile = this.trh.getTile(key);
+		if(tile == null) {
+			tile = new ColumnBasedNiceTile(key);
+			this.nti.getTile(this.v, this.ts, tile);
+			this.trh.saveTile(tile);
+		}
+		return tile;
 	}
 	
 	/************************ Helper Functions *************************/
@@ -143,7 +177,7 @@ public class DefinedTileView {
 		double[] ranges = new double[this.ts.dimensionLabels.length];
 		for(int i = 0; i < this.ts.dimensionLabels.length; i++) {
 			String dimname = this.ts.dimensionLabels[i];
-			List<Integer> range = this.boundaryMap.get(dimname);
+			List<Integer> range = this.dimbound.boundaryMap.get(dimname);
 			int low = range.get(0);
 			int high = range.get(1);
 			ranges[i] = high - low + 1;

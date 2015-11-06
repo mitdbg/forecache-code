@@ -14,7 +14,7 @@ import abstraction.tile.ColumnBasedNiceTile;
 
 import configurations.DBConnector;
 
-public class Scidb14_12TileInterface extends NewTileInterface {
+public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	
 	public Scidb14_12TileInterface() {
 		super(DBConnector.SCIDB);
@@ -22,21 +22,38 @@ public class Scidb14_12TileInterface extends NewTileInterface {
 
 	@Override
 	public TileStructure buildDefaultTileStructure(View v) {
-		// TODO Auto-generated method stub
-		return null;
+		DimensionBoundary dimbound = getDimensionBoundaries(v.getQuery());
+		int aggregationWindow = 2;
+		int tileSize = 100000;
+		int tileWidth = (int) Math.ceil(Math.pow(tileSize,1 / dimbound.dimensions.size()));
+		int zoomLevels = 1;
+		for(String key : dimbound.boundaryMap.keySet()) {
+			List<Integer> boundaries = dimbound.boundaryMap.get(key);
+			int range = boundaries.get(1) - boundaries.get(0) + 1;
+			
+			int levels = 1;
+			range /= tileWidth; // go by tile count
+			while(range >= 2) {
+				levels++;
+				range /= 2; // # tiles should be halved each level
+			}
+			if(levels > zoomLevels) zoomLevels = levels;
+		}
+		return buildTileStructure(dimbound,aggregationWindow, tileWidth, zoomLevels);
 	}
 
 	@Override
-	public boolean executeQuery(String query) {
-		// TODO Auto-generated method stub
-		return false;
+	public TileStructure buildTileStructure(View v, int aggregationWindow, int tileWidth,
+			int zoomLevels) {
+		DimensionBoundary dimbound = getDimensionBoundaries(v.getQuery());
+		return buildTileStructure(dimbound, aggregationWindow, tileWidth, zoomLevels);
 	}
 
 	@Override
-	public boolean getTile(String query, ColumnBasedNiceTile tile) {
-		// TODO Auto-generated method stub
-		return false;
-	}
+	public abstract boolean executeQuery(String query);
+
+	@Override
+	public abstract boolean getTile(String query, ColumnBasedNiceTile tile);
 	
 	@Override
 	public boolean getTile(View v, TileStructure ts, ColumnBasedNiceTile tile) {
@@ -49,18 +66,12 @@ public class Scidb14_12TileInterface extends NewTileInterface {
 	
 	@Override
 	// just a generic function to execute a query on the DBMS, and retrieve the output
-	public boolean getRawTile(String query, ColumnBasedNiceTile tile) {
-		//TODO fill this in
-		return false;
-	}
+	public abstract boolean getRawTile(String query, ColumnBasedNiceTile tile);
 	
 	// just used to get the raw data as a single gigantic string
 	// probably won't be used with scidb connectors
 	@Override
-	public String getRawData(String query) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	public abstract String getRawData(String query);
 	
 	@Override
 	public List<String> getQueryDataTypes(String query) {
@@ -74,14 +85,13 @@ public class Scidb14_12TileInterface extends NewTileInterface {
 	}
 	
 	@Override
-	public Map<String,List<Integer>> getDimensionBoundaries(String query) {
+	public DimensionBoundary getDimensionBoundaries(String query) {
 		String showQuery = generateShowQuery(query);
 		ColumnBasedNiceTile t = new ColumnBasedNiceTile();
 		getRawTile(showQuery,t);
 		int schema_index = t.getIndex("schema");
 		String schema = (String) t.get(schema_index, 0);
-		Map<String,List<Integer>> boundaryMap = parseSchemaForDimensionBoundaries(schema);
-		return boundaryMap;
+		return parseSchemaForDimensionBoundaries(schema);
 	}
 	
 	@Override
@@ -145,6 +155,21 @@ public class Scidb14_12TileInterface extends NewTileInterface {
 	
 	
 	/************* Helper Functions ***************/
+	protected TileStructure buildTileStructure(DimensionBoundary dimbound,
+			int aggregationWindow, int tileWidth, int zoomLevels) {
+		TileStructure ts = new TileStructure();
+		ts.dimensionLabels = new String[dimbound.dimensions.size()];
+		ts.tileWidths = new int[ts.dimensionLabels.length];
+		ts.aggregationWindows = new int[zoomLevels][ts.dimensionLabels.length];
+		for(int d = 0; d < ts.dimensionLabels.length; d++) {
+			ts.tileWidths[d] = tileWidth;
+			ts.dimensionLabels[d] = dimbound.dimensions.get(d);
+			for(int i = 0; i < zoomLevels; i++) {
+				ts.aggregationWindows[i][d] = (int) Math.pow(aggregationWindow, zoomLevels - i - 1);
+			}
+		}
+		return ts;
+	}
 	
 	// does not assume that zoom level is built
 	protected String generateBuildTileQuery(View v, TileStructure ts,NewTileKey id) {
@@ -242,8 +267,10 @@ public class Scidb14_12TileInterface extends NewTileInterface {
 	
 	// given a scidb dimensions definition, gets the data types
 	// TODO: make this function find datatypes, instead of assuming all dims are int64
-	public Map<String,List<Integer>> parseSchemaDimensionsForBoundaries(String dimensions) {
-		Map<String,List<Integer>> boundaryMap = new HashMap<String,List<Integer>>();
+	public DimensionBoundary parseSchemaDimensionsForDimensionBoundaries(String dimensions) {
+		DimensionBoundary dimbound = new DimensionBoundary();
+		dimbound.dimensions = new ArrayList<String>();
+		dimbound.boundaryMap = new HashMap<String,List<Integer>>();
 		int totalDimensions = dimensions.split("=").length - 1;
 		String[] tokens = dimensions.split(",");
 		int base = 0;
@@ -251,6 +278,7 @@ public class Scidb14_12TileInterface extends NewTileInterface {
 			String first = tokens[base];
 			String[] name_tokens = first.split("=");
 			String name = name_tokens[0];
+			dimbound.dimensions.add(name);
 			String[] boundary_tokens = name_tokens[1].split(":");
 			int low = Integer.parseInt(boundary_tokens[0]);
 			int high = Integer.parseInt(boundary_tokens[1]);
@@ -259,9 +287,9 @@ public class Scidb14_12TileInterface extends NewTileInterface {
 			List<Integer> temp = new ArrayList<Integer>();
 			temp.add(low);
 			temp.add(high);
-			boundaryMap.put(name,temp);
+			dimbound.boundaryMap.put(name,temp);
 		}
-		return boundaryMap;
+		return dimbound;
 	}
 	
 	// given a scidb dimensions definition, gets the data types
@@ -288,13 +316,12 @@ public class Scidb14_12TileInterface extends NewTileInterface {
 	}
 	
 	// parses a scidb schema for both the dimension and attribute data types
-	public Map<String,List<Integer>> parseSchemaForDimensionBoundaries(String schema) {
-		Map<String,List<Integer>> boundaryMap = null;
+	public DimensionBoundary parseSchemaForDimensionBoundaries(String schema) {
 		int dimsStart = schema.indexOf("[");
 		int dimsEnd = schema.indexOf("]");
 		String dimensions = schema.substring(dimsStart+1,dimsEnd);
-		boundaryMap = parseSchemaDimensionsForBoundaries(dimensions);
-		return boundaryMap;
+		DimensionBoundary dimbound = parseSchemaDimensionsForDimensionBoundaries(dimensions);
+		return dimbound;
 	}
 	
 	// parses a scidb schema for both the dimension and attribute data types

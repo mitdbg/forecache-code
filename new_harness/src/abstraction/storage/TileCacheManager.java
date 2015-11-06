@@ -1,5 +1,6 @@
 package abstraction.storage;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -22,6 +23,8 @@ public class TileCacheManager {
 	
 	protected int totalRequests = 0;
 	protected int cacheHits = 0;
+	protected List<String> hitsList;
+	
 	PreFetchTask prefetchTask;
 	Future<?> prefetchFuture = null;
 	ExecutorService threadPool = null;
@@ -30,21 +33,33 @@ public class TileCacheManager {
 	public TileCacheManager(DefinedTileView dtv, TileBuffer buffer) {
 		this.dtv = dtv;
 		this.buffer = buffer;
+		this.hitsList = new ArrayList<String>();
 	}
 	
 	public synchronized void init() {
-		this.threadPool = Executors.newFixedThreadPool(poolsize);
+		if(threadPool == null) {
+			this.threadPool = Executors.newFixedThreadPool(poolsize);
+		}
 	}
 	
 	public synchronized void shutdown() {
-		stopCurrentPrefetchTask();
-		this.threadPool.shutdown();
+		if(threadPool != null) {
+			stopCurrentPrefetchTask();
+			this.threadPool.shutdown();
+		}
+	}
+	
+	public synchronized void reset(DefinedTileView dtv, int buffer_size) {
+		clear();
+		this.dtv = dtv;
+		this.buffer.resize(buffer_size);
 	}
 	
 	public synchronized void clear() {
 		stopCurrentPrefetchTask();
 		this.totalRequests = 0;
 		this.cacheHits = 0;
+		this.hitsList.clear();
 		this.buffer.clear();
 	}
 	
@@ -52,9 +67,13 @@ public class TileCacheManager {
 		return (this.prefetchFuture == null) || (this.prefetchFuture.isDone());
 	}
 	
-	// should not be synchronized, so it can be interrupted
 	public synchronized void insertPredictions(List<NewTileKey> predictions) {
 		startNewPrefetchTask(predictions);
+	}
+	
+	// back door used to quickly get tiles for metadata purposes
+	public synchronized ColumnBasedNiceTile getTileForMetadata(NewTileKey key) {
+		return this.dtv.getTileForMetadata(key);
 	}
 	
 	// answer a user request
@@ -62,12 +81,11 @@ public class TileCacheManager {
 	 * @param key
 	 * @return
 	 */
-	public synchronized ColumnBasedNiceTile retrieveRequestedTile(NewTileKey key) {
-		stopCurrentPrefetchTask();
-		this.totalRequests++;
+	public synchronized ColumnBasedNiceTile retrieveUserRequestedTile(NewTileKey key) {
+		// stop prefetching and look for this tile
+		boolean found = updateAccuracy(key);
 		// is it in the cache?
-		if(this.buffer.peek(key)) {
-			this.cacheHits++;
+		if(found) {
 			return this.buffer.get(key);
 		}
 		ColumnBasedNiceTile tile = new ColumnBasedNiceTile();
@@ -79,6 +97,39 @@ public class TileCacheManager {
 			return tile;
 		}
 		return null;
+	}
+	
+	public boolean updateAccuracy(NewTileKey id) {
+		stopCurrentPrefetchTask();
+		// is it in LRU buffer or regular buffer?
+		boolean found = this.buffer.peek(id);
+		if(found) {
+			this.cacheHits++;
+			this.hitsList.add("hit");
+		} else {
+			this.hitsList.add("miss");
+		}
+		totalRequests++;
+		return found;
+	}
+	
+	public double getAccuracy() {
+		return 1.0 * cacheHits / totalRequests;
+	}
+
+	public String getFullAccuracy() {
+		if(hitsList.size() == 0) {
+			return "[]";
+		}
+		String res = hitsList.get(0);
+		for(int i = 1; i < hitsList.size(); i++) {
+			res = res + ","+hitsList.get(i);
+		}
+		return res;
+	}
+
+	public String[] getFullAccuracyRaw() {
+		return hitsList.toArray(new String[hitsList.size()]);
 	}
 	
 	/*************** helper functions ****************/
@@ -121,7 +172,7 @@ public class TileCacheManager {
 	}
 	
 	/********************* Nested Classes ************************/
-	/*this Task is used to prefetch tiles one at a time.*/
+	// this Task is used to prefetch tiles one at a time.
 	public class PreFetchTask implements Runnable {
 		public volatile boolean stop = false;
 		public volatile List<NewTileKey> toPrefetch;

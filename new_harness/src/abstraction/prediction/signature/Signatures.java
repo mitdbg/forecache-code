@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -100,33 +101,29 @@ public class Signatures {
 	
 	/**************** Dense Sift ****************/
 	public static class DenseSiftSignature implements Callable<double[]> {
-		DefinedTileView dtv;
-		NewTileKey id;
+		ColumnBasedNiceTile tile;
 		ConcurrentKDTree<Integer> vocabulary;
 		int vocabsize;
 		
-		public DenseSiftSignature(DefinedTileView dtv, NewTileKey id, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
-			this.dtv = dtv;
-			this.id = id;
+		public DenseSiftSignature(ColumnBasedNiceTile tile, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+			this.tile = tile;
 			this.vocabulary = vocabulary;
 			this.vocabsize = vocabsize;
 		}
 		
 		@Override
 		public double[] call() {
-			ColumnBasedNiceTile tile = new ColumnBasedNiceTile(this.id);
-			this.dtv.nti.getTile(dtv.v, dtv.ts, tile);
 			return buildDenseSiftSignature(tile,this.vocabulary,this.vocabsize);
 		}
 	}
 	
-	public static List<double[]> buildDenseSiftSignaturesInParallel(DefinedTileView dtv,
-			List<NewTileKey> ids, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+	public static List<double[]> buildDenseSiftSignaturesInParallel(List<ColumnBasedNiceTile> tiles,
+			ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
 		ExecutorService executor = Executors.newFixedThreadPool(3);
 		List<DenseSiftSignature> inputs = new ArrayList<DenseSiftSignature>();
 		List<double[]> finalResults = new ArrayList<double[]>();
-		for(NewTileKey id : ids) {
-			inputs.add(new DenseSiftSignature(dtv,id,vocabulary,vocabsize));
+		for(ColumnBasedNiceTile tile : tiles) {
+			inputs.add(new DenseSiftSignature(tile,vocabulary,vocabsize));
 		}
 		List<Future<double[]>> results;
 		try {
@@ -144,6 +141,16 @@ public class Signatures {
 			e.printStackTrace();
 		}
 		return finalResults;
+	}
+	
+	public static List<double[]> buildDenseSiftSignaturesInParallel(DefinedTileView dtv,
+			List<NewTileKey> ids, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+		List<ColumnBasedNiceTile> tiles = new ArrayList<ColumnBasedNiceTile>();
+		for(NewTileKey id : ids) {
+			ColumnBasedNiceTile tile = dtv.getTileForMetadata(id);
+			tiles.add(tile);
+		}
+		return buildDenseSiftSignaturesInParallel(tiles,vocabulary,vocabsize);
 	}
 	
 	public static double[] buildDenseSiftSignature(ColumnBasedNiceTile tile, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
@@ -183,32 +190,40 @@ public class Signatures {
 	
 	/**************** Sift ****************/
 	public static class SiftSignature implements Callable<double[]> {
-		DefinedTileView dtv;
-		NewTileKey id;
-		ConcurrentKDTree<Integer> vocabulary;
-		int vocabsize;
+		protected ColumnBasedNiceTile tile;
+		protected ConcurrentKDTree<Integer> vocabulary;
+		protected int vocabsize;
 		
-		public SiftSignature(DefinedTileView dtv, NewTileKey id, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
-			this.dtv = dtv;
-			this.id = id;
+		public SiftSignature(ColumnBasedNiceTile tile, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+			this.tile = tile;
 			this.vocabulary = vocabulary;
 			this.vocabsize = vocabsize;
 		}
 		
 		@Override
 		public double[] call() {
-			ColumnBasedNiceTile tile = new ColumnBasedNiceTile(this.id);
-			this.dtv.nti.getTile(dtv.v, dtv.ts, tile);
 			return buildSiftSignature(tile,this.vocabulary,this.vocabsize);
 		}
 	}
 	
-	public static List<double[]> buildSiftSignaturesInParallel(DefinedTileView dtv, List<NewTileKey> ids, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+	public static List<double[]> buildSiftSignaturesInParallel(DefinedTileView dtv,
+			List<NewTileKey> ids, ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
+		List<ColumnBasedNiceTile> tiles = new ArrayList<ColumnBasedNiceTile>();
+		for(NewTileKey id : ids) {
+			ColumnBasedNiceTile tile = dtv.getTileForMetadata(id);
+			tiles.add(tile);
+		}
+		return buildSiftSignaturesInParallel(tiles,vocabulary,vocabsize);
+	}
+	
+	// shortcut function, for the case when we already have the tiles
+	public static List<double[]> buildSiftSignaturesInParallel(List<ColumnBasedNiceTile> roiTiles,
+			ConcurrentKDTree<Integer> vocabulary, int vocabsize) {
 		ExecutorService executor = Executors.newFixedThreadPool(3);
 		List<SiftSignature> inputs = new ArrayList<SiftSignature>();
 		List<double[]> finalResults = new ArrayList<double[]>();
-		for(NewTileKey id : ids) {
-			inputs.add(new SiftSignature(dtv,id,vocabulary,vocabsize));
+		for(ColumnBasedNiceTile tile : roiTiles) {
+			inputs.add(new SiftSignature(tile,vocabulary,vocabsize));
 		}
 		List<Future<double[]>> results;
 		try {

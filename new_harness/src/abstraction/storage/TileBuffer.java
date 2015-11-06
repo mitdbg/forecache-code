@@ -19,7 +19,21 @@ public abstract class TileBuffer {
 	public abstract boolean peek(NewTileKey key);
 	public abstract List<NewTileKey> getBufferState();
 	public abstract int size();
+	
+	public synchronized void resize(int storage_max) {
+		this.storage_max = storage_max;
+	}
+	
+	public synchronized void resizeAndClear(int storage_max) {
+		resize(storage_max);
+		clear();
+	}
 
+	// do not evaluate the eviction policy here
+	public synchronized ColumnBasedNiceTile ignoredGet(NewTileKey key) {
+		return get_helper(key);
+	}
+	
 	public synchronized ColumnBasedNiceTile get(NewTileKey key) {
 		ColumnBasedNiceTile tile = get_helper(key);
 		// if get was successful, update Eviction Policy

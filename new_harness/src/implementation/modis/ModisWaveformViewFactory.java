@@ -1,4 +1,4 @@
-package implementation.mimic;
+package implementation.modis;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +17,7 @@ import configurations.VMConfig;
  * @author leibatt
  * This class can be used to generate forecache views for the given mimic waveform id
  */
-public class MimicWaveformViewFactory {
+public class ModisWaveformViewFactory {
 	public static String nameTemplate = "FC_WF?";
 	public static String queryTemplate = "ARRAY(apply(filter("+
 			"slice(waveform_signal_table,RecordName,?)"+
@@ -31,8 +31,8 @@ public class MimicWaveformViewFactory {
 	public String viewsFolder;
 	public ViewMap mimicViews;
 	
-	public MimicWaveformViewFactory(String viewsFolder) {
-		this.viewsFolder = viewsFolder;
+	public ModisWaveformViewFactory() {
+		this.viewsFolder = DBInterface.mimic_views_folder;
 		this.mimicViews = new ViewMap(viewsFolder);
 	}
 	
@@ -53,7 +53,7 @@ public class MimicWaveformViewFactory {
 		Config config = new VMConfig(); // use vm-specific configurations
 		config.setConfig();
 		
-		MimicWaveformViewFactory factory = new MimicWaveformViewFactory(DBInterface.mimic_views_folder);
+		ModisWaveformViewFactory factory = new ModisWaveformViewFactory();
 		try {
 			View v = factory.getMimicWaveformView("325553800011");
 			System.out.println(v.getName());

@@ -1,7 +1,9 @@
 package abstraction.structures;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 
 import abstraction.tile.ColumnBasedNiceTile;
@@ -15,6 +17,7 @@ public class TileHistoryQueue {
 	private ArrayList<TileRecord> history;
 	private ArrayList<TileRecord> trueHistory; // used to track ROI's
 	protected List<NewTileKey> lastRoi;
+	protected List<ColumnBasedNiceTile> lastRoiTiles;
 	protected int lastZoomOut = -1;
 	protected boolean newRoi = false;
 	private int maxhist;
@@ -24,12 +27,14 @@ public class TileHistoryQueue {
 		trueHistory = new ArrayList<TileRecord>();
 		lastRoi = new ArrayList<NewTileKey>();
 		this.maxhist = maxhist;
+		this.lastRoiTiles = new ArrayList<ColumnBasedNiceTile>();
 	}
 	
 	public synchronized void clear() {
 		history.clear();
 		trueHistory.clear();
 		lastRoi.clear();
+		lastRoiTiles.clear();
 	}
 	
 	// adds record to history for given tile
@@ -97,6 +102,7 @@ public class TileHistoryQueue {
 		return myresult;
 	}
 	
+	// get the keys corresponding to the last ROI
 	public synchronized List<NewTileKey> getLastRoi() {
 		if(lastRoi.size() > 0) {
 			return lastRoi;
@@ -106,6 +112,20 @@ public class TileHistoryQueue {
 		List<NewTileKey> makeshiftRoi = new ArrayList<NewTileKey>();
 		if(history.size() == 0) return makeshiftRoi;
 		makeshiftRoi.add(history.get(history.size()-1).MyTile.id);
+		return makeshiftRoi;
+	}
+	
+	// get the tiles corresponding to the last ROI
+	public synchronized List<ColumnBasedNiceTile> getLastRoiTiles() {
+		if(lastRoiTiles.size() > 0) {
+			return lastRoiTiles;
+		}
+		
+		// just return the last request, if there is no ROI yet
+		List<ColumnBasedNiceTile> makeshiftRoi = new ArrayList<ColumnBasedNiceTile>();
+		if(history.size() == 0) return makeshiftRoi;
+		ColumnBasedNiceTile last = history.get(history.size()-1).MyTile;
+		makeshiftRoi.add(last);
 		return makeshiftRoi;
 	}
 	
@@ -141,8 +161,11 @@ public class TileHistoryQueue {
 		if(lastZoomOut >= 0 && lastZoomIn >= 0) {
 			this.lastZoomOut = lastZoomOut;
 			lastRoi.clear();
+			lastRoiTiles.clear();
 			for(i = lastZoomIn; i <= lastZoomOut; i++) {
-				lastRoi.add(history.get(i).MyTile.id);
+				ColumnBasedNiceTile curr = history.get(i).MyTile;
+				lastRoi.add(curr.id);
+				lastRoiTiles.add(curr);
 			}
 			newRoi = true;
 		} else {

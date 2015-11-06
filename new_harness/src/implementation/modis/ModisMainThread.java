@@ -46,7 +46,7 @@ import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.DBInterface;
 import abstraction.util.UtilityFunctions;
 
-public class PreCompThread {
+public class ModisMainThread {
 	public static TileRetrievalHelper trh;
 	public static SessionMetadata md;
 	public static DefinedTileView dtv;

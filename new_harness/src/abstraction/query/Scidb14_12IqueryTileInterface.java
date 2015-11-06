@@ -25,12 +25,6 @@ public class Scidb14_12IqueryTileInterface extends Scidb14_12TileInterface {
 	}
 
 	@Override
-	public TileStructure buildDefaultTileStructure(View v) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
 	public synchronized boolean executeQuery(String query) {
 		// don't waste time making a tile
 		AttributesDataPair pair = new AttributesDataPair();
