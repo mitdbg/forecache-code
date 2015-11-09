@@ -25,10 +25,10 @@ public class TileCacheManager {
 	protected int cacheHits = 0;
 	protected List<String> hitsList;
 	
-	PreFetchTask prefetchTask;
-	Future<?> prefetchFuture = null;
-	ExecutorService threadPool = null;
-	int poolsize = 1;
+	protected PreFetchTask prefetchTask;
+	protected Future<?> prefetchFuture = null;
+	protected ExecutorService threadPool = null;
+	protected int poolsize = 1;
 	
 	public TileCacheManager(DefinedTileView dtv, TileBuffer buffer) {
 		this.dtv = dtv;

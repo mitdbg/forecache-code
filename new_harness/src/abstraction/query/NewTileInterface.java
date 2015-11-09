@@ -4,12 +4,12 @@ import java.util.List;
 import java.util.Map;
 
 
+import abstraction.enums.DBConnector;
 import abstraction.structures.NewTileKey;
 import abstraction.structures.TileStructure;
 import abstraction.structures.View;
 import abstraction.tile.ColumnBasedNiceTile;
 
-import configurations.DBConnector;
 
 public abstract class NewTileInterface {
 	protected DBConnector connectionType;

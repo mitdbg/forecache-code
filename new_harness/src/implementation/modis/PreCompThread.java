@@ -22,10 +22,10 @@ import org.opencv.core.Core;
 
 import configurations.BigDawgConfig;
 import configurations.Config;
-import configurations.DBConnector;
 import configurations.ModisConfig;
 import configurations.VMConfig;
 
+import abstraction.enums.DBConnector;
 import abstraction.enums.Model;
 import abstraction.prediction.AllocationStrategyMap;
 import abstraction.prediction.PredictionEngine;
@@ -64,7 +64,7 @@ public class PreCompThread {
 	public static int deflmbuflen = 0; // default is don't use lru cache
 	public static int neighborhood = 1; // default neighborhood from which to pick candidates
 	public static Config conf;
-
+	public static String defaultSigmapFilename = "sigMap_k100.ser";
 
 	public static void setupServer(int port) throws Exception {
 		server = new Server(port);
@@ -104,7 +104,7 @@ public class PreCompThread {
 		View v = new View(null, null, null, null);
 		TileStructure ts = new TileStructure();
 		NewTileInterface nti = new Scidb14_12IqueryTileInterface();
-		dtv = new DefinedTileView(v, ts, nti, BuildSignaturesOffline.defaultFilename,
+		dtv = new DefinedTileView(v, ts, nti, defaultSigmapFilename,
 				DBInterface.nice_tile_cache_dir);
 		dtv.initializeSignatureMap();
 		

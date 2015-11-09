@@ -172,11 +172,11 @@ public class DefinedTileView {
 	}
 	
 	// given boundary maps from the tile interface, computes the
-	// ranges of 
+	// range for each dimension (assuming integers)
 	protected double[] getRanges() {
-		double[] ranges = new double[this.ts.dimensionLabels.length];
-		for(int i = 0; i < this.ts.dimensionLabels.length; i++) {
-			String dimname = this.ts.dimensionLabels[i];
+		double[] ranges = new double[this.dimbound.dimensions.size()];
+		for(int i = 0; i < ranges.length; i++) {
+			String dimname = this.dimbound.dimensions.get(i);
 			List<Integer> range = this.dimbound.boundaryMap.get(dimname);
 			int low = range.get(0);
 			int high = range.get(1);

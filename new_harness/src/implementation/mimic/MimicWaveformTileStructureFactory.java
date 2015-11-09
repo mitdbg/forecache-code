@@ -3,7 +3,7 @@ package implementation.mimic;
 import abstraction.structures.TileStructure;
 
 public class MimicWaveformTileStructureFactory {
-	public static String[] defaultDimensionLabels = new String[]{"msec"};
+	//public static String[] defaultDimensionLabels = new String[]{"msec"};
 	public static int[][] defaultAggregationWindows = new int[][]{new int[]{1250},
 			new int[]{625},
 			new int[]{125},
@@ -16,7 +16,7 @@ public class MimicWaveformTileStructureFactory {
 		TileStructure ts = new TileStructure();
 		ts.aggregationWindows = defaultAggregationWindows;
 		ts.tileWidths = defaultTileWidths;
-		ts.dimensionLabels = defaultDimensionLabels;
+		//ts.dimensionLabels = defaultDimensionLabels;
 		return ts;
 	}
 	
@@ -24,7 +24,7 @@ public class MimicWaveformTileStructureFactory {
 		TileStructure ts = new TileStructure();
 		ts.aggregationWindows = aggregationWindows;
 		ts.tileWidths = tileWidths;
-		ts.dimensionLabels = defaultDimensionLabels; // this is hardcoded for now
+		//ts.dimensionLabels = defaultDimensionLabels; // this is hardcoded for now
 		return ts;
 	}
 }

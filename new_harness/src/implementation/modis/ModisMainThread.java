@@ -4,9 +4,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.FileOutputStream;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -22,7 +20,6 @@ import org.opencv.core.Core;
 
 import configurations.BigDawgConfig;
 import configurations.Config;
-import configurations.DBConnector;
 import configurations.ModisConfig;
 import configurations.VMConfig;
 
@@ -30,6 +27,7 @@ import abstraction.enums.Model;
 import abstraction.prediction.AllocationStrategyMap;
 import abstraction.prediction.PredictionEngine;
 import abstraction.query.NewTileInterface;
+import abstraction.query.Scidb13_3IqueryTileInterface;
 import abstraction.query.Scidb14_12IqueryTileInterface;
 import abstraction.storage.MainMemoryTileBuffer;
 import abstraction.storage.NiceTilePacker;
@@ -60,18 +58,27 @@ public class ModisMainThread {
 	public static int defaultport = 8080;
 	
 	// General prediction variables
+	public static boolean doprefetch = false;
 	public static int histmax = 10;
 	public static int deflmbuflen = 0; // default is don't use lru cache
-	public static int neighborhood = 1; // default neighborhood from which to pick candidates
+	public static int neighborhood = -1; // default neighborhood from which to pick candidates
+	public static int baselen = -1;
 	public static Config conf;
 
+	public static String defaultSigmapFilename = "sigMap_k100.ser";
 
 	public static void setupServer(int port) throws Exception {
 		server = new Server(port);
 		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-		context.setContextPath("/gettile");
+		// default servlet will look for requests to root path
+		context.setContextPath("/");
+		context.setResourceBase("web_content"); // web content is available in this folder
+		System.out.println(context.getResourceBase());
 		server.setHandler(context);
-		context.addServlet(new ServletHolder(new FetchTileServlet()), "/*");
+		
+		// use the special FetchTileServlet to service fetch requests
+		context.addServlet(new ServletHolder(new FetchTileServlet()), "/forecache/modis/fetch/*");
+		
 		server.start();
 	}
 
@@ -96,15 +103,21 @@ public class ModisMainThread {
 			lmbuflen = Integer.parseInt(args[1]);
 		}
 		
-		if(args.length == 3) {
+		if(args.length >= 3) {
 			neighborhood = Integer.parseInt(args[2]);
 			System.out.println("neighborhood: "+neighborhood);
 		}
 		
-		View v = new View(null, null, null, null);
-		TileStructure ts = new TileStructure();
-		NewTileInterface nti = new Scidb14_12IqueryTileInterface();
-		dtv = new DefinedTileView(v, ts, nti, BuildSignaturesOffline.defaultFilename,
+		if(args.length == 4) {
+			doprefetch = args[3].equals("true");
+		}
+		
+		// this code sets up the MODIS use case
+		ModisViewFactory mvf = new ModisViewFactory();
+		View v = mvf.getModisView();
+		TileStructure ts = OldModisTileStructureFactory.getDefaultModisTileStructure();
+		NewTileInterface nti = new Scidb13_3IqueryTileInterface();
+		dtv = new DefinedTileView(v, ts, nti, defaultSigmapFilename,
 				DBInterface.nice_tile_cache_dir);
 		dtv.initializeSignatureMap();
 		
@@ -154,16 +167,16 @@ public class ModisMainThread {
 			cacheManager.updateAccuracy(id);
 		}
 		
-		protected void doReset(String taskname, String useridstr,String modelstr,String predictions,
-				String nstr) throws Exception {
+		protected void doReset(String taskname, String useridstr,
+				String modelstr,String predictions,
+				String nstr, String baselenstr) throws Exception {
 				System.out.println("Doing reset...");
 				neighborhood = Integer.parseInt(nstr);
-				predictionEngine.reset(taskname,useridstr.split("_"),modelstr.split("_"), -1);
+				baselen = Integer.parseInt(baselenstr);
+				predictionEngine.reset(taskname,useridstr.split("_"),modelstr.split("_"), baselen);
 				int[] allocations = SessionMetadata.parseAllocationStrings(predictions.split("_"));
 				
-				// use the same allocations for every phase
-				AllocationStrategyMap asm = ModisAllocationStrategyMapFactory.
-						getBasicMap(predictionEngine.modellabels, allocations);
+				AllocationStrategyMap asm;
 				
 				// if we are using SIFT and NGRM only, use the hybrid allocation strategy instead
 				if((predictionEngine.modellabels.length == 2) &&
@@ -173,6 +186,10 @@ public class ModisMainThread {
 								(predictionEngine.modellabels[1] == Model.SIFT))) {
 					int totalAllocations = allocations[0] + allocations[1];
 					asm = ModisAllocationStrategyMapFactory.get2ModelHybridMap(totalAllocations);
+				} else {
+					// use the same allocations for every phase
+					asm = ModisAllocationStrategyMapFactory.
+							getBasicMap(predictionEngine.modellabels, allocations);
 				}
 				
 				// new user session
@@ -192,8 +209,9 @@ public class ModisMainThread {
 			//String usePhases = request.getParameter("usephases");
 			String nstr = request.getParameter("neighborhood");
 			String taskname = request.getParameter("taskname");
+			String baselenstr = request.getParameter("histlen");
 			try {
-				doReset(taskname,useridstr,modelstr,predictions, nstr);
+				doReset(taskname,useridstr,modelstr,predictions, nstr, baselenstr);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -211,7 +229,18 @@ public class ModisMainThread {
 				HttpServletResponse response) throws IOException {
 			double accuracy =  cacheManager.getAccuracy();
 			response.getWriter().println(accuracy);
-			return;
+		}
+		
+		protected void doGetTileStructure(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			String jsonstring = dtv.ts.toJson();
+			response.getWriter().println(jsonstring);
+		}
+		
+		protected void doGetView(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			String jsonstring = dtv.v.toJson();
+			response.getWriter().println(jsonstring);
 		}
 		
 		protected void doFetch(HttpServletRequest request,
@@ -242,7 +271,9 @@ public class ModisMainThread {
 
 				md.history.addRecord(t);
 				
-				makePredictions();
+				if(doprefetch) {
+					makePredictions();
+				}
 			} catch (Exception e) {
 				System.err.println("error occured while fetching tile");
 				e.printStackTrace();
@@ -267,8 +298,10 @@ public class ModisMainThread {
 			ColumnBasedNiceTile t = cacheManager.getTileForMetadata(key);
 			md.history.addRecord(t); // keep track
 			
-			// make some new predictions, just in case
-			makePredictions();
+			if(doprefetch) {
+				// make some new predictions, just in case
+				makePredictions();
+			}
 		}
 		
 		protected void doGet(HttpServletRequest request,
@@ -298,6 +331,16 @@ public class ModisMainThread {
 			String getaccuracy = request.getParameter("accuracy");
 			if(getaccuracy != null) {
 				doGetAccuracy(request,response);
+			}
+			
+			String getts = request.getParameter("getts");
+			if(getts != null) {
+				doGetTileStructure(request,response);
+			}
+			
+			String getview = request.getParameter("getview");
+			if(getview != null) {
+				doGetView(request,response);
 			}
 			
 			String fetch = request.getParameter("fetch");

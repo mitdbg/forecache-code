@@ -19,8 +19,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import configurations.DBConnector;
 
+import abstraction.enums.DBConnector;
 import abstraction.query.Scidb14_12IqueryTileInterface.AttributesDataPair;
 import abstraction.structures.NewTileKey;
 import abstraction.structures.TileStructure;

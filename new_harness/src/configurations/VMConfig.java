@@ -1,5 +1,6 @@
 package configurations;
 
+import abstraction.enums.DBConnector;
 import abstraction.util.DBInterface;
 
 public class VMConfig extends Config {
@@ -14,6 +15,7 @@ public class VMConfig extends Config {
 	
 	public void setConfig() {
 		DBInterface.mimic_views_folder = "/home/leibatt/projects/forecache-code/harness/mimic_views";
+		DBInterface.modis_views_folder = "/home/leibatt/projects/forecache-code/harness/modis_views";
 		
 		DBInterface.nice_tile_cache_dir = "/home/leibatt/projects/user_study/scalar_backend/nice_tile_cache";
 		//DBInterface.nice_tile_cache_dir = "/home/leibatt/projects/user_study/scalar_backend/vertica_nice_tile_cache";

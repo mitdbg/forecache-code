@@ -1,5 +1,7 @@
 package configurations;
 
+import abstraction.enums.DBConnector;
+
 // dummy class, used for setting system configurations
 public abstract class Config {
 	private DBConnector db;

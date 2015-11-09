@@ -11,66 +11,17 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+
+/**
+ * @author leibatt
+ * Note: the dimension names are irrelevant to the tile structure, and restrict
+ * the tile structure from being reusable across queries
+ */
 public class TileStructure implements java.io.Serializable {
 	private static final long serialVersionUID = -7588792485497184441L;
-	public String[] dimensionLabels; // need to be in dimension order
+	//public String[] dimensionLabels; // need to be in dimension order
 	public int[][] aggregationWindows; // length = total zoom levels, length of subarray = # dimensions
 	public int []tileWidths; // one per dimension
-	
-	// data for the front-end to setup its tile tracking
-	public String getTileStructureJson() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("{");
-		
-		// dimension labels
-		sb.append("\"dimensionLabels\":[");
-		if(dimensionLabels.length > 0) {
-			sb.append(dimensionLabels[0]);
-			for(int i = 1; i < dimensionLabels.length; i++) {
-				sb.append(",").append(dimensionLabels[i]);
-			}
-		}
-		sb.append("]");
-		
-		//aggregationWindows
-		sb.append(",");
-		sb.append("\"aggregationWidnows\":{");
-		if(aggregationWindows.length > 0) {
-			int[] widths = aggregationWindows[0];
-			if(widths.length > 0) {
-				sb.append("{");
-				sb.append("\""+dimensionLabels[0]+"\"").append(":").append(widths[0]);
-				for(int d = 1; d < widths.length; d++) {
-					sb.append(",").append("\""+dimensionLabels[d]+"\"").append(":").append(widths[d]);
-				}
-				sb.append("}");
-				for(int i = 1; i < dimensionLabels.length; i++) {
-					widths = aggregationWindows[i];
-					sb.append("{");
-					sb.append("\""+dimensionLabels[0]+"\"").append(":").append(widths[0]);
-					for(int d = 1; d < widths.length; d++) {
-						sb.append(",").append("\""+dimensionLabels[d]+"\"").append(":").append(widths[d]);
-					}
-					sb.append("}");
-				}
-			}
-		}
-		sb.append("}");
-		
-		//tile widths
-		sb.append("\"tileWidths\":[");
-		if(tileWidths.length > 0) {
-			sb.append(tileWidths[0]);
-			for(int d = 1; d < tileWidths.length; d++) {
-				sb.append(",").append(tileWidths[d]);
-			}
-		}
-		sb.append("]");
-		
-		sb.append("}");
-		
-		return sb.toString();
-	}
 	
 	//for a zoom id, return the corresponding aggregation window
 	public int[] getAggregationWindow(int zoom) {
@@ -137,18 +88,76 @@ public class TileStructure implements java.io.Serializable {
 		}
 		if(tsjson != null) {
 			this.aggregationWindows = tsjson.aggregationWindows;
-			this.dimensionLabels = tsjson.dimensionLabels;
+			//this.dimensionLabels = tsjson.dimensionLabels;
 			this.tileWidths = tsjson.tileWidths;
 			return true;
 		}
 		return false;
 	}
 	
+	/*
+	// data for the front-end to setup its tile tracking
+	public String getTileStructureJson() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("{");
+	
+		
+		// dimension labels
+		sb.append("\"dimensionLabels\":[");
+		if(dimensionLabels.length > 0) {
+			sb.append(dimensionLabels[0]);
+			for(int i = 1; i < dimensionLabels.length; i++) {
+				sb.append(",").append(dimensionLabels[i]);
+			}
+		}
+		sb.append("]");
+		
+		//aggregationWindows
+		sb.append(",");
+		sb.append("\"aggregationWidnows\":{");
+		if(aggregationWindows.length > 0) {
+			int[] widths = aggregationWindows[0];
+			if(widths.length > 0) {
+				sb.append("{");
+				sb.append("\""+dimensionLabels[0]+"\"").append(":").append(widths[0]);
+				for(int d = 1; d < widths.length; d++) {
+					sb.append(",").append("\""+dimensionLabels[d]+"\"").append(":").append(widths[d]);
+				}
+				sb.append("}");
+				for(int i = 1; i < dimensionLabels.length; i++) {
+					widths = aggregationWindows[i];
+					sb.append("{");
+					sb.append("\""+dimensionLabels[0]+"\"").append(":").append(widths[0]);
+					for(int d = 1; d < widths.length; d++) {
+						sb.append(",").append("\""+dimensionLabels[d]+"\"").append(":").append(widths[d]);
+					}
+					sb.append("}");
+				}
+			}
+		}
+		sb.append("}");
+		
+		//tile widths
+		sb.append("\"tileWidths\":[");
+		if(tileWidths.length > 0) {
+			sb.append(tileWidths[0]);
+			for(int d = 1; d < tileWidths.length; d++) {
+				sb.append(",").append(tileWidths[d]);
+			}
+		}
+		sb.append("]");
+		
+		sb.append("}");
+		
+		return sb.toString();
+	}
+	*/
+	
 	/****************** Helper Functions *********************/
 	protected TileStructureJson getTSJson() {
 		TileStructureJson tsjson = new TileStructureJson();
 		tsjson.aggregationWindows = this.aggregationWindows;
-		tsjson.dimensionLabels = this.dimensionLabels;
+		//tsjson.dimensionLabels = this.dimensionLabels;
 		tsjson.tileWidths = this.tileWidths;
 		return tsjson;
 	}
@@ -168,7 +177,7 @@ public class TileStructure implements java.io.Serializable {
 	/****************** Nested Classes *********************/
 	public static class TileStructureJson implements java.io.Serializable {
 		private static final long serialVersionUID = -7275959924981908343L;
-		public String[] dimensionLabels; // need to be in dimension order
+		//public String[] dimensionLabels; // need to be in dimension order
 		public int[][] aggregationWindows; // length = total zoom levels, length of subarray = # dimensions
 		public int []tileWidths; // one per dimension
 	}

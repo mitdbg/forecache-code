@@ -7,12 +7,12 @@ import java.util.List;
 import java.util.Map;
 
 
+import abstraction.enums.DBConnector;
 import abstraction.structures.NewTileKey;
 import abstraction.structures.TileStructure;
 import abstraction.structures.View;
 import abstraction.tile.ColumnBasedNiceTile;
 
-import configurations.DBConnector;
 
 public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	
@@ -158,12 +158,12 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	protected TileStructure buildTileStructure(DimensionBoundary dimbound,
 			int aggregationWindow, int tileWidth, int zoomLevels) {
 		TileStructure ts = new TileStructure();
-		ts.dimensionLabels = new String[dimbound.dimensions.size()];
-		ts.tileWidths = new int[ts.dimensionLabels.length];
-		ts.aggregationWindows = new int[zoomLevels][ts.dimensionLabels.length];
-		for(int d = 0; d < ts.dimensionLabels.length; d++) {
+		String[] dimensionLabels = new String[dimbound.dimensions.size()];
+		ts.tileWidths = new int[dimensionLabels.length];
+		ts.aggregationWindows = new int[zoomLevels][dimensionLabels.length];
+		for(int d = 0; d < dimensionLabels.length; d++) {
 			ts.tileWidths[d] = tileWidth;
-			ts.dimensionLabels[d] = dimbound.dimensions.get(d);
+			dimensionLabels[d] = dimbound.dimensions.get(d);
 			for(int i = 0; i < zoomLevels; i++) {
 				ts.aggregationWindows[i][d] = (int) Math.pow(aggregationWindow, zoomLevels - i - 1);
 			}

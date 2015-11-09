@@ -1,4 +1,4 @@
-package configurations;
+package abstraction.enums;
 
 public enum DBConnector {
 	SCIDB("scidb"),

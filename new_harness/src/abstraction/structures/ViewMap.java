@@ -13,11 +13,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import abstraction.enums.DBConnector;
 
 
 
 
-import configurations.DBConnector;
+
 
 /**
  * @author leibatt

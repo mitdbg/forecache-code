@@ -8,13 +8,13 @@ import java.util.Iterator;
 import java.util.List;
 
 
+import abstraction.enums.DBConnector;
 import abstraction.structures.TileStructure;
 import abstraction.structures.View;
 import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.UtilityFunctions;
 
 
-import configurations.DBConnector;
 
 public class Scidb14_12IqueryTileInterface extends Scidb14_12TileInterface {
 	protected String scidbVersion = "14.12";
