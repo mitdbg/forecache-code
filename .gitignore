@@ -1,6 +1,8 @@
 .classpath
 .project
 gt_updated.csv
+*.swp
+.DS_Store
 
 new_harness/lib/libsvm-master/
 new_harness/bin
