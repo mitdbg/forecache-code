@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.opencv.core.Core;
@@ -78,7 +79,8 @@ public class ModisMainThread {
 		
 		// use the special FetchTileServlet to service fetch requests
 		context.addServlet(new ServletHolder(new FetchTileServlet()), "/forecache/modis/fetch/*");
-		
+		// use a default servlet to get static stuff
+		context.addServlet(new ServletHolder(new DefaultServlet()), "/*");
 		server.start();
 	}
 
