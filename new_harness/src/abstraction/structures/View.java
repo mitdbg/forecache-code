@@ -53,7 +53,6 @@ public class View implements java.io.Serializable {
 	// in case the client needs it to track user stuff
 	public String toJson() {
 		return toJson(getViewJson());
-		
 	}
 	
 	// populates this view using the given json string
@@ -112,10 +111,10 @@ public class View implements java.io.Serializable {
 	/****************** Nested Classes *********************/
 	public static class ViewJson implements java.io.Serializable {
 		private static final long serialVersionUID = 7891278531786309396L;
-		protected String name; //user-defined view name
-		protected String query; //query used to compute the base view to explore
-		protected String[] summaries; // summary operations to compute for zoom levels
-		protected DBConnector connectionType; // what kind of connector should we use?
+		public String name; //user-defined view name
+		public String query; //query used to compute the base view to explore
+		public String[] summaries; // summary operations to compute for zoom levels
+		public DBConnector connectionType; // what kind of connector should we use?
 	}
 
 }
