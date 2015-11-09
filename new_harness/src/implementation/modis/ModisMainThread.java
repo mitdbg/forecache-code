@@ -85,12 +85,7 @@ public class ModisMainThread {
 	public static void main(String[] args) throws Exception {
 		// tell java where opencv is
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-		//set configurations
-		conf = new VMConfig();
-		// conf = new BigDawgConfig();
-		// conf = new ModisConfig();
-		conf.setConfig();
-		
+
 		int lmbuflen = deflmbuflen;
 		int port = defaultport;
 		
@@ -108,8 +103,26 @@ public class ModisMainThread {
 			System.out.println("neighborhood: "+neighborhood);
 		}
 		
-		if(args.length == 4) {
-			doprefetch = args[3].equals("true");
+		if(args.length >= 4) {
+			//set configurations
+			if(args[3].equals("vm")) {
+				System.out.println("using vm config");
+				conf = new VMConfig();
+			} else if(args[3].equals("bigdawg")) {
+				System.out.println("using big dawg config");
+				conf = new BigDawgConfig();
+			} else if (args[3].equals("modis")) {
+				System.out.println("using modis config");
+				conf = new ModisConfig();
+			} else { // default
+				System.out.println("config not recognized. using default config (vm) ....");
+				conf = new VMConfig();
+			}
+			conf.setConfig();
+		}
+		
+		if(args.length == 5) {
+			doprefetch = args[4].equals("true");
 		}
 		
 		// this code sets up the MODIS use case
@@ -119,7 +132,6 @@ public class ModisMainThread {
 		NewTileInterface nti = new Scidb13_3IqueryTileInterface();
 		dtv = new DefinedTileView(v, ts, nti, defaultSigmapFilename,
 				DBInterface.nice_tile_cache_dir);
-		dtv.initializeSignatureMap();
 		
 		predictionEngine = new PredictionEngine();
 		// buffer using LRU eviction policy
@@ -167,6 +179,14 @@ public class ModisMainThread {
 			cacheManager.updateAccuracy(id);
 		}
 		
+		// assumes no prediction
+		protected void doSimpleReset() {
+			// new user session
+			md = new SessionMetadata("", histmax, null);
+
+			cacheManager.clear();
+		}
+		
 		protected void doReset(String taskname, String useridstr,
 				String modelstr,String predictions,
 				String nstr, String baselenstr) throws Exception {
@@ -201,6 +221,10 @@ public class ModisMainThread {
 		protected void doReset(HttpServletRequest request,
 				HttpServletResponse response) {
 			System.out.println("reset");
+			if(!doprefetch) { // no prefetching, ignore the prediction setup
+				doSimpleReset();
+				return;
+			}
 			//reset models for prediction
 			//String level = request.getParameter("level");
 			String useridstr = request.getParameter("user_ids");
