@@ -90,4 +90,10 @@
             <classpath refid="forecache2.classpath"/>
         </java>
     </target>
+    <target name="ModisMainThread">
+        <java classname="implementation.modis.ModisMainThread" failonerror="true" fork="yes">
+            <arg line="10001 0 1 false"/>
+            <classpath refid="forecache2.classpath"/>
+        </java>
+    </target>
 </project>
