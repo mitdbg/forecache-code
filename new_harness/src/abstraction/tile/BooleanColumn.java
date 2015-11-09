@@ -5,6 +5,7 @@ import java.util.List;
 
 
 public class BooleanColumn extends Column {
+	private static final long serialVersionUID = -4879283509057730872L;
 	public List<Boolean> columnVals;
 	public Domain<Boolean> domain;
 	

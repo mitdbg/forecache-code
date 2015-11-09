@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FloatColumn extends Column {
+	private static final long serialVersionUID = 2831079186367737982L;
 	public List<Float> columnVals;
 	public Domain<Float> domain;
 	

@@ -5,6 +5,7 @@ import java.util.List;
 
 
 public class CharacterColumn extends Column {
+	private static final long serialVersionUID = -3526275516338858856L;
 	public List<Character> columnVals;
 	public Domain<Character> domain;
 	

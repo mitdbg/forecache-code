@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class IntegerColumn extends Column {
+	private static final long serialVersionUID = 1440848013736117720L;
 	public List<Integer> columnVals;
 	public Domain<Integer> domain;
 	

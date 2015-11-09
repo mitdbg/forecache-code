@@ -3,7 +3,8 @@ package abstraction.tile;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Domain<A extends Comparable<? super A>> {
+public class Domain<A extends Comparable<? super A>> implements java.io.Serializable {
+	private static final long serialVersionUID = -2532226068358227137L;
 	protected A low = null;
 	protected A high = null;
 	
