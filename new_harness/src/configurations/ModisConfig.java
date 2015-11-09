@@ -16,7 +16,7 @@ public class ModisConfig extends Config {
 		DBInterface.mimic_views_folder = "/home/leilani/forecache-code/harness/mimic_views";
 		DBInterface.modis_views_folder = "/home/leilani/forecache-code/harness/modis_views";
 		
-		DBInterface.nice_tile_cache_dir = "/home/leilani/nice_tile_cache";
+		DBInterface.nice_tile_cache_dir = "/home/leilani/modis_tile_cache";
 		//DBInterface.nice_tile_cache_dir = "/home/leilani/vertica_nice_tile_cache";
 		DBInterface.defaultparamsfile = "/data/scidb/000/1/leilani/csv/ndsi_agg_7_18_2013_params.tsv";
 		DBInterface.cache_root_dir = "/home/leilani/test_cache";
