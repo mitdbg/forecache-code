@@ -76,6 +76,7 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	@Override
 	public List<String> getQueryDataTypes(String query) {
 		String showQuery = generateShowQuery(query);
+		System.out.println("show query: '"+showQuery+"'");
 		ColumnBasedNiceTile t = new ColumnBasedNiceTile();
 		getRawTile(showQuery,t);
 		int schema_index = t.getIndex("schema");
@@ -192,6 +193,7 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 			lows[i] = ts.tileWidths[i]*id.dimIndices[i];
 			highs[i] = lows[i] + ts.tileWidths[i] - 1;
 		}
+		System.out.println("generateRetrieveTileQuery: '"+generateSubarrayQuery(query,lows,highs)+"'");
 		return generateSubarrayQuery(query,lows,highs);
 	}
 	

@@ -274,7 +274,6 @@ public class ModisMainThread {
 			
 			String zoom = request.getParameter("zoom");
 			String tile_id = request.getParameter("tile_id");
-			String threshold = request.getParameter("threshold");
 			//System.out.println("hashed query: " + hashed_query);
 			//System.out.println("zoom: " + zoom);
 			//System.out.println("tile id: " + tile_id);
@@ -282,7 +281,7 @@ public class ModisMainThread {
 			ColumnBasedNiceTile t = null;
 			try {
 				long ns = System.currentTimeMillis();
-				t = fetchTile(tile_id,zoom,threshold);
+				t = fetchTile(tile_id,zoom);
 				// send the response
 				long s = System.currentTimeMillis();
 				byte[] toSend = NiceTilePacker.serializeTile(t);
@@ -384,8 +383,7 @@ public class ModisMainThread {
 			}
 		}
 		
-		protected ColumnBasedNiceTile fetchTile(String tile_id, String zoom,
-				String threshold) throws InterruptedException {
+		protected ColumnBasedNiceTile fetchTile(String tile_id, String zoom) throws InterruptedException {
 			String reverse = UtilityFunctions.unurlify(tile_id); // undo urlify
 			int[] id = UtilityFunctions.parseTileIdInteger(reverse);
 			int z = Integer.parseInt(zoom);
