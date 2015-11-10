@@ -21,7 +21,7 @@ public class Scidb13_3IqueryTileInterface extends Scidb14_12IqueryTileInterface 
 		myresult[2] = "export SCIDB_VER="+scidbVersion+" ; "+
 				"export PATH=/opt/scidb/$SCIDB_VER/bin:/opt/scidb/$SCIDB_VER/share/scidb:$PATH ; "+
 				"export LD_LIBRARY_PATH=/opt/scidb/$SCIDB_VER/lib:$LD_LIBRARY_PATH ; "+
-				"source ~/.bashrc ; iquery -o "+outputFormat+" -aq \"" + query + "\"";
+				"source ~/.bashrc ; iquery -o "+outputFormat+" -anq \"" + query + "\"";
 		return myresult;
 	}
 
