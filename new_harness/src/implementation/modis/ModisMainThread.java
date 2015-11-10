@@ -420,16 +420,19 @@ public class ModisMainThread {
 			String getaccuracy = request.getParameter("accuracy");
 			if(getaccuracy != null) {
 				doGetAccuracy(request,response);
+				return;
 			}
 			
 			String getts = request.getParameter("getts");
 			if(getts != null) {
 				doGetTileStructure(request,response);
+				return;
 			}
 			
 			String getview = request.getParameter("getview");
 			if(getview != null) {
 				doGetView(request,response);
+				return;
 			}
 
 			String json = request.getParameter("json");
