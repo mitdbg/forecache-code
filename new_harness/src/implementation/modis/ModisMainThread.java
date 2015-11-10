@@ -390,6 +390,7 @@ public class ModisMainThread {
 			
 			response.setContentType("text/html");
 			response.setStatus(HttpServletResponse.SC_OK);
+			fixHeaders(response);
 			
 			String ready = request.getParameter("ready");
 			if(ready != null) {
