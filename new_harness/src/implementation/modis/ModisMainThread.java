@@ -269,6 +269,43 @@ public class ModisMainThread {
 			response.getWriter().println(jsonstring);
 		}
 		
+		protected void doJsonFetch(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			
+			String zoom = request.getParameter("zoom");
+			String tile_id = request.getParameter("tile_id");
+			//System.out.println("hashed query: " + hashed_query);
+			//System.out.println("zoom: " + zoom);
+			//System.out.println("tile id: " + tile_id);
+			//System.out.println("threshold: " + threshold);
+			ColumnBasedNiceTile t = null;
+			try {
+				long ns = System.currentTimeMillis();
+				t = fetchTile(tile_id,zoom);
+				// send the response
+				long s = System.currentTimeMillis();
+				String jsonstring = t.toJson();
+				long e = System.currentTimeMillis();
+				response.getWriter().print(jsonstring);
+				long e2 = System.currentTimeMillis();
+				String report= (s-ns)+","+(e-s)+","+(e2-e)+","+jsonstring.length();
+				System.out.println(report);
+				//log.write(report);
+				//log.newLine();
+				//log.flush();
+
+				md.history.addRecord(t);
+				
+				if(doprefetch) {
+					makePredictions();
+				}
+			} catch (Exception e) {
+				System.err.println("error occured while fetching tile");
+				e.printStackTrace();
+				response.getWriter().println(error);
+			}
+		}
+		
 		protected void doFetch(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
 			
@@ -366,6 +403,13 @@ public class ModisMainThread {
 			String getview = request.getParameter("getview");
 			if(getview != null) {
 				doGetView(request,response);
+			}
+
+			String json = request.getParameter("json");
+			if(json != null) {
+				//System.out.println("doing tile fetch.");
+				doJsonFetch(request,response);
+				return;
 			}
 			
 			String fetch = request.getParameter("fetch");

@@ -4,7 +4,11 @@ import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import abstraction.structures.NewTileKey;
+import abstraction.structures.View.ViewJson;
 
 
 public class ColumnBasedNiceTile implements java.io.Serializable {
@@ -144,6 +148,44 @@ public class ColumnBasedNiceTile implements java.io.Serializable {
 		}
 	}
 	
+	public String toJson() {
+		return toJson(getCbntJson());
+	}
+	
+	/************************ Helper Functions **************************/
+	protected CbntJson getCbntJson() {
+		CbntJson temp = new CbntJson();
+		temp.attributes = attributes.toArray(new String[this.attributes.size()]);
+		temp.dataTypes = new String[this.dataTypes.size()];
+		for(int i = 0; i < temp.dataTypes.length; i++) {
+			temp.dataTypes[i] = this.dataTypes.get(i).getName();
+		}
+		temp.zoom = this.id.zoom;
+		temp.id = this.id.dimIndices;
+		int rows = this.getSize();
+		int cols = this.columns.size();
+		temp.data = new String[rows][cols];
+		for(int r = 0; r < rows; r++) {
+			for(int c = 0; c < cols; c++) {
+				// index1 = column, index2 = row
+				temp.data[r][c] = this.get(c, r).toString();
+			}
+		}
+		return temp;
+	}
+	
+	protected String toJson(CbntJson cjson) {
+		ObjectMapper o = new ObjectMapper();
+		String returnval = null;
+		try {
+			returnval = o.writeValueAsString(cjson);
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return returnval;
+	}
+	
 	public static void main(String[] args) {
 		List<String> attr = new ArrayList<String>();
 		attr.add("str");
@@ -172,5 +214,16 @@ public class ColumnBasedNiceTile implements java.io.Serializable {
 			System.out.println(t.attributes.get(0)+": "+t.get(0,i));
 			System.out.println(t.attributes.get(1)+": "+t.get(1,i));
 		}
+	}
+
+	/************************** Nested Classes********************************/
+	
+	public static class CbntJson implements java.io.Serializable {
+		private static final long serialVersionUID = -1259663013534858050L;
+		int[] id;
+		int zoom;
+		String[][] data;
+		String[] attributes;
+		String[] dataTypes;
 	}
 }
