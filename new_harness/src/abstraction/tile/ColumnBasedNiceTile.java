@@ -220,10 +220,10 @@ public class ColumnBasedNiceTile implements java.io.Serializable {
 	
 	public static class CbntJson implements java.io.Serializable {
 		private static final long serialVersionUID = -1259663013534858050L;
-		int[] id;
-		int zoom;
-		String[][] data;
-		String[] attributes;
-		String[] dataTypes;
+		public int[] id;
+		public int zoom;
+		public String[][] data;
+		public String[] attributes;
+		public String[] dataTypes;
 	}
 }
