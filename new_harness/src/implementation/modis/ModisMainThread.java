@@ -130,7 +130,10 @@ public class ModisMainThread {
 		// this code sets up the MODIS use case
 		ModisViewFactory mvf = new ModisViewFactory();
 		View v = mvf.getModisView();
-		TileStructure ts = OldModisTileStructureFactory.getDefaultModisTileStructure();
+		//TileStructure ts = OldModisTileStructureFactory.getDefaultModisTileStructure();
+		TileStructure ts = OldModisTileStructureFactory.
+				getModisTileStructure(OldModisTileStructureFactory.defaultAggregationWindows,
+						new int[]{100,100}); // changing the tile parameters
 		NewTileInterface nti = new Scidb13_3IqueryTileInterface();
 		dtv = new DefinedTileView(v, ts, nti, defaultSigmapFilename,
 				DBInterface.nice_tile_cache_dir);
@@ -364,6 +367,22 @@ public class ModisMainThread {
 				// make some new predictions, just in case
 				makePredictions();
 			}
+		}
+		
+		// used to enable cross-domain AJAX calls
+		private void fixHeaders(HttpServletResponse response) {
+		    response.setHeader("Access-Control-Allow-Origin", "*");
+		    response.setHeader("Access-Control-Allow-Methods", "GET, HEAD, POST, TRACE, OPTIONS");
+		    response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+		    response.setHeader("Access-Control-Max-Age", "86400");
+		    
+		  //Tell the browser what requests we allow.
+		    response.setHeader("Allow", "GET, HEAD, POST, TRACE, OPTIONS");
+		    //System.out.println("fixing headers to allow CORS");
+		}
+		
+		protected void doOptions(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		    fixHeaders(response);
 		}
 		
 		protected void doGet(HttpServletRequest request,
