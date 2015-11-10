@@ -228,6 +228,12 @@ public class ModisMainThread {
 			System.out.println("reset");
 			if(!doprefetch) { // no prefetching, ignore the prediction setup
 				doSimpleReset();
+				try {
+					response.getWriter().print(done);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				return;
 			}
 			//reset models for prediction
@@ -241,6 +247,7 @@ public class ModisMainThread {
 			String baselenstr = request.getParameter("histlen");
 			try {
 				doReset(taskname,useridstr,modelstr,predictions, nstr, baselenstr);
+				response.getWriter().print(done);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -251,25 +258,25 @@ public class ModisMainThread {
 		protected void doGetFullAccuracy(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
 			String res = cacheManager.getFullAccuracy();
-			if(res != null) response.getWriter().println(res);
+			if(res != null) response.getWriter().print(res);
 		}
 		
 		protected void doGetAccuracy(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
 			double accuracy =  cacheManager.getAccuracy();
-			response.getWriter().println(accuracy);
+			response.getWriter().print(accuracy);
 		}
 		
 		protected void doGetTileStructure(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
 			String jsonstring = dtv.ts.toJson();
-			response.getWriter().println(jsonstring);
+			response.getWriter().print(jsonstring);
 		}
 		
 		protected void doGetView(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
 			String jsonstring = dtv.v.toJson();
-			response.getWriter().println(jsonstring);
+			response.getWriter().print(jsonstring);
 		}
 		
 		protected void doJsonFetch(HttpServletRequest request,
