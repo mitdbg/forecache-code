@@ -1,0 +1,43 @@
+<html>
+<head>
+<META NAME="ROBOTS" CONTENT="NOINDEX">
+<META NAME="ROBOTS" CONTENT="NOFOLLOW">
+	<link rel="stylesheet" type="text/css" href="static/css/forecache_heatmap.css">
+	<title> Heatmap Test</title>
+    <script type="text/javascript" src="static/js/colorbrewer.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/jquery.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/d3.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/bigdawgvis.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/util.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache_backend.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache_renderer_base.js" charset="utf-8"></script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        var renderFunc = function(d) {
+            var FC = ForeCache.Renderer.BaseObj;
+            var vis =
+            FC.getVis($("#view"),{"xname":"longitude_e4ndsi_06_03_2013","xlabel":"lon",
+                                  "yname":"latitude_e4ndsi_06_03_2013","ylabel":"lat",
+                                  "zlabel":"avg_ndsi","zname":"avg_ndsi",
+                                  "width":400,
+                                  "height":400,
+                                  "padding":{"left":50,"right":50,"top":50,"bottom":50}},ForeCache.Backend);
+        };
+        ForeCache.Backend.reset(renderFunc);
+      });
+
+    </script>
+</head>
+
+
+<body>
+  <div class="main">
+			<h1>Heatmap Test</h1>
+			<div id="content">
+         <div id="view" class="view"></div>
+			</div>
+	</div>
+</body>
+
+</html>
+

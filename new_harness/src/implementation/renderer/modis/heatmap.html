@@ -1,0 +1,64 @@
+<html>
+<head>
+<META NAME="ROBOTS" CONTENT="NOINDEX">
+<META NAME="ROBOTS" CONTENT="NOFOLLOW">
+	<link rel="stylesheet" type="text/css" href="static/css/forecache_heatmap.css">
+	<title> Heatmap Test</title>
+    <script type="text/javascript" src="static/js/colorbrewer.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/jquery.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/d3.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/bigdawgvis.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/util.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache_heatmap.js" charset="utf-8"></script>
+    <script type="text/javascript">
+      
+      var url = "http://modis.csail.mit.edu:10001/forecache/modis/fetch/";
+      var reset = function(callback){
+        var dat = {};
+        dat.reset=true;
+        $.get(url,dat,callback);
+      }
+
+      $(document).ready(function() {
+        var t1;
+        var renderFunc = function(d) {
+          var data = {};
+          data.json = 1;
+          data.zoom = 0;
+          data.tile_id = "0_0";
+          $.getJSON(url,data,function(tile){
+            var jsondata = BigDawgVis.convertBigDawgForVega(tile.data,tile.attributes);
+            var FC = ForeCache.Renderer.Heatmap;
+            var t2 = new Date();
+            var vis =
+            FC.getVis($("#view"),{"xname":"longitude_e4ndsi_06_03_2013","xlabel":"lon",
+                                  "yname":"latitude_e4ndsi_06_03_2013","ylabel":"lat",
+                                  "zlabel":"avg_ndsi","zname":"avg_ndsi",
+                                  "width":400,
+                                  "height":400,
+                                  "padding":{"left":50,"right":50,"top":50,"bottom":50}},jsondata);
+            console.log(["vis id:",vis.attr("id")]);
+            var t3 = new Date();
+            console.log(["data loading time",t2.getTime() - t1.getTime(),
+              "rendering time",t3.getTime()-t2.getTime()]);
+          });
+        };
+        t1 = new Date();
+        reset(renderFunc);
+      });
+
+    </script>
+</head>
+
+
+<body>
+  <div class="main">
+			<h1>Heatmap Test</h1>
+			<div id="content">
+         <div id="view" class="view"></div>
+			</div>
+	</div>
+</body>
+
+</html>
+
