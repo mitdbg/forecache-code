@@ -23,7 +23,13 @@ ForeCache.Renderer.BaseObj.getVis = function(root,options,FCBackend) {
 ForeCache.Renderer.VisObj = function(chart, FCBackend, options) {
 	var self = this;
   this.backend = FCBackend;
-  this.currentTiles = [];
+
+  // bookkeeping data structures
+  this.currentTiles = []; // used to keep track of the current tile keys
+  this.tileMap = new ForeCache.Backend.TileMap();
+  this.currentZoom = -1;
+  this.cacheSize = 1;
+  this.viewportRatio = .75;
 
 	//default values
 	this.xlabel = options.xlabel
@@ -37,14 +43,15 @@ ForeCache.Renderer.VisObj = function(chart, FCBackend, options) {
   this.backend.getTileStructure(function(ts) {
     self.ts = ts; // store the tile structure
     if(options.hasOwnProperty("startingPos")) {
-      self.startingPosition = options.startingPos;
+      self.currentTiles = options.startingPos; // these better be tile keys
     } else {
       var dimindices = [];
-      for(var i = 0; i < self.ts.tileWidths.length; i++) {
+      for(var i = 0; i < self.ts.numdims; i++) {
         dimindices.push(0);
       }
-      self.startingPosition = [new self.backend.NewTileKey(dimindices,0)];
+      self.currentTiles = [new self.backend.NewTileKey(dimindices,0)];
     }
+    self.currentZoom = self.currentTiles[0].zoom;
     self.getStartingTiles(); // get the starting data
   });
 };
@@ -52,14 +59,25 @@ ForeCache.Renderer.VisObj = function(chart, FCBackend, options) {
 ForeCache.Renderer.VisObj.prototype.getStartingTiles = function() {
   var self = this;
   // get the starting data, then finish doing setup
-  self.backend.getTiles(self.startingPosition,function(tiles){self.finishSetup(tiles);});
+  self.backend.getTiles(self.currentTiles,function(tiles){
+    // store the starting tiles
+    self.tileMap.batchInsert(tiles);
+    //finish doing setup
+    self.finishSetup(tiles);
+  });
 };
 
+// adjust the width/height of the visible axes to be some fraction of the true range
+ForeCache.Renderer.VisObj.prototype.adjustForViewportRatio = function(domain) {
+  var diff = domain[1] - domain[0];
+  var diff2 = diff * this.viewportRatio;
+  var pad = (diff - diff2) / 2;
+  var domain2 = [domain[0]+pad, domain[1]-pad];
+  return domain2;
+};
 
 // this part of the setup process requires information about the starting data
 ForeCache.Renderer.VisObj.prototype.finishSetup = function(startingTiles) {
-  console.log("got here");
-  this.currentTiles = startingTiles; // store the starting tiles
   this.updateOpts();
 
 	this.cx = this.options.width;
@@ -69,7 +87,6 @@ ForeCache.Renderer.VisObj.prototype.finishSetup = function(startingTiles) {
 	this.fillStyle = "#993366";
 
 	this.padding = this.options.padding;
-
 	this.size = this.options.size;
 
 	$(this.chart).css("position","relative");
@@ -185,7 +202,8 @@ ForeCache.Renderer.VisObj.prototype.finishSetup = function(startingTiles) {
 ForeCache.Renderer.VisObj.prototype.get_stats = function(index) {
   var stats = {};
   for(var i = 0; i < this.currentTiles.length; i++) {
-    var col = this.currentTiles[i].columns[index];
+    var id = this.currentTiles[i];
+    var col = this.tileMap.get(id).columns[index];
     var s = this.get_stats_helper(col);
     if(!stats.hasOwnProperty("min") || (stats.min > s.min)) {
       stats.min = s.min;
@@ -240,12 +258,13 @@ ForeCache.Renderer.VisObj.prototype.get_stats_helper = function(col) {
 // adds to the default options set in BigDawgVis.updateOpts
 ForeCache.Renderer.VisObj.prototype.updateOpts = function() {
   var newopts = this.options;
-  this.xindex = this.currentTiles[0].getIndex(this.options.xname);
-  this.yindex = this.currentTiles[0].getIndex(this.options.yname);
-  this.zindex = this.currentTiles[0].getIndex(this.options.zname);
+  var tile0 = this.tileMap.get(this.currentTiles[0]);
+  this.xindex = tile0.getIndex(this.options.xname);
+  this.yindex = tile0.getIndex(this.options.yname);
+  this.zindex = tile0.getIndex(this.options.zname);
 
   // compute color domain
-  newopts.zdomain = ForeCache.Backend.getDomain(this.currentTiles,this.zindex);
+  newopts.zdomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.zindex);
 	newopts.size = {
 		"width":	newopts.width - newopts.padding.left - newopts.padding.right,
 		"height": newopts.height - newopts.padding.top	- newopts.padding.bottom
@@ -254,7 +273,8 @@ ForeCache.Renderer.VisObj.prototype.updateOpts = function() {
 
   xstats = this.get_stats(this.xindex);
   console.log(xstats);
-  newopts.xdomain = [xstats.max,xstats.min];
+  newopts.xdomain = [xstats.min,xstats.max];
+  newopts.xdomain = this.adjustForViewportRatio(newopts.xdomain);
   var xm = xstats.mindist; // width of box
   var xd = xstats.max - xstats.min; // space for boxes in domain
   var xw = newopts.size.width; // space for boxes in range
@@ -264,7 +284,8 @@ ForeCache.Renderer.VisObj.prototype.updateOpts = function() {
     if(boxwidth < 1) { // can't have a fraction of a pixel!
       boxwidth = 1; // make it 1 pixel
     }
-    newopts.boxwidth.x = boxwidth;
+    //newopts.boxwidth.x = boxwidth;
+    newopts.boxwidth.x = boxwidth / this.viewportRatio;
     newopts.size.width = numboxes*boxwidth; // make the width more realistic
     newopts.width = newopts.padding.left + newopts.padding.right + newopts.size.width;
     console.log([xstats,xm,xd,xw,numboxes,boxwidth]);
@@ -274,7 +295,8 @@ ForeCache.Renderer.VisObj.prototype.updateOpts = function() {
   }
 
   ystats = this.get_stats(this.yindex);
-  newopts.ydomain = [ystats.max,ystats.min];
+  newopts.ydomain = [ystats.min,ystats.max];
+  newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
   console.log(ystats);
   var ym = ystats.mindist; // height of box
   var yd = ystats.max - ystats.min; // space for boxes in domain
@@ -285,7 +307,8 @@ ForeCache.Renderer.VisObj.prototype.updateOpts = function() {
     if(boxwidth < 1) { // can't have a fraction of a pixel!
       boxwidth = 1; // make it 1 pixel
     }
-    newopts.boxwidth.y = boxwidth;
+    //newopts.boxwidth.y = boxwidth;
+    newopts.boxwidth.y = boxwidth / this.viewportRatio;
     newopts.size.height = numboxes*boxwidth; // make the height more realistic
     newopts.height = newopts.padding.top + newopts.padding.bottom + newopts.size.height;
     console.log([ystats,ym,yd,yw,numboxes,boxwidth]);
@@ -293,17 +316,61 @@ ForeCache.Renderer.VisObj.prototype.updateOpts = function() {
       return Math.floor((value - ystats.min)/ym)*boxwidth;
     }
   }
+  this.xdiff = newopts.xdomain[1] - newopts.xdomain[0];
+  this.ydiff = newopts.ydomain[1] - newopts.ydomain[0];
   console.log(["width",newopts.size.width,"height",newopts.size.height]);
 };
 
-//
-// VisObj methods
-//
+
+// compute the range of the xdomain
+ForeCache.Renderer.VisObj.prototype.getXRangeForZoom = function(currzoom,newzoom) {
+  var self = this;
+  var xindex = 0;
+	var xdomain = self.x.domain(); // raw data values for this zoom level
+  var xdiff = xdomain[1]-xdomain[0];
+	var xmid = xdomain[0] + 1.0*(xdiff)/2; // midpoint
+	console.log(["xmid",xmid,"xdomain",xdomain]);
+
+  // old aggregation window
+	var oldWindow = self.ts.aggregationWindows[currzoom][xindex];
+  // new aggregation window
+	var newWindow = self.ts.aggregationWindows[newzoom][xindex];
+  // translate this midpoint to the equivalent midpoint on the new zoom level
+	var newXmid = 1.0*xmid * oldWindow / newWindow;
+	var halfWidth = self.ts.tileWidths[xindex] * self.cacheSize / 2.0;
+	var newXDomain = [newXmid-halfWidth,newXmid+halfWidth];
+	console.log(["x","oldWindow",oldWindow,"newWindow",newWindow,"newXmid",newXmid,
+									"halfWidth",halfWidth,"newXdomain",newXDomain]);
+		
+  return newXDomain;
+};
+
+// compute the range of the xdomain
+ForeCache.Renderer.VisObj.prototype.getYRangeForZoom = function(currzoom,newzoom) {
+  var self = this;
+  var yindex = 1;
+	var ydomain = self.y.domain(); // raw data values for this zoom level
+  var ydiff = ydomain[1]-ydomain[0];
+	var ymid = ydomain[0] + 1.0*(ydiff)/2; // midpoint
+	console.log(["xmid",ymid,"xdomain",ydomain]);
+
+  // old aggregation window
+	var oldWindow = self.ts.aggregationWindows[currzoom][yindex];
+  // new aggregation window
+	var newWindow = self.ts.aggregationWindows[newzoom][yindex];
+  // translate this midpoint to the equivalent midpoint on the new zoom level
+	var newYmid = 1.0*ymid * oldWindow / newWindow;
+	var halfWidth = self.ts.tileWidths[yindex] * self.cacheSize / 2.0;
+	var newYDomain = [newYmid-halfWidth,newYmid+halfWidth];
+	console.log(["y","oldWindow",oldWindow,"newWindow",newWindow,"newYmid",newYmid,
+									"halfWidth",halfWidth,"newYdomain",newYDomain]);
+		
+  return newYDomain;
+};
 
 ForeCache.Renderer.VisObj.prototype.zoomClick = function() {
 	var self = this;
-	return function () {};
-/*
+	//return function () {};
 	return function () {
 		if(!self.mousebusy) {
 			self.mousebusy = true;
@@ -312,40 +379,46 @@ ForeCache.Renderer.VisObj.prototype.zoomClick = function() {
 		var zoomDiff = Number(this.getAttribute("data-zoom"));
 		if(zoomDiff < 0) console.log("zoom out");
 		else console.log("zoom in");
-		var newZoom = Math.min(Math.max(0,self.currentZoom+zoomDiff),self.aggWindows.length-1);
+		var newZoom = Math.min(Math.max(0,self.currentZoom+zoomDiff),self.ts.totalLevels-1);
 		console.log(["zoomDiff",zoomDiff,"currentZoom",self.currentZoom,"newZoom",newZoom]);
-		if(newZoom == self.currentZoom) return; // no change
+		if(newZoom == self.currentZoom) {
+			self.mousebusy = false;
+		$("body").css("cursor", "default");
+      return; // no change
+    }
 
 		var xdomain = self.x.domain();
 		var ydomain = self.y.domain();
 		var xmid = xdomain[0] + 1.0*(xdomain[1]-xdomain[0])/2;
-		console.log(["xmid",xmid,"xdomain",xdomain,"zoomDiff",zoomDiff,
-									"currentZoom",self.currentZoom,"newZoom",newZoom]);
-		var oldWindow = self.aggWindows[self.currentZoom];
-		var newWindow = self.aggWindows[newZoom];
-		var newXmid = 1.0*xmid * oldWindow / newWindow;
-		var halfWidth = self.k * self.cacheSize / 2.0;
-		var newXdomain = [newXmid-halfWidth,newXmid+halfWidth];
-		console.log(["oldWindow",oldWindow,"newWindow",newWindow,"newXmid",newXmid,
-									"halfWidth",halfWidth,"newXdomain",newXdomain]);
+    var newXDomain = self.getXRangeForZoom(self.currentZoom,newZoom);
+    var newYDomain = self.getYRangeForZoom(self.currentZoom,newZoom);
 		
 		self.currentZoom = newZoom;
-		self.tileMap = {};
+		self.tileMap.clear();
 		self.currentTiles = [];
-		self.x.domain(newXdomain);
+		//self.x.domain(newXDomain);
+		//self.y.domain(newYDomain);
+		self.x.domain(self.adjustForViewportRatio(newXDomain));
+		self.y.domain(self.adjustForViewportRatio(newYDomain));
 		self.fixYDomain = true;
 		self.afterZoom()();
 	};
-*/
 }
 
 ForeCache.Renderer.VisObj.prototype.renderTile = function(tile) {
   var rows = tile.getSize();
   var xw = this.options.boxwidth.x;
   var yw = this.options.boxwidth.y;
+  var xt = 1.0 * tile.id.dimindices[0]*this.ts.tileWidths[0];
+  var yt = 1.0 * tile.id.dimindices[1]*this.ts.tileWidths[1];
+  //console.log(["tile",tile,xt,yt]);
+  var xmin = null;
+  var xmax = null;
+  var ymin = null;
+  var ymax = null;
 	for(var i=0; i < rows;i++) {
-    var xval = tile.columns[this.xindex][i];
-    var yval = tile.columns[this.yindex][i];
+    var xval = Number(tile.columns[this.xindex][i]) + xt;
+    var yval = Number(tile.columns[this.yindex][i]) + yt;
     var zval = tile.columns[this.zindex][i];
 		var x = this.x(xval)+this.padding.left;
 		var y = this.y(yval)+this.padding.top;
@@ -354,7 +427,46 @@ ForeCache.Renderer.VisObj.prototype.renderTile = function(tile) {
  		this.ctx.fillStyle = this.color(zval);
 		this.ctx.fillRect(x,y, xw, yw);
 		this.ctx.closePath();
+    if(xmin === null) {
+      xmin = x;
+    } else if (xmin > x) {
+      xmin = x;
+    }
+    if(ymin === null) {
+      ymin = y;
+    } else if (ymin > y) {
+      ymin = y;
+    }
+
+    if(xmax === null) {
+      xmax = x;
+    } else if (xmax < x) {
+      xmax = x;
+    }
+    if(ymax === null) {
+      ymax = y;
+    } else if (ymax < y) {
+      ymax = y;
+    }   
 	}
+  console.log(["drawing lines",xmin,xmax,ymin,ymax]);
+  var xb = xw - 1;
+  var yb = yw - 1;
+
+  for(var i = (xmin-xb); i <= (xmax+xb); i++) {
+  	this.ctx.beginPath();
+ 		this.ctx.fillStyle = "black";
+		this.ctx.fillRect(i,ymin-yb, 1, 1);
+		this.ctx.fillRect(i,ymax+yb, xw, yw);
+		this.ctx.closePath();
+  }
+  for(var j = (ymin-yb); j <= (ymax+yb); j++) {
+  	this.ctx.beginPath();
+ 		this.ctx.fillStyle = "black";
+		this.ctx.fillRect(xmin-xb,j, xw, yw);
+		this.ctx.fillRect(xmax+xb,j, xw, yw);
+		this.ctx.closePath();
+  }
 };
 
 ForeCache.Renderer.VisObj.prototype.canvasUpdate = function() {
@@ -366,7 +478,9 @@ ForeCache.Renderer.VisObj.prototype.canvasUpdate = function() {
 	this.ctx.closePath();
 
   for(var t = 0; t < this.currentTiles.length; t++) {
-    this.renderTile(this.currentTiles[t]);
+    var id = this.currentTiles[t];
+    var tile = this.tileMap.get(id);
+    this.renderTile(tile);
   };
 	
 	this.ctx.beginPath();
@@ -398,43 +512,99 @@ ForeCache.Renderer.VisObj.prototype.canvasUpdate = function() {
 	}
 }
 
+
+
+ForeCache.Renderer.VisObj.prototype.getXRange = function() {
+  var self = this;
+	var xdom = self.x.domain();
+	var low = Math.max(0,parseInt(xdom[0],10));
+	var high = Math.max(0,parseInt(xdom[1],10));
+
+  console.log(["x","low",low,"high",high]);
+	var minID = Math.floor(low / self.ts.tileWidths[0]);
+	var maxID = Math.floor(high / self.ts.tileWidths[0]);
+	var newIDs = [];
+	var newTileMap = {};
+	var toFetch = [];
+	for(var tileID = minID; tileID < maxID; tileID++) {
+		newIDs.push(tileID);
+	}
+	newIDs.push(maxID);
+  return newIDs;
+};
+
+ForeCache.Renderer.VisObj.prototype.getYRange = function() {
+  var self = this;
+	var ydom = self.y.domain();
+	var low = Math.max(0,parseInt(ydom[0],10));
+	var high = Math.max(0,parseInt(ydom[1],10));
+
+  console.log(["y","low",low,"high",high]);
+	var minID = Math.floor(low / self.ts.tileWidths[1]);
+	var maxID = Math.floor(high / self.ts.tileWidths[1]);
+	var newIDs = [];
+	var newTileMap = {};
+	var toFetch = [];
+	for(var tileID = minID; tileID < maxID; tileID++) {
+		newIDs.push(tileID);
+	}
+	newIDs.push(maxID);
+  return newIDs;
+};
+
+ForeCache.Renderer.VisObj.prototype.getFutureTiles = function() {
+  var numdims = this.ts.numdims;
+  var xtiles = this.getXRange();
+  var futuretiles = [];
+  if(numdims == 1) { // one dimension
+    for(var x = 0; x < xtiles.length; x++) {
+        var newkey = new ForeCache.Backend.NewTileKey([xtiles[x]],this.currentZoom);
+        futuretiles.push(newkey); // push the pair
+    }
+  } else if (numdims == 2) { // two dimensions
+    var ytiles = this.getYRange();
+    for(var x = 0; x < xtiles.length; x++) {
+      for(var y = 0; y < ytiles.length; y++) {
+        var newkey = new ForeCache.Backend.NewTileKey([xtiles[x],ytiles[y]],this.currentZoom);
+        futuretiles.push(newkey);
+      }
+    }
+  }
+  console.log(futuretiles);
+  return futuretiles;
+};
+
 ForeCache.Renderer.VisObj.prototype.afterZoom = function() {
 	var self = this;
-	return function() {};
-/*
+	//return function() {};
 	return function() {
 		if(!self.mousebusy) {
 			self.mousebusy = true;
 			$('body').css("cursor", "wait");
 		}
-			var xdom = self.x.domain();
-			var low = Math.max(0,parseInt(xdom[0],10));
-			var high = Math.max(0,parseInt(xdom[1],10));
-
-			var minID = Math.floor(low / self.k);
-			var maxID = Math.floor(high / self.k);
-			var newIDs = [];
-			var newTileMap = {};
+			var newIDs = self.getFutureTiles(); //NewTileKey objects
+			var newTileMap = new ForeCache.Backend.TileMap();
 			var toFetch = [];
-			for(var tileID = minID; tileID < maxID; tileID++) {
-				newIDs.push(tileID);
-			}
-			newIDs.push(maxID);
 
 			for(var i = 0; i < newIDs.length; i++) {
 				var tileID = newIDs[i];
-				if(!self.tileMap.hasOwnProperty(tileID)) {
+				if(!self.tileMap.containsKey(tileID)) {
 					toFetch.push(tileID);
 				} else {
-					newTileMap[tileID] = self.tileMap[tileID];
+					newTileMap.insert(self.tileMap.get(tileID));
 				}
 			}
 			self.tileMap = newTileMap; //get rid of the stuff we don't need
 			self.currentTiles = newIDs; // record the new list of tiles
-			console.log(["to fetch",toFetch]);
-			console.log(["current tiles",self.currentTiles,self.tileMap]);
+			//console.log(["proposed tiles",newIDs]);
+			console.log(["to fetch",toFetch.length,toFetch]);
+			console.log(["current tiles",self.currentTiles.length,self.currentTiles,self.tileMap]);
 			if(toFetch.length > 0) {
-				self.getTiles(toFetch,function() {self.redraw()();}); // get the missing tiles from the new list
+				//self.getTiles(toFetch,function() {self.redraw()();}); // get the missing tiles from the new list
+        self.backend.getTiles(toFetch,function(tiles) {
+          self.tileMap.batchInsert(tiles);
+          self.redraw()();
+        });
 			} else {
 				if(self.mousebusy) {
 					self.mousebusy = false;
@@ -442,7 +612,6 @@ ForeCache.Renderer.VisObj.prototype.afterZoom = function() {
 				}
 			}
 	};
-*/
 }
 
 
@@ -496,7 +665,6 @@ ForeCache.Renderer.VisObj.prototype.redraw = function() {
 			.attr("class", "y forecache-axis")
 			.call(self.yAxis);
 
-		//Leilani
 		self.plot.call(d3.behavior.zoom().scaleExtent([1,1]).x(self.x).y(self.y).on("zoom", self.redraw())
 			.on("zoomend",self.afterZoom()));
 		self.canvasUpdate();		

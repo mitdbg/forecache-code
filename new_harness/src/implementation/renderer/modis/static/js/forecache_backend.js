@@ -161,20 +161,55 @@ ForeCache.Backend.getDomain = function(tiles,index) {
 ForeCache.Backend.NewTileKey = function(dimindices,zoom) {
   this.dimindices = dimindices;
   this.zoom = zoom;
+  this.name = [zoom,dimindices.join("_")].join("_");
+};
+
+ForeCache.Backend.TileMap = function() {
+  this.tiles = {};
+};
+
+// TileMap object
+ForeCache.Backend.TileMap.prototype.batchInsert = function(tiles) {
+  for(var i = 0; i < tiles.length; i++) {
+    this.insert(tiles[i]);
+  }
+};
+
+
+ForeCache.Backend.TileMap.prototype.get = function(id) {
+  if(this.containsKey(id)) {
+    return this.tiles[id.name];
+  }
+  return null;
+};
+
+ForeCache.Backend.TileMap.prototype.insert = function(tile) {
+  this.tiles[tile.id.name] = tile;
+};
+
+ForeCache.Backend.TileMap.prototype.containsKey = function(id) {
+  return this.tiles.hasOwnProperty(id.name);
+};
+
+ForeCache.Backend.TileMap.prototype.remove = function(id) {
+  if(this.containsKey(id)) {
+    delete this.tiles[id.name];
+  }
+};
+
+ForeCache.Backend.TileMap.prototype.getTiles = function() {
+  var self = this;
+  var values = Object.keys(this.tiles).map(function(key){
+    return self.tiles[key];
+  });
+  return values;
+};
+
+ForeCache.Backend.TileMap.prototype.clear = function() {
+  this.tiles = {};
 };
 
 // Tile object
-ForeCache.Backend.Tile = function(id) {
-  this.id = id;
-}
-
-ForeCache.Backend.Tile = function(columns,attributes,dataTypes,dimindices,zoom) {
-  this.columns = columns;
-  this.attributes = attributes;
-  this.dataTypes = dataTypes;
-  this.id = new ForeCache.Backend.NewTileKey(dimindices,zoom);
-};
-
 ForeCache.Backend.Tile = function(columns,attributes,dataTypes,id) {
   this.columns = columns;
   this.attributes = attributes;
@@ -189,11 +224,6 @@ ForeCache.Backend.Tile.prototype.getIndex = function(name) {
 ForeCache.Backend.Tile.prototype.getSize = function() {
   if(this.columns.length == 0) return 0;
   return this.columns[0].length;
-};
-
-ForeCache.Backend.Tile.prototype.getDomain = function(name) {
-  var index = this.getIndex(name);
-  return this.getDomain(index);
 };
 
 ForeCache.Backend.Tile.prototype.getDomain = function(index) {
@@ -214,4 +244,6 @@ ForeCache.Backend.Tile.prototype.getDomain = function(index) {
 ForeCache.Backend.TileStructure = function(aggregationWindows,tileWidths) {
   this.aggregationWindows = aggregationWindows;
   this.tileWidths = tileWidths;
+  this.numdims = this.tileWidths.length;
+  this.totalLevels = this.aggregationWindows.length;
 };
