@@ -3,19 +3,6 @@ var ForeCache = ForeCache || {};
 ForeCache.Renderer = ForeCache.Renderer || {};
 ForeCache.Renderer.Vis.Heatmap = {}
 
-// used to create a unique identifier for visualization objects in the DOM
-ForeCache.Renderer.Vis.Heatmap.getPrefix = function() { return "forecache-renderer-heatmap-";};
-
-// returns a pointer to a new div containing the rendered visualization.
-// The new div has a unique identifier taking the form: "bigdawgvis-linechart-<UUID>".
-// this function also appends the div to the given node in the dom (a.k.a. "root")
-ForeCache.Renderer.Vis.Heatmap.getVis = function(root,o,jsondata) {
-  var name = ForeCache.Renderer.Vis.Heatmap.getPrefix()+BigDawgVis.uuid();
-  var visDiv = $("<div id=\""+name+"\"></div>").appendTo(root);
-  var graph = new ForeCache.Renderer.Vis.HeatmapObj(visDiv,FCBackend,options);
-  return visDiv;
-};
-
 /************* Classes *************/
 /* ForeCache.Renderer.Vis.HeatmapObj is a subclass, inheriting from ForeCache.Renderer.Vis.VisObj. */
 
