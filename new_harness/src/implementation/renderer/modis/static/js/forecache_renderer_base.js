@@ -1,26 +1,15 @@
+// assumes that the ForeCache.Backend object is available
 var ForeCache = ForeCache || {};
 ForeCache.Renderer = ForeCache.Renderer || {};
-// all specialized renderers inherit from this base object
-ForeCache.Renderer.BaseObj = {};
-
-// used to create a unique identifier for visualization objects in the DOM
-ForeCache.Renderer.BaseObj.getPrefix = function() { return BigDawgVis.getPrefix() + "forecache-baseobj-";};
-
-// returns a pointer to a new div containing the rendered visualization.
-// The new div has a unique identifier taking the form: "bigdawgvis-linechart-<UUID>".
-// this function also appends the div to the given node in the dom (a.k.a. "root")
-ForeCache.Renderer.BaseObj.getVis = function(root,options,FCBackend) {
-  var name = ForeCache.Renderer.BaseObj.getPrefix()+BigDawgVis.uuid();
-  var visDiv = $("<div id=\""+name+"\"></div>").appendTo(root);
-  var graph = new ForeCache.Renderer.VisObj(visDiv,FCBackend,options);
-  return visDiv;
-};
-
-
+ForeCache.Renderer.Vis = ForeCache.Renderer.Vis || {};
 
 /************* Classes *************/
-/* chart parameter is a jquery object */
-ForeCache.Renderer.VisObj = function(chart, FCBackend, options) {
+
+// VisObj is a super class for visualizations. All visualization types should be able to
+// inherit from this class, and only fill in a small number of functions.
+// THIS CLASS DOES NOT RENDER ANYTHING!!!! Note also
+// that the chart parameter is a jquery object
+ForeCache.Renderer.Vis.VisObj = function(chart, FCBackend, options) {
 	var self = this;
   this.backend = FCBackend;
 
@@ -29,7 +18,7 @@ ForeCache.Renderer.VisObj = function(chart, FCBackend, options) {
   this.tileMap = new ForeCache.Backend.TileMap();
   this.currentZoom = -1;
   this.cacheSize = 1;
-  this.viewportRatio = .75;
+  this.viewportRatio = 0.6;
 
 	//default values
 	this.xlabel = options.xlabel
@@ -56,7 +45,7 @@ ForeCache.Renderer.VisObj = function(chart, FCBackend, options) {
   });
 };
 
-ForeCache.Renderer.VisObj.prototype.getStartingTiles = function() {
+ForeCache.Renderer.Vis.VisObj.prototype.getStartingTiles = function() {
   var self = this;
   // get the starting data, then finish doing setup
   self.backend.getTiles(self.currentTiles,function(tiles){
@@ -68,7 +57,7 @@ ForeCache.Renderer.VisObj.prototype.getStartingTiles = function() {
 };
 
 // adjust the width/height of the visible axes to be some fraction of the true range
-ForeCache.Renderer.VisObj.prototype.adjustForViewportRatio = function(domain) {
+ForeCache.Renderer.Vis.VisObj.prototype.adjustForViewportRatio = function(domain) {
   var diff = domain[1] - domain[0];
   var diff2 = diff * this.viewportRatio;
   var pad = (diff - diff2) / 2;
@@ -77,7 +66,7 @@ ForeCache.Renderer.VisObj.prototype.adjustForViewportRatio = function(domain) {
 };
 
 // this part of the setup process requires information about the starting data
-ForeCache.Renderer.VisObj.prototype.finishSetup = function(startingTiles) {
+ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function(startingTiles) {
   this.updateOpts();
 
 	this.cx = this.options.width;
@@ -196,79 +185,24 @@ ForeCache.Renderer.VisObj.prototype.finishSetup = function(startingTiles) {
 	this.redraw()();
 };
 
-
-// computs max, min, and min dist between any two points for the given column
-// computes stats across all current tiles
-ForeCache.Renderer.VisObj.prototype.get_stats = function(index) {
-  var stats = {};
-  for(var i = 0; i < this.currentTiles.length; i++) {
-    var id = this.currentTiles[i];
-    var col = this.tileMap.get(id).columns[index];
-    var s = this.get_stats_helper(col);
-    if(!stats.hasOwnProperty("min") || (stats.min > s.min)) {
-      stats.min = s.min;
-    }
-    if(!stats.hasOwnProperty("max") || (stats.max < s.max)) {
-      stats.max = s.max;
-    }
-    if(!stats.hasOwnProperty("mindist") || (stats.mindist > s.mindist)) {
-      stats.mindist = s.mindist;
-    }
-  }
-  return stats;
-};
-
-// compute stats for a single column for one tile
-ForeCache.Renderer.VisObj.prototype.get_stats_helper = function(col) {
-  var stats = {};
-  if(col.length == 0) {
-    return stats;
-  }
-  var temp = [];
-  var seen = {};
-  // unique values only
-  for(var i = 0; i < col.length; i++) {
-    var val = col[i];
-    if(!seen.hasOwnProperty(val)) {
-        seen[val] = true;
-        temp.push(val);
-    }
-  }
-  // sort the values
-  temp.sort(function(a,b){return Number(a)-Number(b);});
-  stats.min = temp[0];
-  stats.max = temp[temp.length - 1];
-  stats.mindist = -1;
-  if(temp.length > 1) {
-    var prev = temp[0];
-    var mindist = stats.max-stats.min;
-    for(var i = 1; i < temp.length; i++) {
-      var val = temp[i];
-      var dist = val - prev;
-      if(dist < mindist) {
-        mindist = dist;
-      }
-      prev = val;
-    }
-    stats.mindist = mindist;
-  }
-  return stats;
-};
-
-// adds to the default options set in BigDawgVis.updateOpts
-ForeCache.Renderer.VisObj.prototype.updateOpts = function() {
+ForeCache.Renderer.Vis.VisObj.prototype.updateOpts = function() {
   var newopts = this.options;
   var tile0 = this.tileMap.get(this.currentTiles[0]);
   this.xindex = tile0.getIndex(this.options.xname);
   this.yindex = tile0.getIndex(this.options.yname);
   this.zindex = tile0.getIndex(this.options.zname);
 
+  newopts.xdomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.xindex);
+  newopts.xdomain = this.adjustForViewportRatio(newopts.xdomain);
+  newopts.ydomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.yindex);
+  newopts.ydomain = this.adjustForViewportRatio(newopts.xdomain);
   // compute color domain
   newopts.zdomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.zindex);
 	newopts.size = {
 		"width":	newopts.width - newopts.padding.left - newopts.padding.right,
 		"height": newopts.height - newopts.padding.top	- newopts.padding.bottom
 	};
+/*
   newopts.boxwidth = {};
 
   xstats = this.get_stats(this.xindex);
@@ -316,14 +250,13 @@ ForeCache.Renderer.VisObj.prototype.updateOpts = function() {
       return Math.floor((value - ystats.min)/ym)*boxwidth;
     }
   }
-  this.xdiff = newopts.xdomain[1] - newopts.xdomain[0];
-  this.ydiff = newopts.ydomain[1] - newopts.ydomain[0];
+*/
   console.log(["width",newopts.size.width,"height",newopts.size.height]);
 };
 
 
 // compute the range of the xdomain
-ForeCache.Renderer.VisObj.prototype.getXRangeForZoom = function(currzoom,newzoom) {
+ForeCache.Renderer.Vis.VisObj.prototype.getXRangeForZoom = function(currzoom,newzoom) {
   var self = this;
   var xindex = 0;
 	var xdomain = self.x.domain(); // raw data values for this zoom level
@@ -346,7 +279,7 @@ ForeCache.Renderer.VisObj.prototype.getXRangeForZoom = function(currzoom,newzoom
 };
 
 // compute the range of the xdomain
-ForeCache.Renderer.VisObj.prototype.getYRangeForZoom = function(currzoom,newzoom) {
+ForeCache.Renderer.Vis.VisObj.prototype.getYRangeForZoom = function(currzoom,newzoom) {
   var self = this;
   var yindex = 1;
 	var ydomain = self.y.domain(); // raw data values for this zoom level
@@ -368,7 +301,7 @@ ForeCache.Renderer.VisObj.prototype.getYRangeForZoom = function(currzoom,newzoom
   return newYDomain;
 };
 
-ForeCache.Renderer.VisObj.prototype.zoomClick = function() {
+ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
 	var self = this;
 	//return function () {};
 	return function () {
@@ -405,71 +338,13 @@ ForeCache.Renderer.VisObj.prototype.zoomClick = function() {
 	};
 }
 
-ForeCache.Renderer.VisObj.prototype.renderTile = function(tile) {
-  var rows = tile.getSize();
-  var xw = this.options.boxwidth.x;
-  var yw = this.options.boxwidth.y;
-  var xt = 1.0 * tile.id.dimindices[0]*this.ts.tileWidths[0];
-  var yt = 1.0 * tile.id.dimindices[1]*this.ts.tileWidths[1];
-  //console.log(["tile",tile,xt,yt]);
-  var xmin = null;
-  var xmax = null;
-  var ymin = null;
-  var ymax = null;
-	for(var i=0; i < rows;i++) {
-    var xval = Number(tile.columns[this.xindex][i]) + xt;
-    var yval = Number(tile.columns[this.yindex][i]) + yt;
-    var zval = tile.columns[this.zindex][i];
-		var x = this.x(xval)+this.padding.left;
-		var y = this.y(yval)+this.padding.top;
-		
-		this.ctx.beginPath();
- 		this.ctx.fillStyle = this.color(zval);
-		this.ctx.fillRect(x,y, xw, yw);
-		this.ctx.closePath();
-    if(xmin === null) {
-      xmin = x;
-    } else if (xmin > x) {
-      xmin = x;
-    }
-    if(ymin === null) {
-      ymin = y;
-    } else if (ymin > y) {
-      ymin = y;
-    }
-
-    if(xmax === null) {
-      xmax = x;
-    } else if (xmax < x) {
-      xmax = x;
-    }
-    if(ymax === null) {
-      ymax = y;
-    } else if (ymax < y) {
-      ymax = y;
-    }   
-	}
-  console.log(["drawing lines",xmin,xmax,ymin,ymax]);
-  var xb = xw - 1;
-  var yb = yw - 1;
-
-  for(var i = (xmin-xb); i <= (xmax+xb); i++) {
-  	this.ctx.beginPath();
- 		this.ctx.fillStyle = "black";
-		this.ctx.fillRect(i,ymin-yb, 1, 1);
-		this.ctx.fillRect(i,ymax+yb, xw, yw);
-		this.ctx.closePath();
-  }
-  for(var j = (ymin-yb); j <= (ymax+yb); j++) {
-  	this.ctx.beginPath();
- 		this.ctx.fillStyle = "black";
-		this.ctx.fillRect(xmin-xb,j, xw, yw);
-		this.ctx.fillRect(xmax+xb,j, xw, yw);
-		this.ctx.closePath();
-  }
+ForeCache.Renderer.Vis.VisObj.prototype.renderTile = function(tile) {
+/*
+should be filled in by subclasses
+*/
 };
 
-ForeCache.Renderer.VisObj.prototype.canvasUpdate = function() {
+ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
 	var self = this;
 	this.ctx.beginPath();
 	this.ctx.fillStyle = this.background;
@@ -514,7 +389,7 @@ ForeCache.Renderer.VisObj.prototype.canvasUpdate = function() {
 
 
 
-ForeCache.Renderer.VisObj.prototype.getXRange = function() {
+ForeCache.Renderer.Vis.VisObj.prototype.getXRange = function() {
   var self = this;
 	var xdom = self.x.domain();
 	var low = Math.max(0,parseInt(xdom[0],10));
@@ -533,7 +408,7 @@ ForeCache.Renderer.VisObj.prototype.getXRange = function() {
   return newIDs;
 };
 
-ForeCache.Renderer.VisObj.prototype.getYRange = function() {
+ForeCache.Renderer.Vis.VisObj.prototype.getYRange = function() {
   var self = this;
 	var ydom = self.y.domain();
 	var low = Math.max(0,parseInt(ydom[0],10));
@@ -552,7 +427,7 @@ ForeCache.Renderer.VisObj.prototype.getYRange = function() {
   return newIDs;
 };
 
-ForeCache.Renderer.VisObj.prototype.getFutureTiles = function() {
+ForeCache.Renderer.Vis.VisObj.prototype.getFutureTiles = function() {
   var numdims = this.ts.numdims;
   var xtiles = this.getXRange();
   var futuretiles = [];
@@ -574,7 +449,7 @@ ForeCache.Renderer.VisObj.prototype.getFutureTiles = function() {
   return futuretiles;
 };
 
-ForeCache.Renderer.VisObj.prototype.afterZoom = function() {
+ForeCache.Renderer.Vis.VisObj.prototype.afterZoom = function() {
 	var self = this;
 	//return function() {};
 	return function() {
@@ -616,7 +491,7 @@ ForeCache.Renderer.VisObj.prototype.afterZoom = function() {
 
 
 /* re-renders the x-axis and y-axis tick lines and labels*/
-ForeCache.Renderer.VisObj.prototype.redraw = function() {
+ForeCache.Renderer.Vis.VisObj.prototype.redraw = function() {
 	var self = this;
 	return function() {
 		var tx = function(d) { 
@@ -648,16 +523,14 @@ ForeCache.Renderer.VisObj.prototype.redraw = function() {
 			.attr("transform", "translate(0," + (self.size.height)+ ")")
 			.call(self.xAxis);
 
-/*
-		if(self.fixYDomain) {
+		if((self.ts.numdims == 1) && self.fixYDomain) {
 			self.fixYDomain = false;
 			var points = self.points;
-			var ydomain = BigDawgVis.domain(points,self.options.yname);
+      var ydomain = ForeCache.Backend.getDomain(self.tileMap.getTiles(),self.yindex);
 			var buffer = .15*(ydomain[1]-ydomain[0]);
 			if((ydomain.length == 0)||(buffer == 0)) buffer = 1;
 			self.y.domain([ydomain[0]-buffer,ydomain[1]+buffer])
 		}
-*/
 
 		// Regenerate y-ticks…
 		self.vis.selectAll("g.y.forecache-axis").remove();
@@ -669,6 +542,6 @@ ForeCache.Renderer.VisObj.prototype.redraw = function() {
 			.on("zoomend",self.afterZoom()));
 		self.canvasUpdate();		
 	}	
-}
+};
 
 

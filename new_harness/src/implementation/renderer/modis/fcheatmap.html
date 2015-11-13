@@ -11,12 +11,15 @@
     <script type="text/javascript" src="static/js/util.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache_backend.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache_renderer_base.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache_heatmap2.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache_renderer.js" charset="utf-8"></script>
     <script type="text/javascript">
       $(document).ready(function() {
         var renderFunc = function(d) {
-            var FC = ForeCache.Renderer.BaseObj;
+            var FC = ForeCache.Renderer.Vis;
             var vis =
-            FC.getVis($("#view"),{"xname":"longitude_e4ndsi_06_03_2013","xlabel":"lon",
+            FC.getVis($("#view"),{"visType":"heatmap",
+                                  "xname":"longitude_e4ndsi_06_03_2013","xlabel":"lon",
                                   "yname":"latitude_e4ndsi_06_03_2013","ylabel":"lat",
                                   "zlabel":"avg_ndsi","zname":"avg_ndsi",
                                   "width":400,
