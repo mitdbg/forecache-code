@@ -64,49 +64,58 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
 
 ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
   var rows = tile.getSize();
+  //TODO: this is a hack, maybe fix later?
+  if(rows == 0) return; // don't render empty tiles...
   var xw = this.options.boxwidth.x;
   var yw = this.options.boxwidth.y;
   var xt = 1.0 * tile.id.dimindices[0]*this.ts.tileWidths[0];
   var yt = 1.0 * tile.id.dimindices[1]*this.ts.tileWidths[1];
   //console.log(["tile",tile,xt,yt]);
-  var xmin = null;
-  var xmax = null;
-  var ymin = null;
-  var ymax = null;
 	for(var i=0; i < rows;i++) {
     var xval = Number(tile.columns[this.xindex][i]) + xt;
     var yval = Number(tile.columns[this.yindex][i]) + yt;
     var zval = tile.columns[this.zindex][i];
 		var x = this.x(xval)+this.padding.left;
 		var y = this.y(yval)+this.padding.top;
+    if(this.inverted.x) { // shift back in pixel space to account for inversion
+      x -= xw;
+    }
+    if(this.inverted.y) {
+      y -= yw;
+    }
 		
 		this.ctx.beginPath();
  		this.ctx.fillStyle = this.color(zval);
 		this.ctx.fillRect(x,y, xw, yw);
 		this.ctx.closePath();
-    if(xmin === null) {
-      xmin = x;
-    } else if (xmin > x) {
-      xmin = x;
-    }
-    if(ymin === null) {
-      ymin = y;
-    } else if (ymin > y) {
-      ymin = y;
-    }
-
-    if(xmax === null) {
-      xmax = x;
-    } else if (xmax < x) {
-      xmax = x;
-    }
-    if(ymax === null) {
-      ymax = y;
-    } else if (ymax < y) {
-      ymax = y;
-    }   
 	}
-  console.log(["drawing lines",xmin,xmax,ymin,ymax]);
+  var xmin = this.x(tile.id.dimindices[0] * this.ts.tileWidths[0]) + this.padding.left;
+  var ymin = this.y(tile.id.dimindices[1] * this.ts.tileWidths[1]) + this.padding.top;
+  var xmax = this.x((tile.id.dimindices[0]+1) * this.ts.tileWidths[0]) + this.padding.left;
+  ymax = this.y((tile.id.dimindices[1]+1) * this.ts.tileWidths[1]) + this.padding.top;
+  console.log(["tile",tile.id.zoom,tile.id.dimindices,"drawing lines",xmin,xmax,ymin,ymax]);
+
+	this.ctx.beginPath();
+ 	this.ctx.strokeStyle = "black";
+	this.ctx.moveTo(xmin,ymin);
+	this.ctx.lineTo(xmin,ymax);
+	this.ctx.stroke();
+
+	this.ctx.moveTo(xmax,ymin);
+	this.ctx.lineTo(xmax,ymax);
+	this.ctx.stroke();
+
+  this.ctx.moveTo(xmin,ymin);
+	this.ctx.lineTo(xmax,ymin);
+	this.ctx.stroke();
+
+  this.ctx.moveTo(xmin,ymax);
+	this.ctx.lineTo(xmax,ymax);
+	this.ctx.stroke();
+	this.ctx.closePath();
+
+
+/*
   var xb = xw - 1;
   var yb = yw - 1;
 
@@ -124,6 +133,7 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
 		this.ctx.fillRect(xmax+xb,j, xw, yw);
 		this.ctx.closePath();
   }
+*/
 };
 
 /****************** Helper Functions *********************/

@@ -23,6 +23,7 @@ ForeCache.Renderer.Vis.VisObj = function(chart, FCBackend, options) {
 	//default values
 	this.xlabel = options.xlabel
 	this.ylabel = options.ylabel
+  this.inverted = options.inverted || {"x":false,"y":false};
 	this.fixYDomain = false;
 	this.mousebusy = false;
 
@@ -94,15 +95,24 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function(startingTiles) {
 	this.y = d3.scale.linear()
 		.domain(this.options.ydomain)
 		.nice()
-		.range([this.size.height,0])
+		.range([0,this.size.height])
 		.nice();
 
-  // color scale
-  // assumes numeric domain
-  // TODO: remove hardcoded color setup here
-  this.color = d3.scale.quantize()
-    .domain(this.options.zdomain)
-    .range(colorbrewer.YlOrRd[9]);
+  if(this.inverted.x) {
+    this.x.range([this.size.width,0]);
+  }
+  if(this.inverted.y) {
+    this.y.range([this.size.height,0]);
+  }
+
+  if(this.options.hasOwnProperty("zdomain")) {
+    // color scale
+    // assumes numeric domain
+    // TODO: remove hardcoded color setup here
+    this.color = d3.scale.quantize()
+      .domain(this.options.zdomain)
+      .range(colorbrewer.YlOrRd[9]);
+  }
 
 	this.xAxis = d3.svg.axis().scale(this.x).orient("bottom");
 	this.yAxis = d3.svg.axis().scale(this.y).orient("left");
@@ -190,67 +200,21 @@ ForeCache.Renderer.Vis.VisObj.prototype.updateOpts = function() {
   var tile0 = this.tileMap.get(this.currentTiles[0]);
   this.xindex = tile0.getIndex(this.options.xname);
   this.yindex = tile0.getIndex(this.options.yname);
-  this.zindex = tile0.getIndex(this.options.zname);
+  if(this.options.hasOwnProperty("zname")) {
+    this.zindex = tile0.getIndex(this.options.zname);
+    newopts.zdomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.zindex);
+  }
 
   newopts.xdomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.xindex);
   newopts.xdomain = this.adjustForViewportRatio(newopts.xdomain);
   newopts.ydomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.yindex);
-  newopts.ydomain = this.adjustForViewportRatio(newopts.xdomain);
+  newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
   // compute color domain
-  newopts.zdomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.zindex);
 	newopts.size = {
 		"width":	newopts.width - newopts.padding.left - newopts.padding.right,
 		"height": newopts.height - newopts.padding.top	- newopts.padding.bottom
 	};
-/*
-  newopts.boxwidth = {};
 
-  xstats = this.get_stats(this.xindex);
-  console.log(xstats);
-  newopts.xdomain = [xstats.min,xstats.max];
-  newopts.xdomain = this.adjustForViewportRatio(newopts.xdomain);
-  var xm = xstats.mindist; // width of box
-  var xd = xstats.max - xstats.min; // space for boxes in domain
-  var xw = newopts.size.width; // space for boxes in range
-  if(xm > 0) {
-    var numboxes = Math.ceil(xd / xm) + 1;
-    var boxwidth = Math.floor(1.0 * xw / numboxes);
-    if(boxwidth < 1) { // can't have a fraction of a pixel!
-      boxwidth = 1; // make it 1 pixel
-    }
-    //newopts.boxwidth.x = boxwidth;
-    newopts.boxwidth.x = boxwidth / this.viewportRatio;
-    newopts.size.width = numboxes*boxwidth; // make the width more realistic
-    newopts.width = newopts.padding.left + newopts.padding.right + newopts.size.width;
-    console.log([xstats,xm,xd,xw,numboxes,boxwidth]);
-    newopts.getXPos = function(value) {
-      return Math.floor((value - xstats.min)/xm)*boxwidth;
-    }
-  }
-
-  ystats = this.get_stats(this.yindex);
-  newopts.ydomain = [ystats.min,ystats.max];
-  newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
-  console.log(ystats);
-  var ym = ystats.mindist; // height of box
-  var yd = ystats.max - ystats.min; // space for boxes in domain
-  var yw = newopts.size.height; // space for boxes in range
-  if(ym > 0) {
-    var numboxes = Math.ceil(yd / ym) + 1;
-    var boxwidth = Math.floor(1.0*yw / numboxes);
-    if(boxwidth < 1) { // can't have a fraction of a pixel!
-      boxwidth = 1; // make it 1 pixel
-    }
-    //newopts.boxwidth.y = boxwidth;
-    newopts.boxwidth.y = boxwidth / this.viewportRatio;
-    newopts.size.height = numboxes*boxwidth; // make the height more realistic
-    newopts.height = newopts.padding.top + newopts.padding.bottom + newopts.size.height;
-    console.log([ystats,ym,yd,yw,numboxes,boxwidth]);
-    newopts.getYPos = function(value) {
-      return Math.floor((value - ystats.min)/ym)*boxwidth;
-    }
-  }
-*/
   console.log(["width",newopts.size.width,"height",newopts.size.height]);
 };
 
@@ -314,10 +278,11 @@ ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
 		else console.log("zoom in");
 		var newZoom = Math.min(Math.max(0,self.currentZoom+zoomDiff),self.ts.totalLevels-1);
 		console.log(["zoomDiff",zoomDiff,"currentZoom",self.currentZoom,"newZoom",newZoom]);
-		if(newZoom == self.currentZoom) {
+
+		if(newZoom == self.currentZoom) { // no change
 			self.mousebusy = false;
-		$("body").css("cursor", "default");
-      return; // no change
+		  $("body").css("cursor", "default");
+      return; // don't do anything
     }
 
 		var xdomain = self.x.domain();
@@ -523,6 +488,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.redraw = function() {
 			.attr("transform", "translate(0," + (self.size.height)+ ")")
 			.call(self.xAxis);
 
+    // only do in one-dimensional case
 		if((self.ts.numdims == 1) && self.fixYDomain) {
 			self.fixYDomain = false;
 			var points = self.points;
