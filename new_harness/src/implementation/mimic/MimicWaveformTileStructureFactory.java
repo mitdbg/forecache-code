@@ -12,7 +12,7 @@ public class MimicWaveformTileStructureFactory {
 			new int[]{1}};
 	public static int[] defaultTileWidths = new int[]{100}; // one per dimension
 	
-	public TileStructure getDefaultMimicWaveformTileStructure() {
+	public static TileStructure getDefaultMimicWaveformTileStructure() {
 		TileStructure ts = new TileStructure();
 		ts.aggregationWindows = defaultAggregationWindows;
 		ts.tileWidths = defaultTileWidths;

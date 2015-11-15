@@ -33,8 +33,8 @@ public class MimicWaveformViewFactory {
 	public String viewsFolder;
 	public ViewMap mimicViews;
 	
-	public MimicWaveformViewFactory(String viewsFolder) {
-		this.viewsFolder = viewsFolder;
+	public MimicWaveformViewFactory() {
+		this.viewsFolder = DBInterface.mimic_views_folder;;
 		File modisDir = new File(this.viewsFolder);
 		if(!modisDir.exists()) {
 			try {
@@ -59,7 +59,7 @@ public class MimicWaveformViewFactory {
 		Config config = new VMConfig(); // use vm-specific configurations
 		config.setConfig();
 		
-		MimicWaveformViewFactory factory = new MimicWaveformViewFactory(DBInterface.mimic_views_folder);
+		MimicWaveformViewFactory factory = new MimicWaveformViewFactory();
 		try {
 			View v = factory.getMimicWaveformView("325553800011");
 			System.out.println(v.getName());
