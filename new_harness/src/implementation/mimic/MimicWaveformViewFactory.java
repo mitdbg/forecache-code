@@ -21,13 +21,13 @@ import configurations.VMConfig;
  */
 public class MimicWaveformViewFactory {
 	public static String nameTemplate = "FC_WF?";
-	public static String queryTemplate = "ARRAY(apply(filter("+
+	public static String queryTemplate = "apply(filter("+
 			"slice(waveform_signal_table,RecordName,?)"+
 			",not(is_nan(signal)))"+
-			",msec2,msec))";
+			",msec2,msec)";
 	public static String[] summaries = new String[]{
 			"avg(signal) as avg_signal",
-			"min(msec) as msec"};
+			"min(msec2) as msec2"};
 	public static DBConnector connectionType = DBConnector.BIGDAWG;
 	
 	public String viewsFolder;
