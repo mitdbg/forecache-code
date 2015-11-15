@@ -16,6 +16,7 @@ ForeCache.Renderer.Vis.LineObj.prototype.constructor = ForeCache.Renderer.Vis.Li
 
 ForeCache.Renderer.Vis.LineObj.prototype.renderTile = function(tile) {
   var rows = tile.getSize();
+  console.log(["rows",rows]);
   //TODO: this is a hack, maybe fix later?
   if(rows == 0) return; // don't render empty tiles...
 
@@ -45,12 +46,15 @@ ForeCache.Renderer.Vis.LineObj.prototype.renderTile = function(tile) {
 		this.ctx.arc(x,y, 3, 0, arcval, false);
  		this.ctx.fill();
 		this.ctx.closePath();
+
+		prevx = x;
+		prevy = y;
 	}
-  console.log(["drawing lines",xmin,xmax,ymin,ymax]);
   var xmin = this.x(tile.id.dimindices[0] * this.ts.tileWidths[0]) + this.padding.left;
-  var xmax = this.x(xmin + this.ts.tileWidths[0]) + this.padding.left;
+  var xmax = this.x((tile.id.dimindices[0]+1) * this.ts.tileWidths[0]) + this.padding.left;
   var ymin = this.padding.top;
   var ymax = this.size.height + this.padding.top;
+  console.log(["drawing lines",xmin,xmax,ymin,ymax]);
 
 	this.ctx.beginPath();
  	this.ctx.strokeStyle = "black";

@@ -19,7 +19,8 @@ ForeCache.Renderer.Vis.getVis = function(root,options,FCBackend) {
 
 // dictionary mapping visualization types to their corresponding visualization objects
 ForeCache.Renderer.Vis.__visTypes = {
-  "heatmap":ForeCache.Renderer.Vis.HeatmapObj
+  "heatmap":ForeCache.Renderer.Vis.HeatmapObj,
+  "line":ForeCache.Renderer.Vis.LineObj
 };
 
 

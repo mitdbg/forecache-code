@@ -9,23 +9,25 @@
     <script type="text/javascript" src="static/js/d3.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/backend.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/renderer/vis/visobj.js" charset="utf-8"></script>
-    <script type="text/javascript" src="static/js/forecache/renderer/vis/heatmap.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/line.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/renderer/vis.js" charset="utf-8"></script>
     <script type="text/javascript">
       $(document).ready(function() {
         var renderFunc = function(d) {
             var FC = ForeCache.Renderer.Vis;
             var vis =
-            FC.getVis($("#view"),{"visType":"heatmap",
-                                  "xname":"longitude_e4ndsi_06_03_2013","xlabel":"lon",
-                                  "yname":"latitude_e4ndsi_06_03_2013","ylabel":"lat",
-                                  "zlabel":"avg_ndsi","zname":"avg_ndsi",
-                                  "width":400,
+            FC.getVis($("#view"),{"visType":"line",
+                                  "xname":"msec","xlabel":"msec",
+                                  "yname":"avg_signal","ylabel":"avg_signal",
+                                  //"zlabel":"avg_ndsi","zname":"avg_ndsi",
+                                  "width":420,
                                   "height":400,
-                                  "padding":{"left":50,"right":50,"top":50,"bottom":50},
+                                  "padding":{"left":70,"right":50,"top":50,"bottom":50},
                                   "inverted":{"x":false,"y":true}},ForeCache.Backend);
         };
-        ForeCache.Backend.simpleReset(renderFunc);
+        //var RecordName = "303320100011";
+        var RecordName = "368977800111";
+        ForeCache.Backend.reset({"RecordName":RecordName},renderFunc);
       });
 
     </script>

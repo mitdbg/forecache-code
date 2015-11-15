@@ -18,9 +18,9 @@ ForeCache.Renderer.Vis.VisObj = function(chart, FCBackend, options) {
   this.tileMap = new ForeCache.Backend.TileMap();
   this.currentZoom = -1;
   this.cacheSize = 1;
-  this.viewportRatio = 0.6;
 
 	//default values
+  this.viewportRatio = options.viewportRatio || 1.0;
 	this.xlabel = options.xlabel
 	this.ylabel = options.ylabel
   this.inverted = options.inverted || {"x":false,"y":false};
@@ -63,6 +63,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.adjustForViewportRatio = function(domain
   var diff2 = diff * this.viewportRatio;
   var pad = (diff - diff2) / 2;
   var domain2 = [domain[0]+pad, domain[1]-pad];
+  console.log(["domain2",domain2]);
   return domain2;
 };
 
@@ -170,7 +171,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function(startingTiles) {
 			.attr("class", "y forecache-axis")
 			.text(this.options.ylabel)
 			.style("text-anchor","middle")
-			.attr("transform","translate(" + -40 + " " + this.size.height/2+") rotate(-90)");
+			.attr("transform","translate(" + (-this.padding.left+12) + " " + this.size.height/2+") rotate(-90)");
 	}
 
 	this.base = d3.select(this.chart);
@@ -205,9 +206,13 @@ ForeCache.Renderer.Vis.VisObj.prototype.updateOpts = function() {
     newopts.zdomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.zindex);
   }
 
-  newopts.xdomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.xindex);
+  // compute domains according to tile range, not according to the data in the tile (tile could be
+  // sparse)
+  //newopts.xdomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.xindex);
+  newopts.xdomain = ForeCache.Backend.getTileDomain(this.tileMap.getTiles(),this.ts,this.xindex);
   newopts.xdomain = this.adjustForViewportRatio(newopts.xdomain);
-  newopts.ydomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.yindex);
+  //newopts.ydomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.yindex);
+  newopts.ydomain = ForeCache.Backend.getTileDomain(this.tileMap.getTiles(),this.ts,this.yindex);
   newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
   // compute color domain
 	newopts.size = {
@@ -286,10 +291,12 @@ ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
     }
 
 		var xdomain = self.x.domain();
-		var ydomain = self.y.domain();
-		var xmid = xdomain[0] + 1.0*(xdomain[1]-xdomain[0])/2;
     var newXDomain = self.getXRangeForZoom(self.currentZoom,newZoom);
-    var newYDomain = self.getYRangeForZoom(self.currentZoom,newZoom);
+
+    if(self.ts.numdims >= 2) { // we are tracking more than one dimension, so update y domain
+		  var ydomain = self.y.domain();
+      var newYDomain = self.getYRangeForZoom(self.currentZoom,newZoom);
+    }
 		
 		self.currentZoom = newZoom;
 		self.tileMap.clear();
@@ -297,7 +304,9 @@ ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
 		//self.x.domain(newXDomain);
 		//self.y.domain(newYDomain);
 		self.x.domain(self.adjustForViewportRatio(newXDomain));
-		self.y.domain(self.adjustForViewportRatio(newYDomain));
+    if(self.ts.numdims >= 2) {
+		  self.y.domain(self.adjustForViewportRatio(newYDomain));
+    }
 		self.fixYDomain = true;
 		self.afterZoom()();
 	};
@@ -493,9 +502,11 @@ ForeCache.Renderer.Vis.VisObj.prototype.redraw = function() {
 			self.fixYDomain = false;
 			var points = self.points;
       var ydomain = ForeCache.Backend.getDomain(self.tileMap.getTiles(),self.yindex);
-			var buffer = .15*(ydomain[1]-ydomain[0]);
-			if((ydomain.length == 0)||(buffer == 0)) buffer = 1;
-			self.y.domain([ydomain[0]-buffer,ydomain[1]+buffer])
+      if(ydomain.length > 0) {
+			  var buffer = .15*(ydomain[1]-ydomain[0]);
+			  if((ydomain.length == 0)||(buffer == 0)) buffer = 1;
+			  self.y.domain([ydomain[0]-buffer,ydomain[1]+buffer])
+      }
 		}
 
 		// Regenerate y-ticks…

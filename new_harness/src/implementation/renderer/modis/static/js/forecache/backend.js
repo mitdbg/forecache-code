@@ -3,8 +3,12 @@ ForeCache.Backend = {};
 
 ForeCache.Backend.URL = "http://modis.csail.mit.edu:10001/forecache/modis/fetch/";
 
-ForeCache.Backend.reset = function(callback) {
+ForeCache.Backend.simpleReset = function(callback) {
   var dat = {};
+  ForeCache.Backend.reset(dat,callback);
+};
+
+ForeCache.Backend.reset = function(dat,callback) {
   dat.reset=true;
   ForeCache.Backend.sendRequest(dat,callback);
 };
@@ -144,12 +148,14 @@ ForeCache.Backend.rowsToColumns = function(rows) {
   return columns;
 };
 
-// traverses a list of tiles to compute the overall domain for the given index
-ForeCache.Backend.getDomain = function(tiles,index) {
+// traverses a set of tiles and computes domains based on tile position
+ForeCache.Backend.getTileDomain = function(tiles,ts,index) {
   var domain = [];
   for(var i = 0; i < tiles.length; i++) {
     var tile = tiles[i];
-    var tempdomain = tile.getDomain(index);
+    var min = tile.id.dimindices[index]*ts.tileWidths[index];
+    var max = (tile.id.dimindices[index]+1)*ts.tileWidths[index]-1;
+    var tempdomain = [min,max];
     if(domain.length == 0) {
       domain = tempdomain;
     } else {
@@ -158,6 +164,28 @@ ForeCache.Backend.getDomain = function(tiles,index) {
       }
       if(domain[1] < tempdomain[1]) {
         domain[1] = tempdomain[1];
+      }
+    }
+  }
+  return domain;
+};
+
+// traverses a list of tiles to compute the overall domain for the given index
+ForeCache.Backend.getDomain = function(tiles,index) {
+  var domain = [];
+  for(var i = 0; i < tiles.length; i++) {
+    var tile = tiles[i];
+    if(tile.getSize() != 0) {
+      var tempdomain = tile.getDomain(index);
+      if(domain.length == 0) {
+        domain = tempdomain;
+      } else {
+        if(domain[0] > tempdomain[0]) {
+          domain[0] = tempdomain[0];
+        }
+        if(domain[1] < tempdomain[1]) {
+          domain[1] = tempdomain[1];
+        }
       }
     }
   }
