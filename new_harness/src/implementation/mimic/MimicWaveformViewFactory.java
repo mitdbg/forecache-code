@@ -21,20 +21,20 @@ import configurations.VMConfig;
  */
 public class MimicWaveformViewFactory {
 	public static String nameTemplate = "FC_WF?";
-	public static String queryTemplate = "ARRAY(apply(filter("+
+	public static String queryTemplate = "apply(filter("+
 			"slice(waveform_signal_table,RecordName,?)"+
 			",not(is_nan(signal)))"+
-			",msec2,msec))";
+			",msec2,msec)";
 	public static String[] summaries = new String[]{
 			"avg(signal) as avg_signal",
-			"min(msec) as msec"};
+			"min(msec2) as msec2"};
 	public static DBConnector connectionType = DBConnector.BIGDAWG;
 	
 	public String viewsFolder;
 	public ViewMap mimicViews;
 	
-	public MimicWaveformViewFactory(String viewsFolder) {
-		this.viewsFolder = viewsFolder;
+	public MimicWaveformViewFactory() {
+		this.viewsFolder = DBInterface.mimic_views_folder;;
 		File modisDir = new File(this.viewsFolder);
 		if(!modisDir.exists()) {
 			try {
@@ -59,7 +59,7 @@ public class MimicWaveformViewFactory {
 		Config config = new VMConfig(); // use vm-specific configurations
 		config.setConfig();
 		
-		MimicWaveformViewFactory factory = new MimicWaveformViewFactory(DBInterface.mimic_views_folder);
+		MimicWaveformViewFactory factory = new MimicWaveformViewFactory();
 		try {
 			View v = factory.getMimicWaveformView("325553800011");
 			System.out.println(v.getName());

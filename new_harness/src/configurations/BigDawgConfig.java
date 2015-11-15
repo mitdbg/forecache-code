@@ -16,8 +16,8 @@ public class BigDawgConfig extends Config {
 	*/
 	
 	public void setConfig() {
-		DBInterface.mimic_views_folder = "/home/gridsan/lbattle/forecache-code/harness/mimic_views";
-		DBInterface.mimic_views_folder = "/home/gridsan/lbattle/forecache-code/harness/modis_views";
+		DBInterface.mimic_views_folder = "/home/gridsan/lbattle/forecache-code/new_harness/mimic_views";
+		DBInterface.mimic_views_folder = "/home/gridsan/lbattle/forecache-code/new_harness/modis_views";
 		
 		DBInterface.nice_tile_cache_dir = "/home/gridsan/lbattle/forecache-code/data/nice_tile_cache";
 		//DBInterface.nice_tile_cache_dir = "/home/gridsan/lbattle/forecache-code/data/vertica_nice_tile_cache";
