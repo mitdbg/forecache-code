@@ -42,6 +42,7 @@ import abstraction.structures.SessionMetadata;
 import abstraction.structures.TileStructure;
 import abstraction.structures.View;
 import abstraction.tile.ColumnBasedNiceTile;
+import abstraction.tile.TileDecoder;
 import abstraction.util.DBInterface;
 import abstraction.util.UtilityFunctions;
 
@@ -316,6 +317,43 @@ public class ModisMainThread {
 			}
 		}
 		
+		protected void doBinaryFetch(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			
+			String zoom = request.getParameter("zoom");
+			String tile_id = request.getParameter("tile_id");
+			//System.out.println("hashed query: " + hashed_query);
+			//System.out.println("zoom: " + zoom);
+			//System.out.println("tile id: " + tile_id);
+			//System.out.println("threshold: " + threshold);
+			ColumnBasedNiceTile t = null;
+			try {
+				long ns = System.currentTimeMillis();
+				t = fetchTile(tile_id,zoom);
+				// send the response
+				long s = System.currentTimeMillis();
+				byte[] toSend = TileDecoder.getBytes(t);
+				long e = System.currentTimeMillis();
+				response.getOutputStream().write(toSend,0,toSend.length);
+				long e2 = System.currentTimeMillis();
+				String report= (s-ns)+","+(e-s)+","+(e2-e)+","+toSend.length;
+				System.out.println(report);
+				//log.write(report);
+				//log.newLine();
+				//log.flush();
+
+				md.history.addRecord(t);
+				
+				if(doprefetch) {
+					makePredictions();
+				}
+			} catch (Exception e) {
+				System.err.println("error occured while fetching tile");
+				e.printStackTrace();
+				response.getWriter().println(error);
+			}
+		}
+		
 		protected void doFetch(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
 			
@@ -439,6 +477,12 @@ public class ModisMainThread {
 			if(json != null) {
 				//System.out.println("doing tile fetch.");
 				doJsonFetch(request,response);
+				return;
+			}
+			
+			String binary = request.getParameter("binary");
+			if(binary != null) {
+				doBinaryFetch(request,response);
 				return;
 			}
 			
