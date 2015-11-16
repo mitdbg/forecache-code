@@ -59,7 +59,7 @@ public class LongColumn extends Column {
 		return Long.class;
 	}
 	
-	// first element is a double (8 bytes), the rest are longs (8 bytes)
+	// each element is a double (8 bytes)
 	@Override
 	public byte[] getBytes() {
 		int numvals = this.columnVals.size();
@@ -68,7 +68,7 @@ public class LongColumn extends Column {
 		buffer.putDouble(0,numvals); // how many bytes?
 		int offset = doubleSize; // numvals is 8 bytes
 		for(int i = 0; i < numvals; i++,offset+=doubleSize) {
-			buffer.putLong(offset,this.columnVals.get(i));
+			buffer.putDouble(offset, this.columnVals.get(i));
 		}
 		return result;
 	}
@@ -80,7 +80,7 @@ public class LongColumn extends Column {
 		int numvals = (int) buffer.getDouble(offset);
 		offset += doubleSize;
 		for(int i = 0; i < numvals; i++,offset+=doubleSize) {
-			this.add(buffer.getLong(offset));
+			this.add((long) buffer.getDouble(offset));
 		}
 		return offset;
 	}
