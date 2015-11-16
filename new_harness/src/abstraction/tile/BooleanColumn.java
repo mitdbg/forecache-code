@@ -1,5 +1,6 @@
 package abstraction.tile;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,5 +58,21 @@ public class BooleanColumn extends Column {
 	@Override
 	public Class<Boolean> getColumnType() {
 		return Boolean.class;
+	}
+	
+	// first element is a double, the rest are chars
+	// each boolean value is represented as one byte
+	// TODO: make each boolean value one bit
+	@Override
+	public byte[] getBytes() {
+		int numvals = this.columnVals.size();
+		byte[] result = new byte[numvals + doubleSize];
+		ByteBuffer buffer = ByteBuffer.wrap(result);
+		buffer.putDouble(0,numvals); // how many bytes?
+		int offset = doubleSize; // numvals is eight bytes
+		for(int i = 0; i < numvals; i++,offset++) {
+			buffer.putChar(offset,this.columnVals.get(i) ? '1' : '0');
+		}
+		return result;
 	}
 }

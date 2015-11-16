@@ -1,5 +1,6 @@
 package abstraction.tile;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,5 +58,19 @@ public class FloatColumn extends Column {
 	@Override
 	public Class<?> getColumnType() {
 		return Float.class;
+	}
+	
+	@Override
+	// each element is a double (8 bytes)
+	public byte[] getBytes() {
+		int numvals = this.columnVals.size();
+		byte[] result = new byte[(numvals + 1)*doubleSize];
+		ByteBuffer buffer = ByteBuffer.wrap(result);
+		buffer.putDouble(0,numvals); // how many bytes?
+		int offset = doubleSize; // numvals is 8 bytes
+		for(int i = 0; i < numvals; i++,offset+=doubleSize) {
+			buffer.putDouble(offset,this.columnVals.get(i));
+		}
+		return result;
 	}
 }

@@ -1,5 +1,7 @@
 package abstraction.tile;
 
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,5 +54,12 @@ public class StringColumn extends Column {
 	@Override
 	public Class<String> getColumnType() {
 		return String.class;
+	}
+	
+	// first element is a double (8 bytes), the rest is a list of pairs:
+	// (length of string (double, 8 bytes), the string (variable bytes))
+	@Override
+	public byte[] getBytes() {
+		return Column.packStrings(this.columnVals);
 	}
 }

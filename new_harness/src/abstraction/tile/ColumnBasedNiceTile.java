@@ -1,5 +1,6 @@
 package abstraction.tile;
 
+import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
@@ -152,6 +153,34 @@ public class ColumnBasedNiceTile implements java.io.Serializable {
 		return toJson(getCbntJson());
 	}
 	
+	// custom parser for turning tiles into bytes
+	public byte[] getBytes() {
+		int totalBytes = 0;
+		byte[] keyBytes = this.packKey();
+		byte[] attributesBytes = this.packAttributes();
+		byte[] dataTypesBytes = this.packDataTypes();
+		totalBytes = attributesBytes.length+dataTypesBytes.length+keyBytes.length;
+		List<byte[]> columnData = new ArrayList<byte[]>();
+		for(Column c : this.columns) {
+			byte[] cBytes = c.getBytes();
+			columnData.add(cBytes);
+			totalBytes += cBytes.length;
+		}
+		int offset = 0;
+		byte[] packedTile = new byte[totalBytes];
+		System.arraycopy(keyBytes, 0, packedTile, offset, keyBytes.length);
+		offset+=keyBytes.length;
+		System.arraycopy(attributesBytes, 0, packedTile, offset, attributesBytes.length);
+		offset += attributesBytes.length;
+		System.arraycopy(dataTypesBytes, 0, packedTile, offset, dataTypesBytes.length);
+		offset += dataTypesBytes.length;
+		for(byte[] cBytes: columnData) {
+			System.arraycopy(cBytes, 0, packedTile, offset, cBytes.length);
+			offset += cBytes.length;	
+		}
+		return packedTile;
+	}
+	
 	/************************ Helper Functions **************************/
 	protected CbntJson getCbntJson() {
 		CbntJson temp = new CbntJson();
@@ -184,6 +213,32 @@ public class ColumnBasedNiceTile implements java.io.Serializable {
 			e.printStackTrace();
 		}
 		return returnval;
+	}
+	
+	protected byte[] packKey() {
+		byte[] data = new byte[(this.id.dimIndices.length+2)*Column.doubleSize];
+		ByteBuffer buffer = ByteBuffer.wrap(data);
+		int offset = 0;
+		buffer.putDouble(offset,this.id.zoom);
+		offset += Column.doubleSize;
+		buffer.putDouble(offset,this.id.dimIndices.length);
+		offset += Column.doubleSize;
+		for(int i = 0; i < this.id.dimIndices.length; i++, offset+=Column.doubleSize) {
+			buffer.putDouble(this.id.dimIndices[i]);
+		}
+		return data;
+	}
+	
+	protected byte[] packAttributes() {
+		return Column.packStrings(this.attributes);
+	}
+	
+	protected byte[] packDataTypes() {
+		List<String> types = new ArrayList<String>();
+		for(Class<?> type : dataTypes) {
+			types.add(type.getCanonicalName());
+		}
+		return Column.packStrings(types);
 	}
 	
 	public static void main(String[] args) {

@@ -1,5 +1,6 @@
 package abstraction.tile;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,5 +58,19 @@ public class CharacterColumn extends Column {
 	@Override
 	public Class<Character> getColumnType() {
 		return Character.class;
+	}
+	
+	// first element is a double, the rest are chars (1 byte)
+	@Override
+	public byte[] getBytes() {
+		int numvals = this.columnVals.size();
+		byte[] result = new byte[numvals + doubleSize];
+		ByteBuffer buffer = ByteBuffer.wrap(result);
+		buffer.putDouble(0,numvals); // how many bytes?
+		int offset = doubleSize; // numvals is 8 bytes
+		for(int i = 0; i < numvals; i++,offset++) {
+			buffer.putChar(offset,this.columnVals.get(i));
+		}
+		return result;
 	}
 }

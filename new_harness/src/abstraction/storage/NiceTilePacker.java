@@ -61,48 +61,6 @@ public class NiceTilePacker {
 			return readNiceTileDefault(id); // default Java deserialization
 	}
 	
-	public static String makeJson(ColumnBasedNiceTile tile) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("{").append("\"id\":{")
-		.append("\"zoom\":").append(tile.id.zoom).append(",\"coords\":[").append(tile.id.dimIndices[0]);
-		for(int i = 1; i < tile.id.dimIndices.length; i++) {
-			sb.append(",").append(tile.id.dimIndices[i]);
-		}
-		sb.append("]},");
-		
-		sb.append("\"attributes\":[");
-		if(tile.attributes.size() > 0) {
-			sb.append("\"").append(tile.attributes.get(0)).append("\"");
-		}
-		for(int i = 1; i < tile.attributes.size(); i++) {
-			sb.append(",").append("\"").append(tile.attributes.get(i)).append("\"");
-		}
-		sb.append("],");
-		
-		sb.append("\"data\":[");
-		int rows = tile.getSize();
-		int cols = tile.columns.size();
-		if(rows > 0) {
-			sb.append("[");
-			sb.append(tile.get(0, 0)); // first column
-			for(int j = 1; j < cols; j++) { // subsequent columns
-				sb.append(",").append(tile.get(j,0));
-			}
-			sb.append("]");
-		}
-		for(int i = 1; i < rows; i++) {
-			sb.append(",[");
-			sb.append(tile.get(0, i)); // first column
-			for(int j = 1; j < cols; j++) { // subsequent columns
-				sb.append(",").append(tile.get(j,i));
-			}
-			sb.append("]");
-		}
-		sb.append("],");
-		sb.append("}");
-		return sb.toString();
-	}
-	
 	/******* Default Java Serialization ******/
 	public static boolean removeNiceTile(NewTileKey id) {
 		File dir = new File(DBInterface.nice_tile_cache_dir);
