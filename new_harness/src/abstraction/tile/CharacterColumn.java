@@ -60,7 +60,7 @@ public class CharacterColumn extends Column {
 		return Character.class;
 	}
 	
-	// first element is a double, the rest are chars (1 byte)
+	// first element is a double (8 bytes), the rest are chars (1 byte)
 	@Override
 	public byte[] getBytes() {
 		int numvals = this.columnVals.size();
@@ -72,5 +72,17 @@ public class CharacterColumn extends Column {
 			buffer.putChar(offset,this.columnVals.get(i));
 		}
 		return result;
+	}
+	
+	@Override
+	public int readBytes(byte[] data, int offset) {
+		this.columnVals.clear();
+		ByteBuffer buffer = ByteBuffer.wrap(data);
+		int numvals = (int) buffer.getDouble(offset);
+		offset += doubleSize;
+		for(int i = 0; i < numvals; i++,offset++) {
+			this.add(buffer.getChar(offset));
+		}
+		return offset;
 	}
 }

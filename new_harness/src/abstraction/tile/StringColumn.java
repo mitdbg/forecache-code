@@ -56,10 +56,66 @@ public class StringColumn extends Column {
 		return String.class;
 	}
 	
+	// copied from TileDecoder class
 	// first element is a double (8 bytes), the rest is a list of pairs:
 	// (length of string (double, 8 bytes), the string (variable bytes))
 	@Override
 	public byte[] getBytes() {
-		return Column.packStrings(this.columnVals);
+		byte[] result = null;
+		try {
+			int numvals = columnVals.size();
+			int[] lengths = new int[numvals];
+			int sum = 0;
+			for(int i = 0; i < numvals; i++) {
+				lengths[i] = columnVals.get(i).length();
+				sum += lengths[i];
+			}
+			result = new byte[(numvals + 1)*doubleSize + sum];
+			ByteBuffer buffer = ByteBuffer.wrap(result);
+			buffer.putDouble(0,numvals); // how many bytes?
+			int offset = doubleSize; // numvals is 8 bytes
+			for(int i = 0; i < numvals; i++) {
+				buffer.putDouble(offset,lengths[i]); // how long is the string?
+				offset += doubleSize;
+				byte[] stringBytes = columnVals.get(i).getBytes(defaultStringEncoding);
+				for(int j = 0; j < stringBytes.length; j++,offset++) {
+					buffer.put(offset,stringBytes[j]);
+				}
+			}
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return result;
+	}
+	
+	// copied from TileDecoder class
+	@Override
+	public int readBytes(byte[] data, int offset) {
+		this.columnVals.clear();
+		ByteBuffer buffer = ByteBuffer.wrap(data);
+		int totalstrings = (int) buffer.getDouble(offset);
+		//System.out.println("num strings: "+totalStrings+", offset: "+offset);
+		offset += doubleSize;
+		
+		for(int i = 0; i < totalstrings; i++) {
+			int strlen = (int) buffer.getDouble(offset);
+			offset += doubleSize;
+			//get the string
+			byte[] stringdata = new byte[strlen];
+			for(int j = 0; j < strlen; j++,offset++) {
+				stringdata[j] = buffer.get(offset);
+			}
+			try {
+				this.add(new String(stringdata,defaultStringEncoding));
+				//System.out.println("attribute:"+result.get(i));
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		
+		return offset;
 	}
 }

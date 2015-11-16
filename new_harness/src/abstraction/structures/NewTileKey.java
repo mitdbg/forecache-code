@@ -16,8 +16,10 @@ public class NewTileKey implements java.io.Serializable {
 	 */
 	private static final long serialVersionUID = -2419645717877248576L;
 	
-	public int[] dimIndices;
-	public int zoom;
+	public int[] dimIndices = null;
+	public int zoom = -1;
+	
+	public NewTileKey() {}
 	
 	public NewTileKey(int[] id, int zoom) {
 		this.dimIndices = id;

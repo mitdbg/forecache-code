@@ -67,4 +67,16 @@ public class IntegerColumn extends Column {
 		}
 		return result;
 	}
+	
+	@Override
+	public int readBytes(byte[] data, int offset) {
+		this.columnVals.clear();
+		ByteBuffer buffer = ByteBuffer.wrap(data);
+		int numvals = (int) buffer.getDouble(offset);
+		offset += doubleSize;
+		for(int i = 0; i < numvals; i++,offset+=doubleSize) {
+			this.add((int)buffer.getDouble(offset));
+		}
+		return offset;
+	}
 }
