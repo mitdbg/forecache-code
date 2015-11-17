@@ -8,8 +8,8 @@ ForeCache.Renderer.Vis.Heatmap = {}
 
 //constructor code
 /* chart parameter is a jquery object. */
-ForeCache.Renderer.Vis.LineObj = function(chart, FCBackend, options) {
-  ForeCache.Renderer.Vis.VisObj.call(this,chart,FCBackend,options);
+ForeCache.Renderer.Vis.LineObj = function(chart, options) {
+  ForeCache.Renderer.Vis.VisObj.call(this,chart, options);
 };
 ForeCache.Renderer.Vis.LineObj.prototype = Object.create(ForeCache.Renderer.Vis.VisObj.prototype);
 ForeCache.Renderer.Vis.LineObj.prototype.constructor = ForeCache.Renderer.Vis.LineObj;

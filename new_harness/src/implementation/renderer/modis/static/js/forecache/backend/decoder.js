@@ -1,6 +1,6 @@
 var ForeCache = ForeCache || {};
 ForeCache.Backend = ForeCache.Backend || {};
-ForeCache.TileDecoder = function(buffer) {
+ForeCache.Backend.TileDecoder = function(buffer) {
   // constants
   this.doubleSize = 8;
   this.encoding = 'utf-8';
@@ -20,7 +20,7 @@ ForeCache.TileDecoder = function(buffer) {
   this.decoder = new TextDecoder(this.encoding);
 };
 
-ForeCache.TileDecoder.prototype.unpackTile = function() {
+ForeCache.Backend.TileDecoder.prototype.unpackTile = function() {
   var offset = 0;
 
   var res = this.unpackKey(offset);
@@ -43,10 +43,10 @@ ForeCache.TileDecoder.prototype.unpackTile = function() {
     cols.push(res.result);
   }
   //console.log(["attributes",attributes,"dataTypes",dataTypes,"cols",cols]);
-  return new ForeCache.Backend.Tile(cols,attributes,dataTypes,id);
+  return new ForeCache.Backend.Structures.Tile(cols,attributes,dataTypes,id);
 };
 
-ForeCache.TileDecoder.prototype.unpackDataTypes = function(offset) {
+ForeCache.Backend.TileDecoder.prototype.unpackDataTypes = function(offset) {
   var res = this.unpackStrings(offset);
   var offset = res.offset;
   var types = res.result;
@@ -54,11 +54,11 @@ ForeCache.TileDecoder.prototype.unpackDataTypes = function(offset) {
   return {"result":dataTypes,"offset":offset};
 };
 
-ForeCache.TileDecoder.prototype.unpackAttributes = function(offset) {
+ForeCache.Backend.TileDecoder.prototype.unpackAttributes = function(offset) {
   return this.unpackStrings(offset);
 };
 
-ForeCache.TileDecoder.prototype.unpackStrings = function(offset) {
+ForeCache.Backend.TileDecoder.prototype.unpackStrings = function(offset) {
   var offset2 = offset;
   var totalstrings = this.getDouble(offset2);
   var finalStrings = [];
@@ -77,7 +77,7 @@ ForeCache.TileDecoder.prototype.unpackStrings = function(offset) {
   return {"result":finalStrings,"offset":offset2};
 };
 
-ForeCache.TileDecoder.prototype.unpackKey = function(offset) {
+ForeCache.Backend.TileDecoder.prototype.unpackKey = function(offset) {
   var offset2 = offset;
   var zoom = this.getDouble(offset2);
   offset2 += this.doubleSize;
@@ -88,31 +88,31 @@ ForeCache.TileDecoder.prototype.unpackKey = function(offset) {
     dimindices.push(this.getDouble(offset2));
   }
   //console.log([zoom,dimindices,offset2]);
-  return {"result": new ForeCache.Backend.NewTileKey(dimindices,zoom), "offset":offset2};
+  return {"result": new ForeCache.Backend.Structures.NewTileKey(dimindices,zoom), "offset":offset2};
 };
 
 /************** Column Parsers ***************/
-ForeCache.TileDecoder.prototype.unpackColumn = function(offset,colType) {
+ForeCache.Backend.TileDecoder.prototype.unpackColumn = function(offset,colType) {
   return this.columnParsers[colType].call(this,offset);
 };
 
-ForeCache.TileDecoder.prototype.unpackLongColumn = function(offset) {
+ForeCache.Backend.TileDecoder.prototype.unpackLongColumn = function(offset) {
   return this.unpackDoubleColumn(offset);
 };
 
-ForeCache.TileDecoder.prototype.unpackFloatColumn = function(offset) {
+ForeCache.Backend.TileDecoder.prototype.unpackFloatColumn = function(offset) {
   return this.unpackDoubleColumn(offset);
 };
 
-ForeCache.TileDecoder.prototype.unpackIntegerColumn = function(offset) {
+ForeCache.Backend.TileDecoder.prototype.unpackIntegerColumn = function(offset) {
   return this.unpackDoubleColumn(offset);
 };
 
-ForeCache.TileDecoder.prototype.unpackStringColumn = function(offset) {
+ForeCache.Backend.TileDecoder.prototype.unpackStringColumn = function(offset) {
   return this.unpackStrings(offset);
 };
 
-ForeCache.TileDecoder.prototype.unpackDoubleColumn = function(offset) {
+ForeCache.Backend.TileDecoder.prototype.unpackDoubleColumn = function(offset) {
   var offset2 = offset;
   var numvals = this.getDouble(offset2);
   offset2 += this.doubleSize;
@@ -125,7 +125,7 @@ ForeCache.TileDecoder.prototype.unpackDoubleColumn = function(offset) {
   return {"result":col,"offset":offset2};
 };
 
-ForeCache.TileDecoder.prototype.unpackBooleanColumn = function(offset) {
+ForeCache.Backend.TileDecoder.prototype.unpackBooleanColumn = function(offset) {
   var offset2 = offset;
   var numvals = this.getDouble(offset2);
   offset2 += this.doubleSize;
@@ -139,7 +139,7 @@ ForeCache.TileDecoder.prototype.unpackBooleanColumn = function(offset) {
   return {"result":col,"offset":offset2};
 };
 
-ForeCache.TileDecoder.prototype.unpackCharacterColumn = function(offset) {
+ForeCache.Backend.TileDecoder.prototype.unpackCharacterColumn = function(offset) {
   var offset2 = offset;
   var numvals = this.getDouble(offset2);
   offset2 += this.doubleSize;
@@ -154,6 +154,6 @@ ForeCache.TileDecoder.prototype.unpackCharacterColumn = function(offset) {
 };
 
 /****************** Helper Functions ********************/
-ForeCache.TileDecoder.prototype.getDouble = function(offset) {
+ForeCache.Backend.TileDecoder.prototype.getDouble = function(offset) {
   return this.dv.getFloat64(offset);
 };

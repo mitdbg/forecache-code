@@ -1,5 +1,6 @@
 // assumes that the ForeCache.Backend object is available
 var ForeCache = ForeCache || {};
+ForeCache.Backend = ForeCache.Backend || {};
 ForeCache.Renderer = ForeCache.Renderer || {};
 ForeCache.Renderer.Vis = ForeCache.Renderer.Vis || {};
 
@@ -9,13 +10,12 @@ ForeCache.Renderer.Vis = ForeCache.Renderer.Vis || {};
 // inherit from this class, and only fill in a small number of functions.
 // THIS CLASS DOES NOT RENDER ANYTHING!!!! Note also
 // that the chart parameter is a jquery object
-ForeCache.Renderer.Vis.VisObj = function(chart, FCBackend, options) {
+ForeCache.Renderer.Vis.VisObj = function(chart, options) {
 	var self = this;
-  this.backend = FCBackend;
 
   // bookkeeping data structures
   this.currentTiles = []; // used to keep track of the current tile keys
-  this.tileMap = new ForeCache.Backend.TileMap();
+  this.tileMap = new ForeCache.Backend.Structures.TileMap();
   this.currentZoom = -1;
   this.cacheSize = 1;
 
@@ -30,7 +30,7 @@ ForeCache.Renderer.Vis.VisObj = function(chart, FCBackend, options) {
 	this.options = options || {};
 	this.chart = (chart.toArray())[0]; // get dom element from jquery
 
-  this.backend.getTileStructure(function(ts) {
+  ForeCache.Backend.Request.getTileStructure(function(ts) {
     self.ts = ts; // store the tile structure
     if(options.hasOwnProperty("startingPos")) {
       self.currentTiles = options.startingPos; // these better be tile keys
@@ -39,7 +39,7 @@ ForeCache.Renderer.Vis.VisObj = function(chart, FCBackend, options) {
       for(var i = 0; i < self.ts.numdims; i++) {
         dimindices.push(0);
       }
-      self.currentTiles = [new self.backend.NewTileKey(dimindices,0)];
+      self.currentTiles = [new ForeCache.Backend.Structures.NewTileKey(dimindices,0)];
     }
     self.currentZoom = self.currentTiles[0].zoom;
     self.getStartingTiles(); // get the starting data
@@ -49,7 +49,7 @@ ForeCache.Renderer.Vis.VisObj = function(chart, FCBackend, options) {
 ForeCache.Renderer.Vis.VisObj.prototype.getStartingTiles = function() {
   var self = this;
   // get the starting data, then finish doing setup
-  self.backend.getTiles(self.currentTiles,function(tiles){
+  ForeCache.Backend.Request.getTiles(self.currentTiles,function(tiles){
     // store the starting tiles
     self.tileMap.batchInsert(tiles);
     //finish doing setup
@@ -203,16 +203,16 @@ ForeCache.Renderer.Vis.VisObj.prototype.updateOpts = function() {
   this.yindex = tile0.getIndex(this.options.yname);
   if(this.options.hasOwnProperty("zname")) {
     this.zindex = tile0.getIndex(this.options.zname);
-    newopts.zdomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.zindex);
+    newopts.zdomain = ForeCache.Backend.Structures.getDomain(this.tileMap.getTiles(),this.zindex);
   }
 
   // compute domains according to tile range, not according to the data in the tile (tile could be
   // sparse)
-  //newopts.xdomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.xindex);
-  newopts.xdomain = ForeCache.Backend.getTileDomain(this.tileMap.getTiles(),this.ts,this.xindex);
+  //newopts.xdomain = ForeCache.Backend.Structures.getDomain(this.tileMap.getTiles(),this.xindex);
+  newopts.xdomain = ForeCache.Backend.Structures.getTileDomain(this.tileMap.getTiles(),this.ts,this.xindex);
   newopts.xdomain = this.adjustForViewportRatio(newopts.xdomain);
-  //newopts.ydomain = ForeCache.Backend.getDomain(this.tileMap.getTiles(),this.yindex);
-  newopts.ydomain = ForeCache.Backend.getTileDomain(this.tileMap.getTiles(),this.ts,this.yindex);
+  //newopts.ydomain = ForeCache.Backend.Structures.getDomain(this.tileMap.getTiles(),this.yindex);
+  newopts.ydomain = ForeCache.Backend.Structures.getTileDomain(this.tileMap.getTiles(),this.ts,this.yindex);
   newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
   // compute color domain
 	newopts.size = {
@@ -407,14 +407,14 @@ ForeCache.Renderer.Vis.VisObj.prototype.getFutureTiles = function() {
   var futuretiles = [];
   if(numdims == 1) { // one dimension
     for(var x = 0; x < xtiles.length; x++) {
-        var newkey = new ForeCache.Backend.NewTileKey([xtiles[x]],this.currentZoom);
+        var newkey = new ForeCache.Backend.Structures.NewTileKey([xtiles[x]],this.currentZoom);
         futuretiles.push(newkey); // push the pair
     }
   } else if (numdims == 2) { // two dimensions
     var ytiles = this.getYRange();
     for(var x = 0; x < xtiles.length; x++) {
       for(var y = 0; y < ytiles.length; y++) {
-        var newkey = new ForeCache.Backend.NewTileKey([xtiles[x],ytiles[y]],this.currentZoom);
+        var newkey = new ForeCache.Backend.Structures.NewTileKey([xtiles[x],ytiles[y]],this.currentZoom);
         futuretiles.push(newkey);
       }
     }
@@ -432,7 +432,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.afterZoom = function() {
 			$('body').css("cursor", "wait");
 		}
 			var newIDs = self.getFutureTiles(); //NewTileKey objects
-			var newTileMap = new ForeCache.Backend.TileMap();
+			var newTileMap = new ForeCache.Backend.Structures.TileMap();
 			var toFetch = [];
 
 			for(var i = 0; i < newIDs.length; i++) {
@@ -450,7 +450,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.afterZoom = function() {
 			console.log(["current tiles",self.currentTiles.length,self.currentTiles,self.tileMap]);
 			if(toFetch.length > 0) {
 				//self.getTiles(toFetch,function() {self.redraw()();}); // get the missing tiles from the new list
-        self.backend.getTiles(toFetch,function(tiles) {
+        ForeCache.Backend.Request.getTiles(toFetch,function(tiles) {
           self.tileMap.batchInsert(tiles);
           self.redraw()();
         });
@@ -501,7 +501,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.redraw = function() {
 		if((self.ts.numdims == 1) && self.fixYDomain) {
 			self.fixYDomain = false;
 			var points = self.points;
-      var ydomain = ForeCache.Backend.getDomain(self.tileMap.getTiles(),self.yindex);
+      var ydomain = ForeCache.Backend.Structures.getDomain(self.tileMap.getTiles(),self.yindex);
       if(ydomain.length > 0) {
 			  var buffer = .15*(ydomain[1]-ydomain[0]);
 			  if((ydomain.length == 0)||(buffer == 0)) buffer = 1;
