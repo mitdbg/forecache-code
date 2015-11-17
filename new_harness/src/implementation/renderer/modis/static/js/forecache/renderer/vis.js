@@ -6,9 +6,9 @@ ForeCache.Renderer.Vis = ForeCache.Renderer.Vis || {};
 // used to create a unique identifier for visualization objects in the DOM
 ForeCache.Renderer.Vis.getPrefix = function() { return "forecache-renderer-vis-";};
 
-// returns a pointer to a new div containing the rendered visualization.
+// returns a jquery object (a new div) containing the rendered visualization.
 // The new div has a unique identifier taking the form: "forecache-renderer-vis-vistype-<UUID>".
-// this function also appends the div to the given node in the dom (a.k.a. "root")
+// this function also appends the div to the given jquery node in the dom (a.k.a. "root")
 ForeCache.Renderer.Vis.getVis = function(root,options,FCBackend) {
   var visType = options.visType;
   var name = ForeCache.Renderer.Vis.getPrefix()+visType+ForeCache.Backend.uuid();

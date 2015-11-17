@@ -67,20 +67,20 @@ ForeCache.Backend.getTileJson = function(tileid,callback) {
   dat.zoom = tileid.zoom;
   dat.tile_id = tileid.dimindices.join("_");
   var createTile = function(jsondata) {
-    // assumes row-major format
-    var columns = ForeCache.Backend.rowsToColumns(jsondata.data);
+    var columns = jsondata.data;
     var attributes = jsondata.attributes;
     var dataTypes = jsondata.dataTypes;
     var tile = new ForeCache.Backend.Tile(columns,attributes,dataTypes,tileid);
     callback(tile); // return the new tile object
   };
-  ForeCache.Backend.sendJsonRequest(dat,createTile);
+  //ForeCache.Backend.sendJsonRequest(dat,createTile);
+  ForeCache.Backend.sendJsonRequestNoJquery(dat,createTile);
 };
 
 // convenience method, chooses JSON or binary format for you
 ForeCache.Backend.getTile = function(tileid,callback) {
-  //ForeCache.Backend.getTileJson(tileid,callback);
-  ForeCache.Backend.getTileBinary(tileid,callback);
+  ForeCache.Backend.getTileJson(tileid,callback);
+  //ForeCache.Backend.getTileBinary(tileid,callback);
 };
 
 // retrieves all tiles, then calls the finalcallback function with
@@ -139,26 +139,72 @@ ForeCache.Backend.uuid = function() {
     });
     return uuid;
 };
+
 ForeCache.Backend.sendRequest = function(dat,callback) {
-  $.get(ForeCache.Backend.URL,dat,callback);
-}
+  //$.get(ForeCache.Backend.URL,dat,callback);
+  ForeCache.Backend.sendRequestHelper(dat,"",callback);
+};
 
 ForeCache.Backend.sendJsonRequest = function(dat,callback) {
-  $.getJSON(ForeCache.Backend.URL,dat,callback);
+  //$.getJSON(ForeCache.Backend.URL,dat,callback);
+  ForeCache.Backend.sendJsonRequestNoJquery(dat,callback);
+};
+
+// IE 10 does not support req.responeType = 'json'
+// just manually getting string and parsing as json
+ForeCache.Backend.sendJsonRequestNoJquery = function(dat,callback) {
+  var jsonParse = function(jsonstring) {
+    var jsondata = JSON.parse(jsonstring);
+    callback(jsondata);
+    console.log(["jsondata",jsondata]);
+  };
+  ForeCache.Backend.sendRequestHelper(dat,"",jsonParse);
 };
 
 ForeCache.Backend.sendBinaryRequest = function(dat,callback) {
-  var paramsString = $.param(dat);
+  ForeCache.Backend.sendRequestHelper(dat,"arraybuffer",callback);
+};
+
+// function written to replace the $.param function from jQuery.
+// I don't need a fancy params building function, so I chose to eliminate
+// the jQuery dependency.
+// shallow parsing of parameters in the dictionary passed as input (i.e., dat)
+// shallow = absolutely no nested parsing, so don't pass anything crazy!
+ForeCache.Backend.buildParams = function(dat) {
+  var parsedParams = [];
+  for(var key in dat) {
+    var val = dat[key];
+    if((val == null) || (typeof(val) === 'undefined')) {
+      val = "";
+    }
+    parsedParams.push(encodeURIComponent(key) + "=" + encodeURIComponent(val));
+  }
+  return parsedParams.join("&");
+};
+
+ForeCache.Backend.sendRequestHelper = function(dat,responseType,callback,errorCallback) {
+  //var paramsString = $.param(dat);
+  var paramsString = ForeCache.Backend.buildParams(dat);
   var newUrl = ForeCache.Backend.URL + "?" + paramsString;
   var oReq = new XMLHttpRequest();
-  oReq.open("GET", newUrl, true);
-  oReq.responseType = "arraybuffer";
+  oReq.open("GET", newUrl, true); // async = true
+  oReq.responseType = responseType;
   oReq.onload = function (oEvent) {
-    var arrayBuffer = oReq.response; // Note: not oReq.responseText
-    callback(arrayBuffer);
+    if(oReq.readyState == 4) { // state = DONE
+      var reqStatus = oReq.status;
+      if(reqStatus == 200) { // status = OK
+        var data = oReq.response;
+        if(responseType === "") { // assume we want the DOM string instead
+          data = oReq.responseText;
+        }
+        callback && callback(data);
+      } else {
+        errorCallback && errorCallback(reqStatus);
+      }
+    }
   };
 
-  oReq.send(null);
+  oReq.send();
 };
 
 // converts nested array in row-major format to nested array in column-major format
