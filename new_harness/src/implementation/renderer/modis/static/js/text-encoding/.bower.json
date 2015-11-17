@@ -1,0 +1,35 @@
+{
+  "name": "text-encoding",
+  "version": "0.5.3",
+  "homepage": "https://github.com/inexorabletash/text-encoding",
+  "authors": [
+    "Joshua Bell <inexorabletash@gmail.com>"
+  ],
+  "description": "Polyfill for the Encoding Living Standard's API",
+  "main": [
+    "lib/encoding.js",
+    "lib/encoding-indexes.js"
+  ],
+  "keywords": [
+    "decoding",
+    "encoding",
+    "living",
+    "standards"
+  ],
+  "license": "Apache-2.0",
+  "ignore": [
+    "**/.*",
+    "test",
+    "*examples*.html"
+  ],
+  "_release": "0.5.3",
+  "_resolution": {
+    "type": "version",
+    "tag": "v0.5.3",
+    "commit": "070f59ab23d25d844a999b3308e5e8fd8059c998"
+  },
+  "_source": "git://github.com/inexorabletash/text-encoding.git",
+  "_target": "~0.5.3",
+  "_originalSource": "text-encoding",
+  "_direct": true
+}

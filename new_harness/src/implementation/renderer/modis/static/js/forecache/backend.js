@@ -1,4 +1,5 @@
 var ForeCache = ForeCache || {};
+ForeCache.TileDecoder = ForeCache.TileDecoder || {};
 ForeCache.Backend = {};
 
 ForeCache.Backend.URL = "http://modis.csail.mit.edu:10001/forecache/modis/fetch/";
@@ -43,6 +44,21 @@ ForeCache.Backend.getTileStructure = function(callback) {
   ForeCache.Backend.sendJsonRequest(dat,createTileStructure);
 };
 
+
+ForeCache.Backend.getTileBinary = function(tileid,callback) {
+var dat = {};
+  dat.binary = true;
+  dat.zoom = tileid.zoom;
+  dat.tile_id = tileid.dimindices.join("_");
+  var createTile = function(arrayBuffer) {
+    console.log(["arrayBuffer length",arrayBuffer.byteLength]);
+    var tdecoder = new ForeCache.TileDecoder(arrayBuffer);
+    var tile = tdecoder.unpackTile();
+    callback(tile); // return the new tile object
+  };
+  ForeCache.Backend.sendBinaryRequest(dat,createTile);
+};
+
 // uses JSON string format to retrieve tile from server
 // returns a ForeCache.Backend.Tile object
 ForeCache.Backend.getTileJson = function(tileid,callback) {
@@ -63,7 +79,8 @@ ForeCache.Backend.getTileJson = function(tileid,callback) {
 
 // convenience method, chooses JSON or binary format for you
 ForeCache.Backend.getTile = function(tileid,callback) {
-  ForeCache.Backend.getTileJson(tileid,callback);
+  //ForeCache.Backend.getTileJson(tileid,callback);
+  ForeCache.Backend.getTileBinary(tileid,callback);
 };
 
 // retrieves all tiles, then calls the finalcallback function with
@@ -128,6 +145,20 @@ ForeCache.Backend.sendRequest = function(dat,callback) {
 
 ForeCache.Backend.sendJsonRequest = function(dat,callback) {
   $.getJSON(ForeCache.Backend.URL,dat,callback);
+};
+
+ForeCache.Backend.sendBinaryRequest = function(dat,callback) {
+  var paramsString = $.param(dat);
+  var newUrl = ForeCache.Backend.URL + "?" + paramsString;
+  var oReq = new XMLHttpRequest();
+  oReq.open("GET", newUrl, true);
+  oReq.responseType = "arraybuffer";
+  oReq.onload = function (oEvent) {
+    var arrayBuffer = oReq.response; // Note: not oReq.responseText
+    callback(arrayBuffer);
+  };
+
+  oReq.send(null);
 };
 
 // converts nested array in row-major format to nested array in column-major format
