@@ -164,11 +164,11 @@ public class ColumnBasedNiceTile implements java.io.Serializable {
 		temp.id = this.id.dimIndices;
 		int rows = this.getSize();
 		int cols = this.columns.size();
-		temp.data = new String[rows][cols];
-		for(int r = 0; r < rows; r++) {
-			for(int c = 0; c < cols; c++) {
+		temp.data = new String[cols][rows];
+		for(int c = 0; c < cols; c++) { // column-major order
+			for(int r = 0; r < rows; r++) {
 				// index1 = column, index2 = row
-				temp.data[r][c] = this.get(c, r).toString();
+				temp.data[c][r] = this.get(c, r).toString();
 			}
 		}
 		return temp;
@@ -206,6 +206,7 @@ public class ColumnBasedNiceTile implements java.io.Serializable {
 		
 		ColumnBasedNiceTile t = new ColumnBasedNiceTile();
 		t.initializeData(data, dataTypes, attr);
+		t.id = new NewTileKey(new int[]{0,0},0);
 		int dbl_index = t.getIndex("dbl");
 		int count = t.getSize();
 		List<?> domain = t.getDomain(dbl_index);
@@ -214,6 +215,8 @@ public class ColumnBasedNiceTile implements java.io.Serializable {
 			System.out.println(t.attributes.get(0)+": "+t.get(0,i));
 			System.out.println(t.attributes.get(1)+": "+t.get(1,i));
 		}
+		System.out.println("json:");
+		System.out.println(t.toJson());
 	}
 
 	/************************** Nested Classes********************************/
