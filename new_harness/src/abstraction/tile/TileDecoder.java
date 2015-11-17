@@ -2,6 +2,7 @@ package abstraction.tile;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,7 +10,7 @@ import abstraction.structures.NewTileKey;
 
 public class TileDecoder {
 	public static int doubleSize = Column.doubleSize;
-	public static String defaultStringEncoding = Column.defaultStringEncoding;
+	public static Charset defaultStringEncoding = Column.defaultStringEncoding;
 	
 	// custom parser for turning tiles into bytes
 	public static byte[] getBytes(ColumnBasedNiceTile tile) {
@@ -71,30 +72,24 @@ public class TileDecoder {
  	// first element is a double (8 bytes), the rest is a list of pairs:
 	// (length of string (double, 8 bytes), the string (variable bytes))
 	public static byte[] packStrings(List<String> columnVals) {
-		byte[] result = null;
-		try {
-			int numvals = columnVals.size();
-			int[] lengths = new int[numvals];
-			int sum = 0;
-			for(int i = 0; i < numvals; i++) {
-				lengths[i] = columnVals.get(i).length();
-				sum += lengths[i];
+		int numvals = columnVals.size();
+		int[] lengths = new int[numvals];
+		int sum = 0;
+		for(int i = 0; i < numvals; i++) {
+			lengths[i] = columnVals.get(i).length();
+			sum += lengths[i];
+		}
+		byte[] result = new byte[(numvals + 1)*doubleSize + sum];
+		ByteBuffer buffer = ByteBuffer.wrap(result);
+		buffer.putDouble(0,numvals); // how many bytes?
+		int offset = doubleSize; // numvals is 8 bytes
+		for(int i = 0; i < numvals; i++) {
+			buffer.putDouble(offset,lengths[i]); // how long is the string?
+			offset += doubleSize;
+			byte[] stringBytes = columnVals.get(i).getBytes(defaultStringEncoding);
+			for(int j = 0; j < stringBytes.length; j++,offset++) {
+				buffer.put(offset,stringBytes[j]);
 			}
-			result = new byte[(numvals + 1)*doubleSize + sum];
-			ByteBuffer buffer = ByteBuffer.wrap(result);
-			buffer.putDouble(0,numvals); // how many bytes?
-			int offset = doubleSize; // numvals is 8 bytes
-			for(int i = 0; i < numvals; i++) {
-				buffer.putDouble(offset,lengths[i]); // how long is the string?
-				offset += doubleSize;
-				byte[] stringBytes = columnVals.get(i).getBytes(defaultStringEncoding);
-				for(int j = 0; j < stringBytes.length; j++,offset++) {
-					buffer.put(offset,stringBytes[j]);
-				}
-			}
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 		return result;
 	}
@@ -113,13 +108,8 @@ public class TileDecoder {
 			for(int j = 0; j < strlen; j++,offset++) {
 				stringdata[j] = buffer.get(offset);
 			}
-			try {
-				result.add(new String(stringdata,defaultStringEncoding));
-				//System.out.println("attribute:"+result.get(i));
-			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			result.add(new String(stringdata,defaultStringEncoding));
+			//System.out.println("attribute:"+result.get(i));
 		}
 		
 		return offset;

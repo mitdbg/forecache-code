@@ -1,11 +1,13 @@
 package abstraction.tile;
 
+import java.nio.charset.Charset;
 import java.util.List;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public abstract class Column implements java.io.Serializable {
 	private static final long serialVersionUID = -5580879891349835855L;
 	public static int doubleSize = 8;
-	public static String defaultStringEncoding = "ISO-8859-1";
+	public static Charset defaultStringEncoding = UTF_8;
 	public abstract void add(String string);
 	public abstract Object get(int i);
 	public abstract Class<?> getColumnType();

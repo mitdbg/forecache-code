@@ -61,30 +61,24 @@ public class StringColumn extends Column {
 	// (length of string (double, 8 bytes), the string (variable bytes))
 	@Override
 	public byte[] getBytes() {
-		byte[] result = null;
-		try {
-			int numvals = columnVals.size();
-			int[] lengths = new int[numvals];
-			int sum = 0;
-			for(int i = 0; i < numvals; i++) {
-				lengths[i] = columnVals.get(i).length();
-				sum += lengths[i];
+		int numvals = columnVals.size();
+		int[] lengths = new int[numvals];
+		int sum = 0;
+		for(int i = 0; i < numvals; i++) {
+			lengths[i] = columnVals.get(i).length();
+			sum += lengths[i];
+		}
+		byte[] result = new byte[(numvals + 1)*doubleSize + sum];
+		ByteBuffer buffer = ByteBuffer.wrap(result);
+		buffer.putDouble(0,numvals); // how many bytes?
+		int offset = doubleSize; // numvals is 8 bytes
+		for(int i = 0; i < numvals; i++) {
+			buffer.putDouble(offset,lengths[i]); // how long is the string?
+			offset += doubleSize;
+			byte[] stringBytes = columnVals.get(i).getBytes(defaultStringEncoding);
+			for(int j = 0; j < stringBytes.length; j++,offset++) {
+				buffer.put(offset,stringBytes[j]);
 			}
-			result = new byte[(numvals + 1)*doubleSize + sum];
-			ByteBuffer buffer = ByteBuffer.wrap(result);
-			buffer.putDouble(0,numvals); // how many bytes?
-			int offset = doubleSize; // numvals is 8 bytes
-			for(int i = 0; i < numvals; i++) {
-				buffer.putDouble(offset,lengths[i]); // how long is the string?
-				offset += doubleSize;
-				byte[] stringBytes = columnVals.get(i).getBytes(defaultStringEncoding);
-				for(int j = 0; j < stringBytes.length; j++,offset++) {
-					buffer.put(offset,stringBytes[j]);
-				}
-			}
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 		return result;
 	}
@@ -106,13 +100,8 @@ public class StringColumn extends Column {
 			for(int j = 0; j < strlen; j++,offset++) {
 				stringdata[j] = buffer.get(offset);
 			}
-			try {
-				this.add(new String(stringdata,defaultStringEncoding));
-				//System.out.println("attribute:"+result.get(i));
-			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			this.add(new String(stringdata,defaultStringEncoding));
+			//System.out.println("attribute:"+result.get(i));
 		}
 		
 		
