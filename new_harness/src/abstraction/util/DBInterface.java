@@ -59,6 +59,7 @@ public class DBInterface {
 	
 	public static String mimic_views_folder;
 	public static String modis_views_folder;
+	public static String eeg_views_folder;
 
 	public static String nice_tile_cache_dir;// = "/home/leibatt/projects/user_study/scalar_backend/nice_tile_cache";
 	//public static String nice_tile_cache_dir;// = "/home/leibatt/projects/user_study/scalar_backend/vertica_nice_tile_cache";
