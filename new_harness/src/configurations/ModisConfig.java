@@ -15,6 +15,7 @@ public class ModisConfig extends Config {
 	public void setConfig() {
 		DBInterface.mimic_views_folder = "/home/leilani/forecache-code/new_harness/mimic_views";
 		DBInterface.modis_views_folder = "/home/leilani/forecache-code/new_harness/modis_views";
+		DBInterface.eeg_views_folder = "/home/leilani/forecache-code/new_harness/eeg_views";
 		
 		DBInterface.nice_tile_cache_dir = "/home/leilani/modis_tile_cache";
 		//DBInterface.nice_tile_cache_dir = "/home/leilani/vertica_nice_tile_cache";
