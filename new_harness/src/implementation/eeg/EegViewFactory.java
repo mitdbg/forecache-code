@@ -24,7 +24,7 @@ public class EegViewFactory {
 	public static String queryTemplate = "scan(EEG_?1_?2)";
 	public static String[] summaries = new String[]{
 			"avg(amplitude) as avg_amplitude"};
-	public static DBConnector connectionType = DBConnector.BIGDAWG;
+	public static DBConnector connectionType = DBConnector.SCIDB;
 	
 	public String viewsFolder;
 	public ViewMap eegViews;
