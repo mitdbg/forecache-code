@@ -1,0 +1,50 @@
+<html>
+<head>
+<META NAME="ROBOTS" CONTENT="NOINDEX">
+<META NAME="ROBOTS" CONTENT="NOFOLLOW">
+	<link rel="stylesheet" type="text/css" href="static/css/forecache_heatmap.css">
+	<title> Heatmap Test</title>
+    <script type="text/javascript" src="static/js/colorbrewer.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/jquery.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/d3.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/text-encoding/encoding.js"></script>
+
+    <script type="text/javascript" src="static/js/forecache/backend/structures.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/backend/decoder.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/backend/request.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/visobj.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/heatmap.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/spectrogram.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis.js" charset="utf-8"></script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+        var renderFunc = function(d) {
+            var vis =
+            ForeCache.Renderer.Vis.getVis($("#view"),{"visType":"spectrogram",
+                                  "xname":"x","xlabel":"x",
+                                  "yname":"y","ylabel":"y",
+                                  "zlabel":"avg_amplitude","zname":"avg_amplitude",
+                                  "width":613,
+                                  "height":532,
+                                  "padding":{"left":50,"right":50,"top":50,"bottom":50},
+                                  "inverted":{"x":false,"y":true,"color":false},
+                                  "scaleType":{"color":"log"}});
+        };
+        ForeCache.Backend.Request.simpleReset(renderFunc);
+      });
+
+    </script>
+</head>
+
+
+<body>
+  <div class="main">
+			<h1>Heatmap Test</h1>
+			<div id="content">
+         <div id="view" class="view"></div>
+			</div>
+	</div>
+</body>
+
+</html>
+

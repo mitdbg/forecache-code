@@ -23,7 +23,8 @@ ForeCache.Renderer.Vis.VisObj = function(chart, options) {
   this.viewportRatio = options.viewportRatio || 1.0;
 	this.xlabel = options.xlabel
 	this.ylabel = options.ylabel
-  this.inverted = options.inverted || {"x":false,"y":false};
+  this.inverted = options.inverted || {"x":false,"y":false,"color":false};
+  this.scaleType = options.scaleType || {};
 	this.fixYDomain = false;
 	this.mousebusy = false;
 
@@ -67,6 +68,14 @@ ForeCache.Renderer.Vis.VisObj.prototype.adjustForViewportRatio = function(domain
   return domain2;
 };
 
+// used to change/override the "this.color" function
+ForeCache.Renderer.Vis.VisObj.prototype.modifyColor = function() {
+/*
+should be filled in by subclasses
+*/
+};
+
+
 // this part of the setup process requires information about the starting data
 ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function(startingTiles) {
   this.updateOpts();
@@ -99,21 +108,30 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function(startingTiles) {
 		.range([0,this.size.height])
 		.nice();
 
+  if(this.options.hasOwnProperty("zdomain")) {
+    // color scale
+    // assumes numeric domain
+    // TODO: remove hardcoded color setup here
+    var zdom = this.options.zdomain;
+    this.colorScale = d3.scale.quantize()
+      .domain(zdom)
+      .range(colorbrewer.YlOrRd[9]);
+      //.range(colorbrewer.Spectral[9]);
+  }
+
   if(this.inverted.x) {
     this.x.range([this.size.width,0]);
   }
   if(this.inverted.y) {
     this.y.range([this.size.height,0]);
   }
-
-  if(this.options.hasOwnProperty("zdomain")) {
-    // color scale
-    // assumes numeric domain
-    // TODO: remove hardcoded color setup here
-    this.color = d3.scale.quantize()
-      .domain(this.options.zdomain)
-      .range(colorbrewer.YlOrRd[9]);
+  // TODO: remove hardcoded color setup here
+  if(this.inverted.hasOwnProperty("color") && this.inverted.color) {
+    this.colorScale.domain(this.colorScale.domain().reverse());
   }
+
+  // use this function to do any fancy color stuff in other classes
+  this.modifyColor();
 
 	this.xAxis = d3.svg.axis().scale(this.x).orient("bottom");
 	this.yAxis = d3.svg.axis().scale(this.y).orient("left");
@@ -201,6 +219,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.updateOpts = function() {
   var tile0 = this.tileMap.get(this.currentTiles[0]);
   this.xindex = tile0.getIndex(this.options.xname);
   this.yindex = tile0.getIndex(this.options.yname);
+  console.log(["indexes","x",this.xindex,"y",this.yindex]);
   if(this.options.hasOwnProperty("zname")) {
     this.zindex = tile0.getIndex(this.options.zname);
     newopts.zdomain = ForeCache.Backend.Structures.getDomain(this.tileMap.getTiles(),this.zindex);

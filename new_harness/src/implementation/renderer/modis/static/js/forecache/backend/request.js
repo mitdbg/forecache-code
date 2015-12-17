@@ -45,11 +45,12 @@ ForeCache.Backend.Request.getTileStructure = function(callback) {
 };
 
 
-ForeCache.Backend.Request.getTileBinary = function(tileid,callback) {
+ForeCache.Backend.Request.getTileBinary = function(tileid,requestid,callback) {
 var dat = {};
   dat.binary = true;
   dat.zoom = tileid.zoom;
   dat.tile_id = tileid.dimindices.join("_");
+  dat.requestid = requestid;
   var createTile = function(arrayBuffer) {
     console.log(["arrayBuffer length",arrayBuffer.byteLength]);
     var tdecoder = new ForeCache.Backend.TileDecoder(arrayBuffer);
@@ -61,11 +62,12 @@ var dat = {};
 
 // uses JSON string format to retrieve tile from server
 // returns a ForeCache.Backend.Request.Tile object
-ForeCache.Backend.Request.getTileJson = function(tileid,callback) {
+ForeCache.Backend.Request.getTileJson = function(tileid,requestid,callback) {
   var dat = {};
   dat.json = true;
   dat.zoom = tileid.zoom;
   dat.tile_id = tileid.dimindices.join("_");
+  dat.requestid = requestid;
   var createTile = function(jsondata) {
     var columns = jsondata.data;
     var attributes = jsondata.attributes;
@@ -78,9 +80,16 @@ ForeCache.Backend.Request.getTileJson = function(tileid,callback) {
 };
 
 // convenience method, chooses JSON or binary format for you
+ForeCache.Backend.Request.getTileWithRequestid = function(tileid,requestid,callback) {
+  //ForeCache.Backend.Request.getTileJson(tileid,requestid,callback);
+  ForeCache.Backend.Request.getTileBinary(tileid,requestid,callback);
+};
+
+// convenience method, chooses JSON or binary format for you
 ForeCache.Backend.Request.getTile = function(tileid,callback) {
-  ForeCache.Backend.Request.getTileJson(tileid,callback);
-  //ForeCache.Backend.Request.getTileBinary(tileid,callback);
+  var requestid = ForeCache.Backend.Request.uuid();
+  //ForeCache.Backend.Request.getTileJson(tileid,requestid,callback);
+  ForeCache.Backend.Request.getTileBinary(tileid,requestid,callback);
 };
 
 // retrieves all tiles, then calls the finalcallback function with
@@ -88,18 +97,19 @@ ForeCache.Backend.Request.getTile = function(tileid,callback) {
 ForeCache.Backend.Request.getTiles = function(tileids,finalcallback) {
   var i = 0;
   var tiles = [];
+  var requestid = ForeCache.Backend.Request.uuid();
   var processNextTile = function(tile) {
     tiles.push(tile);
     i++;
     if(i < tileids.length) {
       var tid = tileids[i]; // get the next id to retrieve
-      ForeCache.Backend.Request.getTile(tid,processNextTile); // repeat loop
+      ForeCache.Backend.Request.getTileWithRequestid(tid,requestid,processNextTile); // repeat loop
     } else { // all tiles have been processed
       finalcallback(tiles);
     }
   };
   var startingid = tileids[0];
-  ForeCache.Backend.Request.getTile(startingid,processNextTile);
+  ForeCache.Backend.Request.getTileWithRequestid(startingid,requestid,processNextTile);
 };
 
 // calls tilecallback function with each individual tile
@@ -112,13 +122,14 @@ ForeCache.Backend.Request.getAndProcessTiles = function(tileids,tilecallback,fin
   var dofc = arguments.length == 3;
   var i = 0;
   var tiles = [];
+  var requestid = ForeCache.Backend.Request.uuid();
   var processNextTile = function(tile) { // ForeCache.Backend.Request.Tile object
     tilecallback(tile);
     tiles.push(tile);
     i++;
     if(i < tileids.length) {
       var tid = tileids[i]; // get the next id to retrieve
-      ForeCache.Backend.Request.getTile(tid,processNextTile); // repeat loop
+      ForeCache.Backend.Request.getTileWithRequestid(tid,requestid,processNextTile); // repeat loop
     } else { // all tiles have been processed
       if(dofc) {
         finalcallback(tiles);
@@ -126,7 +137,7 @@ ForeCache.Backend.Request.getAndProcessTiles = function(tileids,tilecallback,fin
     }
   };
   var startingid = tileids[0];
-  ForeCache.Backend.Request.getTile(startingid,processNextTile);
+  ForeCache.Backend.Request.getTileWithRequestid(startingid,requestid,processNextTile);
 };
 
 /************** Helper Functions ***************/
