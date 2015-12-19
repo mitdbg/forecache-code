@@ -75,6 +75,9 @@ should be filled in by subclasses
 */
 };
 
+ForeCache.Renderer.Vis.VisObj.prototype.getZoomDims = function() {
+  return this.ts.numdims;
+};
 
 // this part of the setup process requires information about the starting data
 ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function(startingTiles) {
@@ -107,6 +110,24 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function(startingTiles) {
 		.nice()
 		.range([0,this.size.height])
 		.nice();
+
+/*
+  if(this.scaleType.hasOwnProperty("y")) {
+    this.oldy = this.y;
+    if(this.scaleType.y === "log") {
+      if(this.options.ydomain[0] == 0) { //zeros are bad for logs
+        this.options.ydomain[0] = 1;
+        this.options.ydomain[1] += 1;
+      }
+      this.y = d3.scale.log().base(10)
+        .domain(this.options.ydomain)
+        .nice()
+        .range([0,this.size.height])
+        .nice();
+      console.log(["new ydomain",this.y.domain()]);
+    }
+  }
+*/
 
   if(this.options.hasOwnProperty("zdomain")) {
     // color scale
@@ -232,7 +253,9 @@ ForeCache.Renderer.Vis.VisObj.prototype.updateOpts = function() {
   newopts.xdomain = this.adjustForViewportRatio(newopts.xdomain);
   //newopts.ydomain = ForeCache.Backend.Structures.getDomain(this.tileMap.getTiles(),this.yindex);
   newopts.ydomain = ForeCache.Backend.Structures.getTileDomain(this.tileMap.getTiles(),this.ts,this.yindex);
-  newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
+  if(this.getZoomDims() == 2) {
+    newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
+  }
   // compute color domain
 	newopts.size = {
 		"width":	newopts.width - newopts.padding.left - newopts.padding.right,
@@ -312,7 +335,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
 		var xdomain = self.x.domain();
     var newXDomain = self.getXRangeForZoom(self.currentZoom,newZoom);
 
-    if(self.ts.numdims >= 2) { // we are tracking more than one dimension, so update y domain
+    if(self.getZoomDims() == 2) { // we are tracking more than one dimension, so update y domain
 		  var ydomain = self.y.domain();
       var newYDomain = self.getYRangeForZoom(self.currentZoom,newZoom);
     }
@@ -323,7 +346,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
 		//self.x.domain(newXDomain);
 		//self.y.domain(newYDomain);
 		self.x.domain(self.adjustForViewportRatio(newXDomain));
-    if(self.ts.numdims >= 2) {
+    if(self.getZoomDims() == 2) {
 		  self.y.domain(self.adjustForViewportRatio(newYDomain));
     }
 		self.fixYDomain = true;
@@ -421,13 +444,21 @@ ForeCache.Renderer.Vis.VisObj.prototype.getYRange = function() {
 };
 
 ForeCache.Renderer.Vis.VisObj.prototype.getFutureTiles = function() {
-  var numdims = this.ts.numdims;
+  var numdims = this.getZoomDims();
   var xtiles = this.getXRange();
   var futuretiles = [];
   if(numdims == 1) { // one dimension
-    for(var x = 0; x < xtiles.length; x++) {
+    if(this.ts.numdims == 1) {
+      for(var x = 0; x < xtiles.length; x++) {
         var newkey = new ForeCache.Backend.Structures.NewTileKey([xtiles[x]],this.currentZoom);
         futuretiles.push(newkey); // push the pair
+      }
+    } else if (this.ts.numdims == 2) { // navigation along 1 dim doesn't mean there is only one dim
+      for(var x = 0; x < xtiles.length; x++) {
+        var newkey = new ForeCache.Backend.Structures.NewTileKey([xtiles[x],0],this.currentZoom);
+        console.log(["new key",newkey]);
+        futuretiles.push(newkey); // push the pair
+      }
     }
   } else if (numdims == 2) { // two dimensions
     var ytiles = this.getYRange();
@@ -540,4 +571,9 @@ ForeCache.Renderer.Vis.VisObj.prototype.redraw = function() {
 	}	
 };
 
+/****************** Helper Functions *********************/
+
+ForeCache.Renderer.Vis.VisObj.prototype.log10 = function(val) {
+  return Math.log(val) / Math.log(10.0);
+}
 
