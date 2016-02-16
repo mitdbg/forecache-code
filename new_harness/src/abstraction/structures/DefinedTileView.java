@@ -17,6 +17,8 @@ import abstraction.util.UtilityFunctions;
  * @author leibatt
  * This class is used to get explicit tile information for the given
  * view, tiling structure, and tile interface (aka. the database connector).
+ * WARNING: if you change the view or tile structure after creating the dtv,
+ * then the tiles stored in the "cache_path" directory will be invalid!!!
  */
 public class DefinedTileView {
 	public View v;
@@ -107,6 +109,7 @@ public class DefinedTileView {
 	
 	// is this a valid key?
 	public boolean containsKey(NewTileKey key) {
+		getAllTileKeys();
 		return this.allKeys.containsKey(key);
 	}
 	
@@ -125,6 +128,19 @@ public class DefinedTileView {
 			this.trh.saveTile(tile);
 		}
 		return tile;
+	}
+	
+	//note: this reset will overwrite the current sigMap file, if a save occurs
+	//TODO: do something appropriate for the "cache_path" variable
+	public void reset() {
+		this.allKeys = null;
+		this.sigMap = new SignatureMap(); // do not use the current signature map
+	}
+	
+	//TODO: do something appropriate for the "cache_path" variable
+	public void reset(String sigMapFile) {
+		reset();
+		this.sigMapFile = sigMapFile;
 	}
 	
 	/************************ Helper Functions *************************/

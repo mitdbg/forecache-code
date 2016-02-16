@@ -69,7 +69,8 @@ public class SignatureMap implements Serializable {
 		
 		ObjectOutputStream out;
 		try {
-			out = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
+			// do not append
+			out = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(file, false)));
 			out.writeObject(this);
 			out.close();
 			return true;

@@ -274,10 +274,30 @@ public class ModisMainThread {
 			response.getWriter().print(jsonstring);
 		}
 		
+		protected void doSetTileStructure(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			String jsonstring = request.getParameter("ts");
+			boolean success = false;
+			if(jsonstring != null) {
+				success = dtv.ts.fromJson(jsonstring);
+			}
+			response.getWriter().print(success);
+		}
+		
 		protected void doGetView(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
 			String jsonstring = dtv.v.toJson();
 			response.getWriter().print(jsonstring);
+		}
+		
+		protected void doSetView(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			String jsonstring = request.getParameter("view");
+			boolean success = false;
+			if(jsonstring != null) {
+				success = dtv.v.fromJson(jsonstring);
+			}
+			response.getWriter().print(success);
 		}
 		
 		protected void doJsonFetch(HttpServletRequest request,
@@ -467,9 +487,21 @@ public class ModisMainThread {
 				return;
 			}
 			
+			String setts = request.getParameter("setts");
+			if(setts != null) {
+				doSetTileStructure(request,response);
+				return;
+			}
+			
 			String getview = request.getParameter("getview");
 			if(getview != null) {
 				doGetView(request,response);
+				return;
+			}
+			
+			String setview = request.getParameter("setview");
+			if(setview != null) {
+				doSetView(request,response);
 				return;
 			}
 
