@@ -1,4 +1,5 @@
 var ForeCache = ForeCache || {};
+ForeCache.Tracker = ForeCache.Tracker || {};
 ForeCache.Backend = ForeCache.Backend || {};
 ForeCache.Backend.Request = {};
 
@@ -52,11 +53,22 @@ var dat = {};
   dat.tile_id = tileid.dimindices.join("_");
   dat.requestid = requestid;
   var createTile = function(arrayBuffer) {
-    console.log(["arrayBuffer length",arrayBuffer.byteLength]);
+    var fetchEnd = Date.now();
+    ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,
+      {'action':'fetchTileBinary','tileId':tileid.name,'start':fetchStart,'end':fetchEnd});
+    console.log(["time to fetch",fetchEnd-fetchStart]);
+    //console.log(["arrayBuffer length",arrayBuffer.byteLength]);
+    var decodeStart = Date.now();
     var tdecoder = new ForeCache.Backend.TileDecoder(arrayBuffer);
     var tile = tdecoder.unpackTile();
+    var decodeEnd = Date.now();
+    ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,
+      {'action':'decodeTile','tileId':tileid.name,'start':decodeStart,'end':decodeEnd});
+    console.log(["time to decode",decodeEnd-decodeStart]);
+
     callback(tile); // return the tile object
   };
+  var fetchStart = Date.now();
   ForeCache.Backend.Request.sendBinaryRequest(dat,createTile);
 };
 
@@ -69,19 +81,33 @@ ForeCache.Backend.Request.getTileJson = function(tileid,requestid,callback) {
   dat.tile_id = tileid.dimindices.join("_");
   dat.requestid = requestid;
   var createTile = function(jsondata) {
+    var fetchEnd = Date.now();
+    ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,
+      {'action':'fetchTileJson','tileId':tileid.name,'start':fetchStart,'end':fetchEnd});
+
     var columns = jsondata.data;
     var attributes = jsondata.attributes;
     var dataTypes = jsondata.dataTypes;
     var tile = new ForeCache.Backend.Structures.Tile(columns,attributes,dataTypes,tileid);
     callback(tile); // return the tile object
   };
+  var fetchStart = Date.now();
   //ForeCache.Backend.Request.sendJsonRequest(dat,createTile);
   ForeCache.Backend.Request.sendJsonRequestNoJquery(dat,createTile);
 };
 
 // convenience method, chooses JSON or binary format for you
 ForeCache.Backend.Request.getTileWithRequestid = function(tileid,requestid,callback) {
-  //ForeCache.Backend.Request.getTileJson(tileid,requestid,callback);
+  var fetchStart = Date.now();
+/*(
+  var cb = function(tile) {
+    var fetchEnd = Date.now();
+    ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,
+      {'action':'fetchTile','tileId':tile.id.name,'start':fetchStart,'end':fetchEnd});
+    callback(tile);
+  };
+*/
+  //ForeCache.Backend.Request.getTileJson(tileid,requestid,cb);
   ForeCache.Backend.Request.getTileBinary(tileid,requestid,callback);
 };
 
@@ -167,7 +193,7 @@ ForeCache.Backend.Request.sendJsonRequestNoJquery = function(dat,callback) {
   var jsonParse = function(jsonstring) {
     var jsondata = JSON.parse(jsonstring);
     callback(jsondata);
-    console.log(["jsondata",jsondata]);
+    //console.log(["jsondata",jsondata]);
   };
   ForeCache.Backend.Request.sendRequestHelper(dat,"",jsonParse);
 };

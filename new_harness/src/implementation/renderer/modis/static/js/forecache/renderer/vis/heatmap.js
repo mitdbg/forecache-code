@@ -22,7 +22,7 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
   newopts.boxwidth = {};
 
   xstats = this.get_stats(this.xindex);
-  console.log(["xdomain",newopts.xdomain,"xstats",xstats]);
+  //console.log(["xdomain",newopts.xdomain,"xstats",xstats]);
   //newopts.xdomain = [xstats.min,xstats.max];
   //newopts.xdomain = this.adjustForViewportRatio(newopts.xdomain);
   var xm = xstats.mindist; // width of box
@@ -37,14 +37,14 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
     newopts.boxwidth.x = Math.max(Math.round(boxwidth / this.viewportRatio),1);
     newopts.size.width = numboxes*boxwidth; // make the width more realistic
     newopts.width = newopts.padding.left + newopts.padding.right + newopts.size.width;
-    console.log([xstats,xm,xd,xw,numboxes,boxwidth]);
+    //console.log([xstats,xm,xd,xw,numboxes,boxwidth]);
   }
 
   ystats = this.get_stats(this.yindex);
-  console.log(["ydomain",newopts.ydomain,"ystats",ystats]);
+  //console.log(["ydomain",newopts.ydomain,"ystats",ystats]);
   //newopts.ydomain = [ystats.min,ystats.max];
   //newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
-  console.log(ystats);
+  //console.log(ystats);
   var ym = ystats.mindist; // height of box
   var yd = ystats.max - ystats.min; // space for boxes in domain
   var yw = newopts.size.height; // space for boxes in range
@@ -57,9 +57,9 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
     newopts.boxwidth.y = Math.max(Math.round(boxwidth / this.viewportRatio),1);
     newopts.size.height = numboxes*boxwidth; // make the height more realistic
     newopts.height = newopts.padding.top + newopts.padding.bottom + newopts.size.height;
-    console.log([ystats,ym,yd,yw,numboxes,boxwidth]);
+    //console.log([ystats,ym,yd,yw,numboxes,boxwidth]);
   }
-  console.log(["updated width",newopts.size.width,"updated height",newopts.size.height]);
+  //console.log(["updated width",newopts.size.width,"updated height",newopts.size.height]);
 };
 
 ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
@@ -85,7 +85,7 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
     }
 		
 		this.ctx.beginPath();
- 		this.ctx.fillStyle = this.color(zval);
+ 		this.ctx.fillStyle = this.colorScale(zval);
 		this.ctx.fillRect(x,y, xw, yw);
 		this.ctx.closePath();
 	}
@@ -93,7 +93,7 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
   var ymin = this.y(tile.id.dimindices[1] * this.ts.tileWidths[1]) + this.padding.top;
   var xmax = this.x((tile.id.dimindices[0]+1) * this.ts.tileWidths[0]) + this.padding.left;
   ymax = this.y((tile.id.dimindices[1]+1) * this.ts.tileWidths[1]) + this.padding.top;
-  console.log(["tile",tile.id.zoom,tile.id.dimindices,"drawing lines",xmin,xmax,ymin,ymax]);
+  //console.log(["tile",tile.id.zoom,tile.id.dimindices,"drawing lines",xmin,xmax,ymin,ymax]);
 
 	this.ctx.beginPath();
  	this.ctx.strokeStyle = "black";
@@ -134,6 +134,11 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
 		this.ctx.closePath();
   }
 */
+};
+
+
+ForeCache.Renderer.Vis.HeatmapObj.prototype.modifyColor = function() {
+  this.color = this.colorScale;
 };
 
 /****************** Helper Functions *********************/

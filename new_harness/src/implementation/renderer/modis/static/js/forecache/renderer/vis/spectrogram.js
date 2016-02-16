@@ -129,7 +129,7 @@ ForeCache.Renderer.Vis.SpectrogramObj.prototype.get_amplitude = function(tile,i,
     }
     //console.log(["diff",diff,"ydomain",this.options.ydomain]);
     newindex = Math.pow(diff,Math.min(1.0,1.0*index/diff)) / diff;
-    newindex += 1.0/512.0; // now on a 0 to 1 scale
+    //newindex += 1.0/512.0; // now on a 0 to 1 scale
     // map back to a 0 to 512 scale
     var mapping = newindex * 512.0;
     //console.log(["mapping",mapping]);
