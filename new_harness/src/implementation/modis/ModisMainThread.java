@@ -319,7 +319,8 @@ public class ModisMainThread {
 				long e = System.currentTimeMillis();
 				response.getWriter().print(jsonstring);
 				long e2 = System.currentTimeMillis();
-				String report= (s-ns)+","+(e-s)+","+(e2-e)+","+jsonstring.length();
+				//String report= (s-ns)+","+(e-s)+","+(e2-e)+","+jsonstring.length();
+				String report= "fetch:"+(s-ns)+", encode:"+(e-s)+", send:"+(e2-e)+", stringlength:"+jsonstring.length();
 				System.out.println(report);
 				//log.write(report);
 				//log.newLine();
@@ -356,7 +357,8 @@ public class ModisMainThread {
 				long e = System.currentTimeMillis();
 				response.getOutputStream().write(toSend,0,toSend.length);
 				long e2 = System.currentTimeMillis();
-				String report= (s-ns)+","+(e-s)+","+(e2-e)+","+toSend.length;
+				//String report= (s-ns)+","+(e-s)+","+(e2-e)+","+toSend.length;
+				String report= "fetch:"+(s-ns)+", encode:"+(e-s)+", send:"+(e2-e)+", bytelength:"+toSend.length;
 				System.out.println(report);
 				//log.write(report);
 				//log.newLine();
@@ -393,7 +395,8 @@ public class ModisMainThread {
 				long e = System.currentTimeMillis();
 				response.getOutputStream().write(toSend,0,toSend.length);
 				long e2 = System.currentTimeMillis();
-				String report= (s-ns)+","+(e-s)+","+(e2-e)+","+toSend.length;
+				//String report= (s-ns)+","+(e-s)+","+(e2-e)+","+toSend.length;
+				String report= "fetch:"+(s-ns)+", encode:"+(e-s)+", send:"+(e2-e)+", bytelength:"+toSend.length;
 				System.out.println(report);
 				//log.write(report);
 				//log.newLine();
