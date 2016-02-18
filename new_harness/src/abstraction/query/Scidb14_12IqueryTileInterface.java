@@ -118,6 +118,7 @@ public class Scidb14_12IqueryTileInterface extends Scidb14_12TileInterface {
 	public synchronized boolean getRawTileHelper(String query,ColumnBasedNiceTile tile, boolean retrieve_output) {
 		AttributesDataPair pair = new AttributesDataPair();
 		boolean returnval = getRawDataHelper(query,pair,retrieve_output);
+		System.out.println("got here");
 		tile.initializeDataDefault(pair.data, pair.attributes);
 		return returnval;
 	}
