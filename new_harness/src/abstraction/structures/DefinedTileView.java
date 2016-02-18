@@ -104,6 +104,7 @@ public class DefinedTileView {
 	// it computes the list first.
 	public Map<NewTileKey,Boolean> getAllTileKeys() {
 		if(this.allKeys == null) {
+			this.allKeys = new HashMap<NewTileKey,Boolean>();
 			getBoundaries();
 			double[] ranges = getRanges();
 			tileCounts = new double[this.ts.aggregationWindows.length][];
@@ -188,7 +189,7 @@ public class DefinedTileView {
 		int[] currPos = new int[tileCounts[zoom].length]; // all zeros
 		Map<NewTileKey,Boolean> masterList = new HashMap<NewTileKey,Boolean>();
 		enumerateKeysHelper(zoom,currPos,masterList);
-		this.allKeys = masterList;
+		this.allKeys.putAll(masterList);
 	}
 	
 	//  recursively generates new keys, tests if they are real, and adds them to the master list
