@@ -112,7 +112,7 @@ public class DefinedTileView {
 				tileCounts[i] = new double[ranges.length];
 				// count tiles along each dimension
 				for(int j = 0; j < ranges.length; j++) { // for each dimension
-					tileCounts[i][j] = Math.ceil(1.0 * ranges[j] / windows[j]);
+					tileCounts[i][j] = Math.ceil(1.0 * ranges[j] / (windows[j] * this.ts.tileWidths[j]));
 				}
 				// enumerate all tiles for this zoom level
 				enumerateKeys(i);
