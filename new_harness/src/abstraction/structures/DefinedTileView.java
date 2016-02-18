@@ -188,6 +188,7 @@ public class DefinedTileView {
 		int[] currPos = new int[tileCounts[zoom].length]; // all zeros
 		Map<NewTileKey,Boolean> masterList = new HashMap<NewTileKey,Boolean>();
 		enumerateKeysHelper(zoom,currPos,masterList);
+		this.allKeys = masterList;
 	}
 	
 	//  recursively generates new keys, tests if they are real, and adds them to the master list
