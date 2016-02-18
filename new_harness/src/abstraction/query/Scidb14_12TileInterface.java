@@ -1,6 +1,7 @@
 package abstraction.query;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -89,6 +90,7 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 		String showQuery = generateShowQuery(query);
 		ColumnBasedNiceTile t = new ColumnBasedNiceTile();
 		getRawTile(showQuery,t);
+		System.out.println("attributes: "+Arrays.toString(t.attributes.toArray()));
 		int schema_index = t.getIndex("schema");
 		String schema = (String) t.get(schema_index, 0);
 		return parseSchemaForDimensionBoundaries(schema);
