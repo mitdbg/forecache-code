@@ -52,7 +52,7 @@ public class ModisViewFactory {
 	
 	public View getModisView() throws Exception {
 		List<String> summaryFunctions = Arrays.asList(summaries);
-		View v = this.modisViews.getView(name, query, summaryFunctions, connectionType);
+		View v = this.modisViews.getView(name, scanQuery, summaryFunctions, connectionType);
 		this.modisViews.saveView(v); // save it on disk so we don't have to make this view again
 		return v;
 	}

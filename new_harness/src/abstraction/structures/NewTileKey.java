@@ -108,4 +108,11 @@ public class NewTileKey implements java.io.Serializable {
 		}
 		return eb.isEquals();
 	}
+	
+	/****************** Nested Classes *********************/
+	public static class NewTileKeyJson implements java.io.Serializable {
+		private static final long serialVersionUID = 3044841539693043061L;
+		public int[] dimIndices;
+		public int zoom;
+	}
 }

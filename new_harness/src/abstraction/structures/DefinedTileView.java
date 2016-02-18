@@ -6,9 +6,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import abstraction.query.NewTileInterface;
 import abstraction.query.NewTileInterface.DimensionBoundary;
 import abstraction.storage.TileRetrievalHelper;
+import abstraction.structures.NewTileKey.NewTileKeyJson;
+import abstraction.structures.TileStructure.TileStructureJson;
 import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.UtilityFunctions;
 
@@ -17,6 +22,8 @@ import abstraction.util.UtilityFunctions;
  * @author leibatt
  * This class is used to get explicit tile information for the given
  * view, tiling structure, and tile interface (aka. the database connector).
+ * WARNING: if you change the view or tile structure after creating the dtv,
+ * then the tiles stored in the "cache_path" directory will be invalid!!!
  */
 public class DefinedTileView {
 	public View v;
@@ -71,10 +78,33 @@ public class DefinedTileView {
 		this.dimbound = this.nti.getDimensionBoundaries(v.getQuery());
 	}
 	
+	public String getAllTileKeysJson() {
+		Map<NewTileKey,Boolean> keys = getAllTileKeys();
+		NewTileKeyJson[] keyArr = new NewTileKeyJson[keys.size()];
+		int i = 0;
+		for(NewTileKey key : keys.keySet()) {
+			keyArr[i] = new NewTileKeyJson();
+			keyArr[i].dimIndices = key.dimIndices;
+			keyArr[i].zoom = key.zoom;
+			i++;
+		}
+		
+		ObjectMapper o = new ObjectMapper();
+		String returnval = null;
+		try {
+			returnval = o.writeValueAsString(keyArr);
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return returnval;
+	}
+	
 	// returns a list of all tile keys. If the list doesn't exist yet,
 	// it computes the list first.
 	public Map<NewTileKey,Boolean> getAllTileKeys() {
 		if(this.allKeys == null) {
+			this.allKeys = new HashMap<NewTileKey,Boolean>();
 			getBoundaries();
 			double[] ranges = getRanges();
 			tileCounts = new double[this.ts.aggregationWindows.length][];
@@ -83,7 +113,7 @@ public class DefinedTileView {
 				tileCounts[i] = new double[ranges.length];
 				// count tiles along each dimension
 				for(int j = 0; j < ranges.length; j++) { // for each dimension
-					tileCounts[i][j] = Math.ceil(1.0 * ranges[j] / windows[j]);
+					tileCounts[i][j] = Math.ceil(1.0 * ranges[j] / (windows[j] * this.ts.tileWidths[j]));
 				}
 				// enumerate all tiles for this zoom level
 				enumerateKeys(i);
@@ -107,6 +137,7 @@ public class DefinedTileView {
 	
 	// is this a valid key?
 	public boolean containsKey(NewTileKey key) {
+		getAllTileKeys();
 		return this.allKeys.containsKey(key);
 	}
 	
@@ -127,6 +158,19 @@ public class DefinedTileView {
 		return tile;
 	}
 	
+	//note: this reset will overwrite the current sigMap file, if a save occurs
+	//TODO: do something appropriate for the "cache_path" variable
+	public void reset() {
+		this.allKeys = null;
+		this.sigMap = new SignatureMap(); // do not use the current signature map
+	}
+	
+	//TODO: do something appropriate for the "cache_path" variable
+	public void reset(String sigMapFile) {
+		reset();
+		this.sigMapFile = sigMapFile;
+	}
+	
 	/************************ Helper Functions *************************/
 
 	protected void initializeSignatureMap(String sigMapFile) {
@@ -145,10 +189,12 @@ public class DefinedTileView {
 		int[] currPos = new int[tileCounts[zoom].length]; // all zeros
 		Map<NewTileKey,Boolean> masterList = new HashMap<NewTileKey,Boolean>();
 		enumerateKeysHelper(zoom,currPos,masterList);
+		this.allKeys.putAll(masterList);
 	}
 	
 	//  recursively generates new keys, tests if they are real, and adds them to the master list
 	protected void enumerateKeysHelper(int zoom, int[] currPos, Map<NewTileKey,Boolean> masterList) {
+		//System.out.println("zoom: "+zoom+",currPos: "+Arrays.toString(currPos));
 		if(checkRange(currPos,zoom)) { // is this a valid key?
 			NewTileKey temp = new NewTileKey(currPos, zoom);
 			if(!masterList.containsKey(temp)) { // is it a new key?
@@ -181,6 +227,7 @@ public class DefinedTileView {
 			int low = range.get(0);
 			int high = range.get(1);
 			ranges[i] = high - low + 1;
+			//System.out.println("range for "+i+": "+ranges[i]);
 		}
 		return ranges;
 	}

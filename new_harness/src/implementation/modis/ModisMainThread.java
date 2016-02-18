@@ -274,10 +274,36 @@ public class ModisMainThread {
 			response.getWriter().print(jsonstring);
 		}
 		
+		protected void doSetTileStructure(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			String jsonstring = request.getParameter("ts");
+			boolean success = false;
+			if(jsonstring != null) {
+				success = dtv.ts.fromJson(jsonstring);
+			}
+			response.getWriter().print(success);
+		}
+		
+		protected void doGetAllKeys(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			String keys = dtv.getAllTileKeysJson();
+			response.getWriter().print(keys);
+		}
+		
 		protected void doGetView(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
 			String jsonstring = dtv.v.toJson();
 			response.getWriter().print(jsonstring);
+		}
+		
+		protected void doSetView(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			String jsonstring = request.getParameter("view");
+			boolean success = false;
+			if(jsonstring != null) {
+				success = dtv.v.fromJson(jsonstring);
+			}
+			response.getWriter().print(success);
 		}
 		
 		protected void doJsonFetch(HttpServletRequest request,
@@ -299,7 +325,8 @@ public class ModisMainThread {
 				long e = System.currentTimeMillis();
 				response.getWriter().print(jsonstring);
 				long e2 = System.currentTimeMillis();
-				String report= (s-ns)+","+(e-s)+","+(e2-e)+","+jsonstring.length();
+				//String report= (s-ns)+","+(e-s)+","+(e2-e)+","+jsonstring.length();
+				String report= "fetch:"+(s-ns)+", encode:"+(e-s)+", send:"+(e2-e)+", stringlength:"+jsonstring.length();
 				System.out.println(report);
 				//log.write(report);
 				//log.newLine();
@@ -336,7 +363,8 @@ public class ModisMainThread {
 				long e = System.currentTimeMillis();
 				response.getOutputStream().write(toSend,0,toSend.length);
 				long e2 = System.currentTimeMillis();
-				String report= (s-ns)+","+(e-s)+","+(e2-e)+","+toSend.length;
+				//String report= (s-ns)+","+(e-s)+","+(e2-e)+","+toSend.length;
+				String report= "fetch:"+(s-ns)+", encode:"+(e-s)+", send:"+(e2-e)+", bytelength:"+toSend.length;
 				System.out.println(report);
 				//log.write(report);
 				//log.newLine();
@@ -373,7 +401,8 @@ public class ModisMainThread {
 				long e = System.currentTimeMillis();
 				response.getOutputStream().write(toSend,0,toSend.length);
 				long e2 = System.currentTimeMillis();
-				String report= (s-ns)+","+(e-s)+","+(e2-e)+","+toSend.length;
+				//String report= (s-ns)+","+(e-s)+","+(e2-e)+","+toSend.length;
+				String report= "fetch:"+(s-ns)+", encode:"+(e-s)+", send:"+(e2-e)+", bytelength:"+toSend.length;
 				System.out.println(report);
 				//log.write(report);
 				//log.newLine();
@@ -467,9 +496,27 @@ public class ModisMainThread {
 				return;
 			}
 			
+			String setts = request.getParameter("setts");
+			if(setts != null) {
+				doSetTileStructure(request,response);
+				return;
+			}
+			
+			String getallkeys = request.getParameter("getallkeys");
+			if(getallkeys != null) {
+				doGetAllKeys(request,response);
+				return;
+			}
+			
 			String getview = request.getParameter("getview");
 			if(getview != null) {
 				doGetView(request,response);
+				return;
+			}
+			
+			String setview = request.getParameter("setview");
+			if(setview != null) {
+				doSetView(request,response);
 				return;
 			}
 
