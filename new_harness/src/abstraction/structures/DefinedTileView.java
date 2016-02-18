@@ -6,9 +6,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import abstraction.query.NewTileInterface;
 import abstraction.query.NewTileInterface.DimensionBoundary;
 import abstraction.storage.TileRetrievalHelper;
+import abstraction.structures.NewTileKey.NewTileKeyJson;
+import abstraction.structures.TileStructure.TileStructureJson;
 import abstraction.tile.ColumnBasedNiceTile;
 import abstraction.util.UtilityFunctions;
 
@@ -71,6 +76,28 @@ public class DefinedTileView {
 	// gets array dimension boundaries from the tile interface
 	public synchronized void getBoundaries() {
 		this.dimbound = this.nti.getDimensionBoundaries(v.getQuery());
+	}
+	
+	public String getAllTileKeysJson() {
+		Map<NewTileKey,Boolean> keys = getAllTileKeys();
+		NewTileKeyJson[] keyArr = new NewTileKeyJson[keys.size()];
+		int i = 0;
+		for(NewTileKey key : keys.keySet()) {
+			keyArr[i] = new NewTileKeyJson();
+			keyArr[i].dimIndices = key.dimIndices;
+			keyArr[i].zoom = key.zoom;
+			i++;
+		}
+		
+		ObjectMapper o = new ObjectMapper();
+		String returnval = null;
+		try {
+			returnval = o.writeValueAsString(keyArr);
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return returnval;
 	}
 	
 	// returns a list of all tile keys. If the list doesn't exist yet,

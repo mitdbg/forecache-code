@@ -284,6 +284,12 @@ public class ModisMainThread {
 			response.getWriter().print(success);
 		}
 		
+		protected void doGetAllKeys(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			String keys = dtv.getAllTileKeysJson();
+			response.getWriter().print(keys);
+		}
+		
 		protected void doGetView(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
 			String jsonstring = dtv.v.toJson();
@@ -493,6 +499,12 @@ public class ModisMainThread {
 			String setts = request.getParameter("setts");
 			if(setts != null) {
 				doSetTileStructure(request,response);
+				return;
+			}
+			
+			String getallkeys = request.getParameter("getallkeys");
+			if(getallkeys != null) {
+				doGetAllKeys(request,response);
 				return;
 			}
 			
