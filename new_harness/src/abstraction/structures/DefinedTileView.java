@@ -227,7 +227,7 @@ public class DefinedTileView {
 			int low = range.get(0);
 			int high = range.get(1);
 			ranges[i] = high - low + 1;
-			System.out.println("range for "+i+": "+ranges[i]);
+			//System.out.println("range for "+i+": "+ranges[i]);
 		}
 		return ranges;
 	}
