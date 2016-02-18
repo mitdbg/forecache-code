@@ -192,6 +192,7 @@ public class DefinedTileView {
 	
 	//  recursively generates new keys, tests if they are real, and adds them to the master list
 	protected void enumerateKeysHelper(int zoom, int[] currPos, Map<NewTileKey,Boolean> masterList) {
+		System.out.println("zoom: "+zoom+",currPos: "+Arrays.toString(currPos));
 		if(checkRange(currPos,zoom)) { // is this a valid key?
 			NewTileKey temp = new NewTileKey(currPos, zoom);
 			if(!masterList.containsKey(temp)) { // is it a new key?
