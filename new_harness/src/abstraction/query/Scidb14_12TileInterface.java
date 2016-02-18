@@ -90,6 +90,8 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 		String showQuery = generateShowQuery(query);
 		ColumnBasedNiceTile t = new ColumnBasedNiceTile();
 		getRawTile(showQuery,t);
+		System.out.println("query: '"+query+"'");
+		System.out.println("show query: '"+showQuery+"'");
 		System.out.println("attributes: "+Arrays.toString(t.attributes.toArray()));
 		int schema_index = t.getIndex("schema");
 		String schema = (String) t.get(schema_index, 0);
