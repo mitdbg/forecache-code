@@ -100,6 +100,31 @@ public class DefinedTileView {
 		return returnval;
 	}
 	
+	// an iterative enumerateKeys function, instead of the recursive
+	// enumerateKeys version
+	// will not blow out the call stack
+	public void enumerateKeys2(int zoom) {
+		double[] max = tileCounts[zoom];
+		int[] curr = new int[max.length]; // all zeros
+		Map<NewTileKey,Boolean> masterList = new HashMap<NewTileKey,Boolean>();
+		
+		int last = curr.length - 1;
+		while(curr[last] < max[last]) {
+			for(int i = 0; i < last; i++) {
+				if(curr[i] >= max[i]) {
+					curr[i] = 0;
+					curr[i+1]++;
+				}
+			}
+			if(curr[last] < max[last]) {
+				int[] newPos = Arrays.copyOf(curr, curr.length);
+				masterList.put(new NewTileKey(newPos,zoom), true);
+			}
+			curr[0]++;
+		}
+		this.allKeys.putAll(masterList);
+	}
+	
 	// returns a list of all tile keys. If the list doesn't exist yet,
 	// it computes the list first.
 	public Map<NewTileKey,Boolean> getAllTileKeys() {
@@ -116,7 +141,8 @@ public class DefinedTileView {
 					tileCounts[i][j] = Math.ceil(1.0 * ranges[j] / (windows[j] * this.ts.tileWidths[j]));
 				}
 				// enumerate all tiles for this zoom level
-				enumerateKeys(i);
+				//enumerateKeys(i);
+				enumerateKeys2(i);
 			}
 		}
 		return this.allKeys;
