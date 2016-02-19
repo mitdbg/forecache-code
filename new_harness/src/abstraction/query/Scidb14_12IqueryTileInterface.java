@@ -19,6 +19,7 @@ import abstraction.util.UtilityFunctions;
 public class Scidb14_12IqueryTileInterface extends Scidb14_12TileInterface {
 	protected String scidbVersion = "14.12";
 	protected String outputFormat = "tsv+";
+	protected String delim = "\t";
 			
 	public Scidb14_12IqueryTileInterface() {
 		super();
@@ -144,9 +145,14 @@ public class Scidb14_12IqueryTileInterface extends Scidb14_12TileInterface {
 				"source ~/.bashrc ; iquery -o "+outputFormat+" -aq \"" + query + "\"";
 		return myresult;
 	}
+	
+	// used to specify the delimiter
+	public synchronized boolean getRawDataHelper(String query,AttributesDataPair pair, boolean retrieve_output) {
+		return getRawDataHelper(query,pair,this.delim,retrieve_output);
+	}
 
 	// gets the raw data, and the attribute/dimension names
-	public synchronized boolean getRawDataHelper(String query,AttributesDataPair pair, boolean retrieve_output) {
+	public synchronized boolean getRawDataHelper(String query,AttributesDataPair pair, String delim, boolean retrieve_output) {
 		boolean returnval = false;
 		String[] cmd;
 		if(retrieve_output) {
@@ -178,13 +184,13 @@ public class Scidb14_12IqueryTileInterface extends Scidb14_12TileInterface {
 				//System.out.println(line);
 				String[] tokens;// = line.split(",");
 				if(!first) { // ignore first line
-					tokens = line.split(",",labels.size());
+					tokens = line.split(delim,labels.size());
 					for(int i = 0; i < tokens.length; i++) {
 						temp.add(tokens[i]); // just add 0.0 if we can't parse it
 					}
 				} else {
 					first = false;
-					tokens = line.split(",");
+					tokens = line.split(delim);
 					for(int i = 0; i < tokens.length;i++) {
 						labels.add(tokens[i]);
 					}

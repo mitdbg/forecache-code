@@ -2,6 +2,7 @@ package abstraction.query;
 
 import java.util.List;
 
+import abstraction.query.Scidb14_12IqueryTileInterface.AttributesDataPair;
 import abstraction.tile.ColumnBasedNiceTile;
 
 
@@ -10,6 +11,7 @@ public class Scidb13_3IqueryTileInterface extends Scidb14_12IqueryTileInterface 
 	//NOTE: SciDB 13.3 does *not* support tsv output format for iquery!!!!
 	protected String scidbVersion = "13.3";
 	protected String outputFormat = "csv+";
+	protected String delim = ",";
 
 	/************* For Precomputation ***************/
 	/************* Helper Functions ***************/
@@ -35,6 +37,12 @@ public class Scidb13_3IqueryTileInterface extends Scidb14_12IqueryTileInterface 
 				"export LD_LIBRARY_PATH=/opt/scidb/$SCIDB_VER/lib:$LD_LIBRARY_PATH ; "+
 				"source ~/.bashrc ; iquery -o "+outputFormat+" -aq \"" + query + "\"";
 		return myresult;
+	}
+	
+	// used to specify the delimiter
+	@Override
+	public synchronized boolean getRawDataHelper(String query,AttributesDataPair pair, boolean retrieve_output) {
+		return getRawDataHelper(query,pair,this.delim,retrieve_output);
 	}
 	
 	public static void main(String[] args) {
