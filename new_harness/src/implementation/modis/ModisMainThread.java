@@ -30,6 +30,7 @@ import abstraction.prediction.PredictionEngine;
 import abstraction.query.NewTileInterface;
 import abstraction.query.Scidb13_3IqueryTileInterface;
 import abstraction.query.Scidb14_12IqueryTileInterface;
+import abstraction.query.Scidb14_12OptimizedIqueryTileInterface;
 import abstraction.storage.MainMemoryTileBuffer;
 import abstraction.storage.NiceTilePacker;
 import abstraction.storage.TileBuffer;
@@ -135,7 +136,8 @@ public class ModisMainThread {
 		TileStructure ts = OldModisTileStructureFactory.
 				getModisTileStructure(OldModisTileStructureFactory.defaultAggregationWindows,
 						new int[]{100,100}); // changing the tile parameters
-		NewTileInterface nti = new Scidb13_3IqueryTileInterface();
+		//NewTileInterface nti = new Scidb13_3IqueryTileInterface();
+		NewTileInterface nti = new Scidb14_12OptimizedIqueryTileInterface();
 		dtv = new DefinedTileView(v, ts, nti, defaultSigmapFilename,
 				DBInterface.nice_tile_cache_dir);
 		
@@ -288,6 +290,13 @@ public class ModisMainThread {
 				HttpServletResponse response) throws IOException {
 			String keys = dtv.getAllTileKeysJson();
 			response.getWriter().print(keys);
+		}
+		
+		protected void doRemoveTiles(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			boolean returnval = ((Scidb14_12OptimizedIqueryTileInterface) dtv.nti)
+					.removeAllTiles(dtv.v, dtv.ts);
+			response.getWriter().print(returnval);
 		}
 		
 		protected void doGetView(HttpServletRequest request,
@@ -505,6 +514,12 @@ public class ModisMainThread {
 			String getallkeys = request.getParameter("getallkeys");
 			if(getallkeys != null) {
 				doGetAllKeys(request,response);
+				return;
+			}
+			
+			String removeTiles = request.getParameter("removetiles");
+			if(removeTiles != null) {
+				doRemoveTiles(request,response);
 				return;
 			}
 			

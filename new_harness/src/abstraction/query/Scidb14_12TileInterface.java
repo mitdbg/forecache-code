@@ -204,6 +204,10 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 		return generateRegridQuery(query,aggWindow,summaryFunctions);
 	}
 	
+	protected String generateRemoveQuery(String arrayName) {
+		return "remove("+arrayName+")";
+	}
+	
 	protected String generateSubarrayQuery(String query, int[] lows, int[] highs) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("subarray(").append(query);
