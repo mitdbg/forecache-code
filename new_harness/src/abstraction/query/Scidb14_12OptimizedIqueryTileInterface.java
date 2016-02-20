@@ -425,13 +425,13 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 		// get the base-0 range in aggregated points
 		for(int i = 0; i < ts.tileWidths.length; i++) {
 			lows[i] = ts.tileWidths[i]*id.dimIndices[i]; // in tiles
-			highs[i] = lows[i] + ts.tileWidths[i] - 1;
+			highs[i] = lows[i] + ts.tileWidths[i]; // do not subtract 1 yet
 		}
 		
 		// get the base-0 range in un-aggregated points
 		for(int i = 0; i < ts.tileWidths.length; i++) {
 			lows[i] = lows[i] * ts.aggregationWindows[id.zoom][i]; // in data points
-			highs[i] = highs[i] * ts.aggregationWindows[id.zoom][i];
+			highs[i] = highs[i] * ts.aggregationWindows[id.zoom][i]-1;
 		}
 		
 		// shift/adjust the raw range to match the array
