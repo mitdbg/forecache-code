@@ -193,7 +193,8 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 			lows[i] = ts.tileWidths[i]*id.dimIndices[i];
 			highs[i] = lows[i] + ts.tileWidths[i] - 1;
 		}
-		return generateSubarrayQuery(query,lows,highs);
+		//return generateSubarrayQuery(query,lows,highs);
+		return generateBetweenQuery(query,lows,highs);
 	}
 	
 	// builds, but does not store, the zoom level
