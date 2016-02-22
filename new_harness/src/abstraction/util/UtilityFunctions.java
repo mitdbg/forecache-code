@@ -131,6 +131,21 @@ public class UtilityFunctions {
 		return myresult;
 	}
 	
+	public static int[] parseTileIdIntegerNoBrackets(String tile_id, String delim) {
+		String [] tokens = tile_id.split(delim);
+		int[] myresult = new int[tokens.length];
+		try {
+			for(int i = 0; i < tokens.length; i++) {
+				if(tokens[i].length() > 0) {
+					myresult[i] = Integer.parseInt(tokens[i]);
+				}
+			}
+		} catch (NumberFormatException e) {
+			System.out.println("error occured while converting string to int");
+		}
+		return myresult;
+	}
+	
 	public static List<Double> parseTileIdDouble(String tile_id) {
 		return parseTileIdDouble(tile_id,", ");
 	}

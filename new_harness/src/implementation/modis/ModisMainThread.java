@@ -292,10 +292,20 @@ public class ModisMainThread {
 			response.getWriter().print(keys);
 		}
 		
-		protected void doRemoveTiles(HttpServletRequest request,
+		protected void doRemoveAllTiles(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
 			boolean returnval = ((Scidb14_12OptimizedIqueryTileInterface) dtv.nti)
 					.removeAllTiles(dtv.v, dtv.ts);
+			response.getWriter().print(returnval);
+		}
+		
+		protected void doRemoveTile(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			String zoom = request.getParameter("zoom");
+			String tile_id = request.getParameter("tile_id");
+			NewTileKey key = new NewTileKey(UtilityFunctions.parseTileIdIntegerNoBrackets(tile_id,"_"),Integer.parseInt(zoom));
+			boolean returnval = ((Scidb14_12OptimizedIqueryTileInterface) dtv.nti)
+					.removeTile(dtv.v, dtv.ts,key);
 			response.getWriter().print(returnval);
 		}
 		
@@ -517,9 +527,15 @@ public class ModisMainThread {
 				return;
 			}
 			
-			String removeTiles = request.getParameter("removetiles");
-			if(removeTiles != null) {
-				doRemoveTiles(request,response);
+			String removeAllTiles = request.getParameter("removealltiles");
+			if(removeAllTiles != null) {
+				doRemoveAllTiles(request,response);
+				return;
+			}
+			
+			String removeTile = request.getParameter("removetile");
+			if(removeTile != null) {
+				doRemoveTile(request,response);
 				return;
 			}
 			
