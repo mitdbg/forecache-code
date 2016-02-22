@@ -463,7 +463,8 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 		// get the original query
 		String sourceQuery = v.getQuery();
 		// call subarray first, to ensure we only aggregate the relevant data
-		String subarrayQuery = generateSubarrayQuery(sourceQuery,lows,highs);
+		//String subarrayQuery = generateSubarrayQuery(sourceQuery,lows,highs);
+		String subarrayQuery = generateBetweenQuery(sourceQuery,lows,highs);
 		// then do regrid to get aggregated data
 		String regridQuery = generateRegridQuery(subarrayQuery, 
 				ts.aggregationWindows[id.zoom], v.getSummaryFunctions());

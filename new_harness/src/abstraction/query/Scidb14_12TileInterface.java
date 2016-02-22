@@ -221,6 +221,19 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 		return sb.toString();
 	}
 	
+	protected String generateBetweenQuery(String query, int[] lows, int[] highs) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("between(").append(query);
+		for(int i = 0; i < lows.length; i++) {
+			sb.append(",").append(lows[i]);
+		}
+		for(int i = 0; i < highs.length; i++) {
+			sb.append(",").append(highs[i]);
+		}
+		sb.append(")");
+		return sb.toString();
+	}
+	
 	// execute SciDB regrid statement given the aggregatino windows and summary functions
 	protected String generateRegridQuery(String query, int[] aggWindow, Iterator<String> summaryFunctions) {
 		boolean optimize = true;
