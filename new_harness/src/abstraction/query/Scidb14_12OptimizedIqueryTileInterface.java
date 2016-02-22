@@ -467,7 +467,7 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 		// then do regrid to get aggregated data
 		String regridQuery = generateRegridQuery(subarrayQuery, 
 				ts.aggregationWindows[id.zoom], v.getSummaryFunctions());
-		System.out.println("tile build query: "+regridQuery);
+		//System.out.println("tile build query: "+regridQuery);
 		return regridQuery;
 	}
 	
