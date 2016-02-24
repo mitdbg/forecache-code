@@ -295,6 +295,7 @@ public class ModisMainThread {
 			boolean success = false;
 			try {
 				dtv.v = tmvf.getModisView(chunkSize);
+				System.out.println("using chunk size: "+chunkSize);
 				success = true;
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
