@@ -236,6 +236,21 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	
 	// execute SciDB regrid statement given the aggregatino windows and summary functions
 	protected String generateRegridQuery(String query, int[] aggWindow, Iterator<String> summaryFunctions) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("regrid(").append(query);
+		for(int i = 0; i < aggWindow.length; i++) {
+			sb.append(",").append(aggWindow[i]);
+		}
+		while(summaryFunctions.hasNext()) {
+			sb.append(",").append(summaryFunctions.next());
+		}
+		sb.append(")");
+		return sb.toString();
+	}
+	
+	// execute SciDB regrid statement given the aggregatino windows and summary functions
+	protected String generateOptimizedRegridQuery(String query, int[] aggWindow,
+			Iterator<String> attributes, Iterator<String> summaryFunctions, Iterator<String> summaryNames) {
 		boolean optimize = true;
 		for(int i = 0; i < aggWindow.length; i++) {
 			if(aggWindow[i] != 1) {
@@ -243,11 +258,11 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 				break;
 			}
 		}
-		/*if(optimize) {
-			StringBuilder sb = new StringBuilder();
-			return query; // for now, don't change the query if it doesn't need to be aggregated
-			// TODO: make this apply the correct names
-		} else {*/
+		if(optimize) {
+			String applyQuery = generateApplyQuery(query,attributes,summaryNames); // rename the attributes
+			String projectQuery = generateProjectQuery(applyQuery,summaryNames); // only keep the summary names
+			return projectQuery;
+		} else {
 			StringBuilder sb = new StringBuilder();
 			sb.append("regrid(").append(query);
 			for(int i = 0; i < aggWindow.length; i++) {
@@ -258,7 +273,7 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 			}
 			sb.append(")");
 			return sb.toString();
-		//}
+		}
 	}
 	
 	// get the SciDB schema for this query
@@ -280,6 +295,40 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	// given an array name, performs a scan on the array
 	protected String generateScanQueryForArray(String arrayName) {
 		return "scan("+arrayName+")";
+	}
+	
+	// given a query, make a project call on the query to filter out certain columns
+	protected String generateProjectQuery(String query, Iterator<String> attributeNames)
+	{
+		if(!attributeNames.hasNext()) return query;
+		StringBuilder sb = new StringBuilder();
+		sb.append("project(");
+		sb.append(query);
+		while(attributeNames.hasNext()) {
+			sb.append(",");
+			sb.append(attributeNames.next());
+		}
+		sb.append(")");
+		return sb.toString();
+	}
+	
+	// given a query, list of operations, and list of labels, create a new attribute for each label
+	// using the operations
+	protected String generateApplyQuery(String query, Iterator<String> operations, Iterator<String> labels) {
+		if(!operations.hasNext()) return query;
+		StringBuilder sb = new StringBuilder();
+		sb.append("apply(");
+		sb.append(query);
+		while(operations.hasNext()) {
+			String op = operations.next();
+			String label = labels.next();
+			sb.append(",");
+			sb.append(label);
+			sb.append(",");
+			sb.append(op);
+		}
+		sb.append(")");
+		return sb.toString();
 	}
 	
 	// get attribute description for the given array name:

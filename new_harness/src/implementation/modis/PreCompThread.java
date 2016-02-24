@@ -101,7 +101,7 @@ public class PreCompThread {
 			System.out.println("neighborhood: "+neighborhood);
 		}
 		
-		View v = new View(null, null, null, null);
+		View v = new View(null, null, null, null, null, null);
 		TileStructure ts = new TileStructure();
 		NewTileInterface nti = new Scidb14_12IqueryTileInterface();
 		dtv = new DefinedTileView(v, ts, nti, defaultSigmapFilename,

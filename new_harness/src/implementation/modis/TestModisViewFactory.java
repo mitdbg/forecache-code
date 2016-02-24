@@ -27,10 +27,19 @@ public class TestModisViewFactory {
 	public static String name = "FC_Test_Modis";
 	public static String array_name_prefix = "ndsi_test_";
 	protected static int[] chunkSizes = {300,600,900};
+	public static String[] attributeNames = new String[] {
+		"ndsi",
+		"land_sea_mask",
+		"ndsi_count"
+	};
+	public static String[] summaryNames = new String[] {
+		"avg_"+attributeNames[0],
+		"min_"+attributeNames[1],
+		attributeNames[2]};
 	public static String[] summaries = new String[]{
-			"avg(ndsi) as avg_ndsi",
-			"min(land_sea_mask) as min_land_sea_mask",
-			"sum(ndsi_count) as ndsi_count"};
+		"avg("+attributeNames[0]+") as "+summaryNames[0],
+		"min("+attributeNames[1]+") as "+summaryNames[1],
+		"sum("+attributeNames[2]+") as "+summaryNames[2]};
 	public static DBConnector connectionType = DBConnector.SCIDB;
 	
 	public String viewsFolder;
@@ -51,7 +60,9 @@ public class TestModisViewFactory {
 	
 	// use this test array to do our experiments
 	public View getModisView(int chunkSize) throws Exception {
+		List<String> attributes = Arrays.asList(attributeNames);
 		List<String> summaryFunctions = Arrays.asList(summaries);
+		List<String> summaryLabels = Arrays.asList(summaryNames);
 		boolean found = false;
 		for(int i = 0; i < chunkSizes.length; i++) {
 			if(chunkSize == chunkSizes[i]){
@@ -66,7 +77,7 @@ public class TestModisViewFactory {
 			System.out.println("using chunk size "+chunkSize);
 		}
 		String query = "scan("+array_name_prefix+chunkSize+")";
-		View v = this.modisViews.getView(name, query, summaryFunctions, connectionType);
+		View v = this.modisViews.getView(name, query, attributes, summaryFunctions, summaryLabels, connectionType);
 		this.modisViews.saveView(v); // save it on disk so we don't have to make this view again
 		return v;
 	}

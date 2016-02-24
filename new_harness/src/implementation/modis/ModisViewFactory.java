@@ -28,10 +28,19 @@ public class ModisViewFactory {
 	public static String array_name = "ndsi_agg_7_18_2013";
 	public static String query = array_name;
 	public static String scanQuery = "scan("+ array_name+")";
+	public static String[] attributeNames = new String[] {
+		"ndsi",
+		"land_sea_mask",
+		"ndsi_count"
+	};
+	public static String[] summaryNames = new String[] {
+		"avg_"+attributeNames[0],
+		"min_"+attributeNames[1],
+		attributeNames[2]};
 	public static String[] summaries = new String[]{
-			"avg(ndsi) as avg_ndsi",
-			"min(land_sea_mask) as min_land_sea_mask",
-			"sum(ndsi_count) as ndsi_count"};
+		"avg("+attributeNames[0]+") as "+summaryNames[0],
+		"min("+attributeNames[1]+") as "+summaryNames[1],
+		"sum("+attributeNames[2]+") as "+summaryNames[2]};
 	public static DBConnector connectionType = DBConnector.SCIDB;
 	
 	public String viewsFolder;
@@ -51,8 +60,10 @@ public class ModisViewFactory {
 	}
 	
 	public View getModisView() throws Exception {
+		List<String> attributes = Arrays.asList(attributeNames);
 		List<String> summaryFunctions = Arrays.asList(summaries);
-		View v = this.modisViews.getView(name, scanQuery, summaryFunctions, connectionType);
+		List<String> summaryLabels = Arrays.asList(summaryNames);
+		View v = this.modisViews.getView(name, scanQuery, attributes, summaryFunctions, summaryLabels, connectionType);
 		this.modisViews.saveView(v); // save it on disk so we don't have to make this view again
 		return v;
 	}

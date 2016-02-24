@@ -36,17 +36,19 @@ public class ViewMap {
 	}
 	
 	// get existing view, otherwise create it
-	public View getView(String viewName,String query,List<String> summaries, DBConnector connectionType) throws Exception {
+	public View getView(String viewName,String query, List<String> attributeNames,
+			List<String> summaries, List<String> summaryNames, DBConnector connectionType) throws Exception {
 		if(this.viewMap.containsKey(viewName)) return this.viewMap.get(viewName);
 		View v = getSavedView(viewName);
 		if(v != null) return v;
-		return createView(viewName,query,summaries,connectionType);
+		return createView(viewName,query,attributeNames, summaries, summaryNames,connectionType);
 	}
 	
 	// create new view (do not use if the view may exist already!)
-	public View createView(String viewName,String query,List<String> summaries, DBConnector connectionType) throws Exception {
+	public View createView(String viewName,String query,List<String> attributeNames,
+			List<String> summaries, List<String> summaryNames, DBConnector connectionType) throws Exception {
 		if(this.viewMap.containsKey(viewName)) throw new Exception("view name '"+viewName+"' already exists!");
-		View v = new View(viewName,query, summaries,connectionType);
+		View v = new View(viewName,query, attributeNames, summaries, summaryNames,connectionType);
 		this.viewMap.put(viewName, v);
 		return v;
 	}

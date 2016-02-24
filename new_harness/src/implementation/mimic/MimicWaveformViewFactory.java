@@ -25,9 +25,16 @@ public class MimicWaveformViewFactory {
 			"slice(waveform_signal_table,RecordName,?)"+
 			",not(is_nan(signal)))"+
 			",msec2,msec)";
+	public static String[] attributeNames = new String[] {
+		"signal",
+		"msec2"
+	};
+	public static String[] summaryNames = new String[] {
+		"avg_"+attributeNames[0],
+		attributeNames[1]};
 	public static String[] summaries = new String[]{
-			"avg(signal) as avg_signal",
-			"min(msec2) as msec2"};
+			"avg("+attributeNames[0]+") as "+summaryNames[0],
+			"min("+attributeNames[1]+") as "+summaryNames[1]};
 	public static DBConnector connectionType = DBConnector.BIGDAWG;
 	
 	public String viewsFolder;
@@ -49,8 +56,10 @@ public class MimicWaveformViewFactory {
 	public View getMimicWaveformView(String recordName) throws Exception {
 		String viewName = nameTemplate.replace("?", recordName);
 		String query = queryTemplate.replace("?", recordName);
+		List<String> attributes = Arrays.asList(attributeNames);
 		List<String> summaryFunctions = Arrays.asList(summaries);
-		View v = this.mimicViews.getView(viewName, query, summaryFunctions, connectionType);
+		List<String> summaryLabels = Arrays.asList(summaryNames);
+		View v = this.mimicViews.getView(viewName, query, attributes, summaryFunctions, summaryLabels, connectionType);
 		this.mimicViews.saveView(v); // save it on disk so we don't have to make this view again
 		return v;
 	}

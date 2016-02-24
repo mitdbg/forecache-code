@@ -22,8 +22,12 @@ import configurations.VMConfig;
 public class EegViewFactory {
 	public static String nameTemplate = "FC_EEG_?1_?2"; // filenumber-region
 	public static String queryTemplate = "scan(EEG_?1_?2)";
+	public static String[] attributeNames = new String[] {
+		"amplitude"};
+	public static String[] summaryNames = new String[] {
+		"avg_"+attributeNames[0]};
 	public static String[] summaries = new String[]{
-			"avg(amplitude) as avg_amplitude"};
+			"avg("+attributeNames[0]+") as "+summaryNames[0]};
 	public static DBConnector connectionType = DBConnector.SCIDB;
 	
 	public String viewsFolder;
@@ -45,8 +49,10 @@ public class EegViewFactory {
 	public View getView(String filenumber, String region) throws Exception {
 		String viewName = nameTemplate.replace("?1", filenumber).replace("?2",region);
 		String query = queryTemplate.replace("?1", filenumber).replace("?2",region);
+		List<String> attributes = Arrays.asList(attributeNames);
 		List<String> summaryFunctions = Arrays.asList(summaries);
-		View v = this.eegViews.getView(viewName, query, summaryFunctions, connectionType);
+		List<String> summaryLabels = Arrays.asList(summaryNames);
+		View v = this.eegViews.getView(viewName, query, attributes, summaryFunctions, summaryLabels, connectionType);
 		this.eegViews.saveView(v); // save it on disk so we don't have to make this view again
 		return v;
 	}
