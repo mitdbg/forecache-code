@@ -515,7 +515,7 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 		myresult[2] = "export SCIDB_VER="+scidbVersion+" ; "+
 				"export PATH=/opt/scidb/$SCIDB_VER/bin:/opt/scidb/$SCIDB_VER/share/scidb:$PATH ; "+
 				"export LD_LIBRARY_PATH=/opt/scidb/$SCIDB_VER/lib:$LD_LIBRARY_PATH ; "+
-				"source ~/.bashrc ; iquery -o "+outputFormat+" -anq \"" + query + "\"";
+				"source ~/.bashrc ; iquery -anq \"" + query + "\"";
 		return myresult;
 	}
 	
