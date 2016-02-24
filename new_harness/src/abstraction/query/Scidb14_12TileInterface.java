@@ -259,7 +259,7 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 			}
 		}
 		if(optimize) {
-			String applyQuery = generateApplyQuery(query,attributes,summaryNames); // rename the attributes
+			String applyQuery = generateApplyQuery(query,attributes,attributes,summaryNames); // rename the attributes
 			String projectQuery = generateProjectQuery(applyQuery,summaryNames); // only keep the summary names
 			return projectQuery;
 		} else {
@@ -312,20 +312,30 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 		return sb.toString();
 	}
 	
-	// given a query, list of operations, and list of labels, create a new attribute for each label
-	// using the operations
-	protected String generateApplyQuery(String query, Iterator<String> operations, Iterator<String> labels) {
+	/**
+	 * given a query, list of operations, and list of labels, create a new attribute for each label
+	 * using the operations
+	 * @param query input query to extend
+	 * @param oldLabels original attribute names produced by input query
+	 * @param operations operations to be executed to create new attributes
+	 * @param newLabels labels for the new attributes to be created
+	 * @return a modified version of the input query, with specified attributes created
+	 */
+	protected String generateApplyQuery(String query, Iterator<String> oldLabels, Iterator<String> operations, Iterator<String> newLabels) {
 		if(!operations.hasNext()) return query;
 		StringBuilder sb = new StringBuilder();
 		sb.append("apply(");
 		sb.append(query);
 		while(operations.hasNext()) {
 			String op = operations.next();
-			String label = labels.next();
-			sb.append(",");
-			sb.append(label);
-			sb.append(",");
-			sb.append(op);
+			String newLabel = newLabels.next();
+			String oldLabel = oldLabels.next();
+			if(!oldLabel.equals(newLabel)) { // assume same name means duplicate here
+				sb.append(",");
+				sb.append(newLabel);
+				sb.append(",");
+				sb.append(op);
+			}
 		}
 		sb.append(")");
 		return sb.toString();
