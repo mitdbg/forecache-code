@@ -200,8 +200,8 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 			NewTileKey key = tileKeys.get(i);
 			String buildQuery = generateBuildTileQuery(v, ts, key);
 			String storeQuery = generateStoreQuery(getTileName(v,ts,key),buildQuery);
-			System.out.println("store query: "+storeQuery);
-			System.out.println("building tile '"+key+"' for view '"+v.getName()+"'");
+			//System.out.println("store query: "+storeQuery);
+			//System.out.println("building tile '"+key+"' for view '"+v.getName()+"'");
 			boolean test = getRawTileHelper(storeQuery,t,false);
 			if(test) {
 				m.put(key, true); // track the tiles we've built
