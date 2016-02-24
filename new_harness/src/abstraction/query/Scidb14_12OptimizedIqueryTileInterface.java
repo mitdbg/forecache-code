@@ -239,11 +239,14 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 		return m.containsKey(id);
 	}
 
+	// do not assume you can fetch the tile as you build it. SciDB will not support this
+	// functionality in the future
 	@Override
 	public boolean buildTile(View v, TileStructure ts, ColumnBasedNiceTile tile, NewTileKey id) {
 		String query = generateBuildTileQuery(v,ts,id);
 		String storeQuery = generateStoreQuery(getTileName(v,ts,id),query);
-		boolean returnval = getTile(storeQuery,tile);
+		//boolean returnval = getTile(storeQuery,tile);
+		boolean returnval = this.getRawTileHelper(storeQuery, tile, false);
 		if(returnval) { // successfully built the tile
 			int hash = hashVTS(v,ts);
 			checkVTS(v,ts);
