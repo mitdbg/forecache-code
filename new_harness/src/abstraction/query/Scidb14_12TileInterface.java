@@ -322,7 +322,7 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	 * @return a modified version of the input query, with specified attributes created
 	 */
 	protected String generateApplyQuery(String query, Iterator<String> oldLabels, Iterator<String> operations, Iterator<String> newLabels) {
-		if(!operations.hasNext()) return query;
+		if(!operations.hasNext() || ! oldLabels.hasNext() || !newLabels.hasNext()) return query;
 		StringBuilder sb = new StringBuilder();
 		sb.append("apply(");
 		sb.append(query);
@@ -333,11 +333,15 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 		while(operations.hasNext()) {
 			String op = operations.next();
 			String newLabel = newLabels.next();
+			System.out.println("op: "+op);
+			System.out.println("new label: "+newLabel);
 			if(!olm.containsKey(newLabel)) { // avoid name conflicts with original labels
 				sb.append(",");
 				sb.append(newLabel);
 				sb.append(",");
 				sb.append(op);
+			} else {
+				System.out.println("found duplicate for "+newLabel);
 			}
 		}
 		sb.append(")");
