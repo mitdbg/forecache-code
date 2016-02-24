@@ -329,21 +329,16 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 		Map<String,Boolean> olm = new HashMap<String,Boolean>();
 		for(int i = 0; i < oldLabels.size(); i++) {
 			String oldLabel = oldLabels.get(i);
-			System.out.println("old label: "+oldLabel);
 			olm.put(oldLabel,true);
 		}
 		for(int i = 0; i < operations.size();i++) {
 			String op = operations.get(i);
 			String newLabel = newLabels.get(i);
-			System.out.println("op: "+op);
-			System.out.println("new label: "+newLabel);
 			if(!olm.containsKey(newLabel)) { // avoid name conflicts with original labels
 				sb.append(",");
 				sb.append(newLabel);
 				sb.append(",");
 				sb.append(op);
-			} else {
-				System.out.println("found duplicate for "+newLabel);
 			}
 		}
 		sb.append(")");
