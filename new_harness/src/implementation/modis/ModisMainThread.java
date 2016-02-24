@@ -288,6 +288,21 @@ public class ModisMainThread {
 			response.getWriter().print(success);
 		}
 		
+		protected void doSetChunkSize(HttpServletRequest request,
+				HttpServletResponse response) throws IOException {
+			int chunkSize = Integer.parseInt(request.getParameter("chunkSize"));
+			TestModisViewFactory tmvf = new TestModisViewFactory();
+			boolean success = false;
+			try {
+				dtv.v = tmvf.getModisView(chunkSize);
+				success = true;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			response.getWriter().print(success);
+		}
+		
 		protected void doGetAllKeys(HttpServletRequest request,
 				HttpServletResponse response) throws IOException {
 			String keys = dtv.getAllTileKeysJson();
@@ -520,6 +535,13 @@ public class ModisMainThread {
 			String setts = request.getParameter("setts");
 			if(setts != null) {
 				doSetTileStructure(request,response);
+				return;
+			}
+			
+			// for use with optimized scidb14_12 code
+			String setchunksize = request.getParameter("setchunksize");
+			if(setchunksize != null) {
+				doSetChunkSize(request,response);
 				return;
 			}
 			
