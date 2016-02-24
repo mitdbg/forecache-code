@@ -62,6 +62,8 @@ public class TestModisViewFactory {
 		if(!found) {
 			System.out.println("did not recognize chunk size '"+chunkSize+"', using '"+chunkSizes[0]+"' instead.");
 			chunkSize = chunkSizes[0];
+		} else {
+			System.out.println("using chunk size "+chunkSize);
 		}
 		String query = "scan("+array_name_prefix+chunkSize+")";
 		View v = this.modisViews.getView(name, query, summaryFunctions, connectionType);
