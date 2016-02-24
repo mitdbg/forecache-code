@@ -300,7 +300,7 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	// given a query, make a project call on the query to filter out certain columns
 	protected String generateProjectQuery(String query, List<String> attributeNames)
 	{
-		if(!attributeNames.isEmpty()) return query;
+		if(attributeNames.isEmpty()) return query;
 		StringBuilder sb = new StringBuilder();
 		sb.append("project(");
 		sb.append(query);
@@ -322,7 +322,7 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	 * @return a modified version of the input query, with specified attributes created
 	 */
 	protected String generateApplyQuery(String query, List<String> oldLabels, List<String> operations, List<String> newLabels) {
-		if(!operations.isEmpty() || ! oldLabels.isEmpty() || !newLabels.isEmpty()) return query;
+		if(operations.isEmpty() || oldLabels.isEmpty() || newLabels.isEmpty()) return query;
 		StringBuilder sb = new StringBuilder();
 		sb.append("apply(");
 		sb.append(query);
