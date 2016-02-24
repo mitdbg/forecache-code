@@ -17,3 +17,6 @@ harness/images
 harness/forecache_metadata
 harness/.settings
 harness/sigMap_k100.ser
+
+*.ser
+env/
