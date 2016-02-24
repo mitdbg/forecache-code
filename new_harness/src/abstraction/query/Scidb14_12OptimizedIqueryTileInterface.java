@@ -55,6 +55,7 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 	public boolean getTile(View v, TileStructure ts, ColumnBasedNiceTile tile) {
 		boolean built = true;
 		if(!checkTile(v,ts,tile.id)) { // tile is not prepared
+			System.out.println("building tile first...");
 			built = this.buildTile(v, ts, tile, tile.id);
 		}
 		/*
@@ -62,7 +63,7 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 			built = buildZoomLevel(v,ts,tile.id.zoom);
 		}
 		*/
-		
+		System.out.println("fetching tile...");
 		return built && this.retrieveStoredTile(v, ts, tile, tile.id);
 		//return built && this.retrieveTileFromStoredZoomLevel(v, ts, tile, tile.id);
 	}
@@ -242,7 +243,16 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 	public boolean buildTile(View v, TileStructure ts, ColumnBasedNiceTile tile, NewTileKey id) {
 		String query = generateBuildTileQuery(v,ts,id);
 		String storeQuery = generateStoreQuery(getTileName(v,ts,id),query);
-		return getTile(storeQuery,tile);
+		boolean returnval = getTile(storeQuery,tile);
+		if(returnval) { // successfully built the tile
+			int hash = hashVTS(v,ts);
+			checkVTS(v,ts);
+			Map<NewTileKey,Boolean> m = this.tileMap.get(hash);
+			m.put(id, true); // the tile has been built
+			this.tileMap.put(hash, m);
+			this.saveTileMap(v, ts);
+		}
+		return returnval;
 	}
 
 	@Override
