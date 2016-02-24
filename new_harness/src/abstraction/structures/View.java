@@ -53,16 +53,16 @@ public class View implements java.io.Serializable {
 		return this.connectionType;
 	}
 	
-	public Iterator<String> getAttributeNames() {
-		return this.attributeNames.iterator();
+	public List<String> getAttributeNames() {
+		return this.attributeNames;
 	}
 	
-	public Iterator<String> getSummaryFunctions() {
-		return this.summaries.iterator();
+	public List<String> getSummaryFunctions() {
+		return this.summaries;
 	}
 	
-	public Iterator<String> getSummaryNames() {
-		return this.summaryNames.iterator();
+	public List<String> getSummaryNames() {
+		return this.summaryNames;
 	}
 	
 	// returns this view as a json object

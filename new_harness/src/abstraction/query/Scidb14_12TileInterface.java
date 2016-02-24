@@ -200,7 +200,7 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	protected String generateBuildZoomLevelQuery(View v, TileStructure ts, int zoom) {
 		String query = v.getQuery();
 		int[] aggWindow = ts.aggregationWindows[zoom];
-		Iterator<String> summaryFunctions = v.getSummaryFunctions();
+		List<String> summaryFunctions = v.getSummaryFunctions();
 		return generateRegridQuery(query,aggWindow,summaryFunctions);
 	}
 	
@@ -235,14 +235,14 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	}
 	
 	// execute SciDB regrid statement given the aggregatino windows and summary functions
-	protected String generateRegridQuery(String query, int[] aggWindow, Iterator<String> summaryFunctions) {
+	protected String generateRegridQuery(String query, int[] aggWindow, List<String> summaryFunctions) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("regrid(").append(query);
 		for(int i = 0; i < aggWindow.length; i++) {
 			sb.append(",").append(aggWindow[i]);
 		}
-		while(summaryFunctions.hasNext()) {
-			sb.append(",").append(summaryFunctions.next());
+		for(int i = 0; i < summaryFunctions.size(); i++) {
+			sb.append(",").append(summaryFunctions.get(i));
 		}
 		sb.append(")");
 		return sb.toString();
@@ -250,7 +250,7 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	
 	// execute SciDB regrid statement given the aggregatino windows and summary functions
 	protected String generateOptimizedRegridQuery(String query, int[] aggWindow,
-			Iterator<String> attributes, Iterator<String> summaryFunctions, Iterator<String> summaryNames) {
+			List<String> attributes, List<String> summaryFunctions, List<String> summaryNames) {
 		boolean optimize = true;
 		for(int i = 0; i < aggWindow.length; i++) {
 			if(aggWindow[i] != 1) {
@@ -268,8 +268,8 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 			for(int i = 0; i < aggWindow.length; i++) {
 				sb.append(",").append(aggWindow[i]);
 			}
-			while(summaryFunctions.hasNext()) {
-				sb.append(",").append(summaryFunctions.next());
+			for(int i = 0; i < summaryFunctions.size(); i++) {
+				sb.append(",").append(summaryFunctions.get(i));
 			}
 			sb.append(")");
 			return sb.toString();
@@ -298,15 +298,15 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	}
 	
 	// given a query, make a project call on the query to filter out certain columns
-	protected String generateProjectQuery(String query, Iterator<String> attributeNames)
+	protected String generateProjectQuery(String query, List<String> attributeNames)
 	{
-		if(!attributeNames.hasNext()) return query;
+		if(!attributeNames.isEmpty()) return query;
 		StringBuilder sb = new StringBuilder();
 		sb.append("project(");
 		sb.append(query);
-		while(attributeNames.hasNext()) {
+		for(int i = 0; i < attributeNames.size(); i++) {
 			sb.append(",");
-			sb.append(attributeNames.next());
+			sb.append(attributeNames.get(i));
 		}
 		sb.append(")");
 		return sb.toString();
@@ -321,18 +321,20 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 	 * @param newLabels labels for the new attributes to be created
 	 * @return a modified version of the input query, with specified attributes created
 	 */
-	protected String generateApplyQuery(String query, Iterator<String> oldLabels, Iterator<String> operations, Iterator<String> newLabels) {
-		if(!operations.hasNext() || ! oldLabels.hasNext() || !newLabels.hasNext()) return query;
+	protected String generateApplyQuery(String query, List<String> oldLabels, List<String> operations, List<String> newLabels) {
+		if(!operations.isEmpty() || ! oldLabels.isEmpty() || !newLabels.isEmpty()) return query;
 		StringBuilder sb = new StringBuilder();
 		sb.append("apply(");
 		sb.append(query);
 		Map<String,Boolean> olm = new HashMap<String,Boolean>();
-		while(oldLabels.hasNext()) {
-			olm.put(oldLabels.next(),true);
+		for(int i = 0; i < oldLabels.size(); i++) {
+			String oldLabel = oldLabels.get(i);
+			System.out.println("old label: "+oldLabel);
+			olm.put(oldLabel,true);
 		}
-		while(operations.hasNext()) {
-			String op = operations.next();
-			String newLabel = newLabels.next();
+		for(int i = 0; i < operations.size();i++) {
+			String op = operations.get(i);
+			String newLabel = newLabels.get(i);
 			System.out.println("op: "+op);
 			System.out.println("new label: "+newLabel);
 			if(!olm.containsKey(newLabel)) { // avoid name conflicts with original labels

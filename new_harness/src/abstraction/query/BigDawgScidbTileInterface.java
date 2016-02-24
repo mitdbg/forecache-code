@@ -194,8 +194,7 @@ public class BigDawgScidbTileInterface extends Scidb14_12TileInterface {
 	protected String generateBuildZoomLevelQuery(View v, TileStructure ts, int zoom) {
 		String query = removeBigDawgWrapper(v.getQuery());
 		int[] aggWindow = ts.aggregationWindows[zoom];
-		Iterator<String> summaryFunctions = v.getSummaryFunctions();
-		return generateRegridQuery(query,aggWindow,summaryFunctions);
+		return generateRegridQuery(query,aggWindow,v.getSummaryFunctions());
 	}
 	
 	// executes tile and retrieves output as a tile
