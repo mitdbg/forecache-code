@@ -130,8 +130,10 @@ public class ModisMainThread {
 		}
 		
 		// this code sets up the MODIS use case
-		ModisViewFactory mvf = new ModisViewFactory();
-		View v = mvf.getModisView();
+		//ModisViewFactory mvf = new ModisViewFactory();
+		//View v = mvf.getModisView();
+		TestModisViewFactory tmvf = new TestModisViewFactory();
+		View v = tmvf.getModisView(300);
 		//TileStructure ts = OldModisTileStructureFactory.getDefaultModisTileStructure();
 		TileStructure ts = OldModisTileStructureFactory.
 				getModisTileStructure(OldModisTileStructureFactory.defaultAggregationWindows,
