@@ -8,6 +8,13 @@ import smtplib
 # Import the email modules we'll need
 from email.mime.text import MIMEText
 
+'''
+This script is specifically for loading data into SciDB, and onto modis and modis2 servers in the MIT DB group cluster.
+This script was only tested for Ubuntu 12.04. Tthe Python script makes a lot of command line calls, and uses SciDB's
+iquery command line interface.
+These parameters are specific to the directory structures created on modis and modis2,
+and definitely need to be modified if this script is to be used on different machines, with different file structures.
+'''
 
 if len(sys.argv) != 3:
 	print "ERROR: incorrect number of inputs specified."
@@ -49,11 +56,14 @@ envir=os.environ.copy()
 currinstance=int(sys.argv[2])
 script_sender="loadmod_py_"+ str(currinstance)
 server="modis"
-if currinstance < 3:
+# Base folder for CSV output.
+baseOutputFolder="/data/scidb/000/2/leilani/tmp"
+if currinstance < 3: # stick with parameters for modis server
 	script_sender =  script_sender + "@modis.csail.mit.edu"
-else:
+else: # change parameters to match modis2 server
 	server="modis2"
 	script_sender = script_sender + "@modis2.csail.mit.edu"
+	baseOutputFolder="/data/scidb/001/3/leilani/tmp"
 script_recipient="leibatt@mit.edu"
 
 # how many times can cleanup fail before we abort?
@@ -65,8 +75,6 @@ prefix="logs/modis_"+str(currinstance)+"_loadmod_binary"
 timeLog=prefix+".log"
 progressLog=prefix+".progress"
 
-# Base folder for CSV output.
-baseOutputFolder="/data/scidb/000/2/leilani/tmp"
 
 
 starttime=201400000000
@@ -137,7 +145,8 @@ def writeProgressFile(baseFile):
 def executeProcess(args,errorMessage):
 	try:
 		#print "executing: "+subprocess.list2cmdline(args)
-		p = subprocess.check_call(args,env=envir)
+		with open(os.devnull, "w") as devn: # pipe regular output to /dev/null
+			p = subprocess.check_call(args,stdout=devn,env=envir)
 	except subprocess.CalledProcessError as e:
 		if errorMessage is not None:
 			print errorMessage
