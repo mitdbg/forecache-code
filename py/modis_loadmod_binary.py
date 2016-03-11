@@ -71,7 +71,7 @@ not_clean_threshold=2
 scidb_heartbeat_threshold=3
 
 tsforlog=getTimestamp()
-prefix="logs/modis_"+str(currinstance)+"_loadmod_binary"
+prefix="logs/" +server+ "_"+str(currinstance)+"_loadmod_binary"
 timeLog=prefix+".log"
 progressLog=prefix+".progress"
 
@@ -200,7 +200,7 @@ def sendEmail(sender,recipient,subject,message):
 	msg['Subject'] = subject
 	msg['From'] = sender
 	s = smtplib.SMTP('localhost')
-	s.sendmail("script@modis.csail.mit.edu",["leibatt@mit.edu"],msg.as_string())
+	s.sendmail(sender,[recipient],msg.as_string())
 	s.quit()
 
 
