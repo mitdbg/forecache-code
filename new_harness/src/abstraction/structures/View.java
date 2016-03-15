@@ -88,7 +88,7 @@ public class View implements java.io.Serializable {
 			e.printStackTrace();
 		}
 		if(vjson != null) {
-			this.connectionType = vjson.connectionType;
+			this.connectionType = DBConnector.getConnectorFromString(vjson.connectionType);
 			this.name = vjson.name;
 			this.query = vjson.query;
 			this.summaries = Arrays.asList(vjson.summaries);
@@ -105,7 +105,7 @@ public class View implements java.io.Serializable {
 	/****************** Helper Functions *********************/
 	protected ViewJson getViewJson() {
 		ViewJson vjson = new ViewJson();
-		vjson.connectionType = this.connectionType;
+		vjson.connectionType = this.connectionType.toString();
 		vjson.name = this.name;
 		vjson.query = this.query;
 		vjson.attributeNames = this.attributeNames.toArray(new String[this.attributeNames.size()]);
@@ -134,7 +134,7 @@ public class View implements java.io.Serializable {
 		public String[] attributeNames; // label for each attribute computed by the query
 		public String[] summaries; // summary operations to compute for zoom levels
 		public String[] summaryNames; // label of each summary operation
-		public DBConnector connectionType; // what kind of connector should we use?
+		public String connectionType; // what kind of connector should we use?
 	}
 
 }
