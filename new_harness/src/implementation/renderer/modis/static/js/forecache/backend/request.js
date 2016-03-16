@@ -12,13 +12,48 @@ ForeCache.Backend.Request.simpleReset = function(callback) {
 
 ForeCache.Backend.Request.reset = function(dat,callback) {
   dat.reset=true;
-  ForeCache.Backend.Request.sendRequest(dat,callback);
+  ForeCache.Backend.Request.sendGetRequest(dat,callback);
+};
+
+ForeCache.Backend.Request.sendLogs = function(dat,callback) {
+  dat.logs=true;
+  ForeCache.Backend.Request.sendPostRequest(dat,callback);
 };
 
 ForeCache.Backend.Request.getView = function(callback) {
   var dat = {};
   dat.getview=true;
-  ForeCache.Backend.Request.sendJsonRequest(dat,callback);
+  ForeCache.Backend.Request.sendJsonGetRequest(dat,callback);
+};
+
+ForeCache.Backend.Request.updateTileWidths = function(oldts,tileWidths,callback) {
+  var dat = {};
+  dat.setts = true;
+  dat.ts = {"aggregationWindows":oldts.aggregationWindows,"tileWidths":tileWidths};
+  var confirmTileStructure = function(jsondata) {
+    callback(jsondata);
+  };
+  ForeCache.Backend.Request.sendJsonGetRequest(dat,confirmTileStructure);
+};
+
+ForeCache.Backend.Request.setView = function(newview,callback) {
+  var dat = {};
+  dat.setview = true;
+  dat.view=newview;
+  var confirmView = function(jsondata) {
+    callback(jsondata === "true");
+  };
+  ForeCache.Backend.Request.sendJsonGetRequest(dat,confirmView);
+};
+
+ForeCache.Backend.Request.setTileStructure = function(newts,callback) {
+  var dat = {};
+  dat.setts = true;
+  dat.ts = {"aggregationWindows":newts.aggregationWindows,"tileWidths":newts.tileWidths};
+  var confirmTileStructure = function(jsondata) {
+    callback(jsondata === "true");
+  };
+  ForeCache.Backend.Request.sendJsonGetRequest(dat,confirmTileStructure);
 };
 
 ForeCache.Backend.Request.getTileStructure = function(callback) {
@@ -42,7 +77,7 @@ ForeCache.Backend.Request.getTileStructure = function(callback) {
     var ts = new ForeCache.Backend.Structures.TileStructure(aggregationWindows,tileWidths);
     callback(ts);
   };
-  ForeCache.Backend.Request.sendJsonRequest(dat,createTileStructure);
+  ForeCache.Backend.Request.sendJsonGetRequest(dat,createTileStructure);
 };
 
 
@@ -69,7 +104,7 @@ var dat = {};
     callback(tile); // return the tile object
   };
   var fetchStart = Date.now();
-  ForeCache.Backend.Request.sendBinaryRequest(dat,createTile);
+  ForeCache.Backend.Request.sendBinaryGetRequest(dat,createTile);
 };
 
 // uses JSON string format to retrieve tile from server
@@ -92,8 +127,8 @@ ForeCache.Backend.Request.getTileJson = function(tileid,requestid,callback) {
     callback(tile); // return the tile object
   };
   var fetchStart = Date.now();
-  //ForeCache.Backend.Request.sendJsonRequest(dat,createTile);
-  ForeCache.Backend.Request.sendJsonRequestNoJquery(dat,createTile);
+  //ForeCache.Backend.Request.sendJsonGetRequest(dat,createTile);
+  ForeCache.Backend.Request.sendJsonGetRequestNoJquery(dat,createTile);
 };
 
 // convenience method, chooses JSON or binary format for you
@@ -177,29 +212,33 @@ ForeCache.Backend.Request.uuid = function() {
     return uuid;
 };
 
-ForeCache.Backend.Request.sendRequest = function(dat,callback) {
+ForeCache.Backend.Request.sendGetRequest = function(dat,callback) {
   //$.get(ForeCache.Backend.Request.URL,dat,callback);
-  ForeCache.Backend.Request.sendRequestHelper(dat,"",callback);
+  ForeCache.Backend.Request.sendGetRequestHelper(dat,"",callback);
 };
 
-ForeCache.Backend.Request.sendJsonRequest = function(dat,callback) {
+ForeCache.Backend.Request.sendPostRequest = function(dat,callback) {
+  ForeCache.Backend.Request.sendPostRequestHelper(dat,"",callback);
+};
+
+ForeCache.Backend.Request.sendJsonGetRequest = function(dat,callback) {
   //$.getJSON(ForeCache.Backend.Request.URL,dat,callback);
-  ForeCache.Backend.Request.sendJsonRequestNoJquery(dat,callback);
+  ForeCache.Backend.Request.sendJsonGetRequestNoJquery(dat,callback);
 };
 
 // IE 10 does not support req.responeType = 'json'
 // just manually getting string and parsing as json
-ForeCache.Backend.Request.sendJsonRequestNoJquery = function(dat,callback) {
+ForeCache.Backend.Request.sendJsonGetRequestNoJquery = function(dat,callback) {
   var jsonParse = function(jsonstring) {
     var jsondata = JSON.parse(jsonstring);
     callback(jsondata);
     //console.log(["jsondata",jsondata]);
   };
-  ForeCache.Backend.Request.sendRequestHelper(dat,"",jsonParse);
+  ForeCache.Backend.Request.sendGetRequestHelper(dat,"",jsonParse);
 };
 
-ForeCache.Backend.Request.sendBinaryRequest = function(dat,callback) {
-  ForeCache.Backend.Request.sendRequestHelper(dat,"arraybuffer",callback);
+ForeCache.Backend.Request.sendBinaryGetRequest = function(dat,callback) {
+  ForeCache.Backend.Request.sendGetRequestHelper(dat,"arraybuffer",callback);
 };
 
 // function written to replace the $.param function from jQuery.
@@ -214,17 +253,35 @@ ForeCache.Backend.Request.buildParams = function(dat) {
     if((val == null) || (typeof(val) === 'undefined')) {
       val = "";
     }
-    parsedParams.push(encodeURIComponent(key) + "=" + encodeURIComponent(val));
+    var p = encodeURIComponent(key) + "=";
+    if((typeof val === 'string') || ForeCache.Backend.Request.isNumber(val) || (typeof val === 'boolean')) {
+      p += encodeURIComponent(val);
+    } else { // is some object
+      //console.log("is object");
+      p += encodeURIComponent(JSON.stringify(val));
+    }
+    //parsedParams.push(encodeURIComponent(key) + "=" + encodeURIComponent(val));
+    //console.log(["param",key,JSON.stringify(val),encodeURIComponent(JSON.stringify(val))]);
+    parsedParams.push(p);
   }
   return parsedParams.join("&");
 };
 
-ForeCache.Backend.Request.sendRequestHelper = function(dat,responseType,callback,errorCallback) {
+
+ForeCache.Backend.Request.sendGetRequestHelper = function(dat,responseType,callback,errorCallback) {
+  ForeCache.Backend.Request.sendRequestHelper(dat,"GET",responseType,callback,errorCallback);
+};
+
+ForeCache.Backend.Request.sendPostRequestHelper = function(dat,responseType,callback,errorCallback) {
+  ForeCache.Backend.Request.sendRequestHelper(dat,"POST",responseType,callback,errorCallback);
+};
+
+ForeCache.Backend.Request.sendRequestHelper = function(dat,requestType,responseType,callback,errorCallback) {
   //var paramsString = $.param(dat);
   var paramsString = ForeCache.Backend.Request.buildParams(dat);
-  var newUrl = ForeCache.Backend.Request.URL + "?" + paramsString;
+  var newUrl = (requestType==="GET") ? ForeCache.Backend.Request.URL + "?" + paramsString : ForeCache.Backend.Request.URL;
   var oReq = new XMLHttpRequest();
-  oReq.open("GET",newUrl, true); // async = true
+  oReq.open(requestType,newUrl, true); // async = true
   oReq.responseType = responseType;
   oReq.onload = function (oEvent) {
     if(oReq.readyState == 4) { // state = DONE
@@ -241,7 +298,11 @@ ForeCache.Backend.Request.sendRequestHelper = function(dat,responseType,callback
     }
   };
 
-  oReq.send();
+  if(requestType==="GET") {
+    oReq.send();
+  } else { // post method
+    oReq.send(paramsString);
+  }
 };
 
 // converts nested array in row-major format to nested array in column-major format
@@ -260,4 +321,8 @@ ForeCache.Backend.Request.rowsToColumns = function(rows) {
     }
   }
   return columns;
+};
+
+ForeCache.Backend.Request.isNumber  = function(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
 };

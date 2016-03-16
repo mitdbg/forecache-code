@@ -35,17 +35,24 @@ ForeCache.Renderer.Vis.VisObj = function(chart, options) {
 
   ForeCache.Backend.Request.getTileStructure(function(ts) {
     self.ts = ts; // store the tile structure
-    if(options.hasOwnProperty("startingPos")) {
-      self.currentTiles = options.startingPos; // these better be tile keys
-    } else {
-      var dimindices = [];
-      for(var i = 0; i < self.ts.numdims; i++) {
-        dimindices.push(0);
+    var newTileWidths = options.tileWidths || ts.tileWidths;
+    ForeCache.Backend.Request.updateTileWidths(ts, newTileWidths, function(changed) {
+      if(changed) { // successfully updated tile widths
+        self.ts.tileWidths = newTileWidths;
+        console.log(["successfully changed tile widths to",newTileWidths]);
       }
-      self.currentTiles = [new ForeCache.Backend.Structures.NewTileKey(dimindices,0)];
-    }
-    self.currentZoom = self.currentTiles[0].zoom;
-    self.getStartingTiles(); // get the starting data
+      if(options.hasOwnProperty("startingPos")) {
+        self.currentTiles = options.startingPos; // these better be tile keys
+      } else {
+        var dimindices = [];
+        for(var i = 0; i < self.ts.numdims; i++) {
+          dimindices.push(0);
+        }
+        self.currentTiles = [new ForeCache.Backend.Structures.NewTileKey(dimindices,0)];
+      }
+      self.currentZoom = self.currentTiles[0].zoom;
+      self.getStartingTiles(); // get the starting data
+    });
   });
 };
 
@@ -378,12 +385,12 @@ ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
 	this.ctx.closePath();
 
   for(var t = 0; t < this.currentTiles.length; t++) {
-    //var s = Date.now();
+    var s = Date.now();
     var id = this.currentTiles[t];
     var tile = this.tileMap.get(id);
     this.renderTile(tile);
-    //var e = Date.now();
-    //console.log(["time to render tile",e-s]); // console statements take ~3ms of time
+    var e = Date.now();
+    console.log(["time to render tile",e-s]); // console statements take ~3ms of time
     //ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,{'action':'renderTile','tileId':id.name,'start':s,'end':e});
   };
    var end = Date.now(); // in seconds

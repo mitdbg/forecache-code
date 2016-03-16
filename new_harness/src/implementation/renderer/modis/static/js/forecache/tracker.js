@@ -21,6 +21,10 @@ ForeCache.Tracker.prototype.startLog = function(logName) {
   this.logs[logName] = new ForeCache.LogObj();
 };
 
+ForeCache.Tracker.prototype.clearLog = function(logName) {
+  this.logs[logName].clear();
+};
+
 ForeCache.Tracker.prototype.appendToLog = function(logName,recordObj) {
     this.logs[logName].addRecord(recordObj);
     //console.log(recordObj);
@@ -31,9 +35,21 @@ ForeCache.Tracker.prototype.printLogToConsole = function(logName) {
   console.log(['output for log',logName,output]);
 };
 
+
+ForeCache.Tracker.prototype.flushLogData = function(logName) {
+  var output = this.logs[logName].exportTsv();
+  this.logs[logName] = []; // empty the log
+  return output;
+};
+
 ForeCache.LogObj = function () {
   this.records = [];
 }
+
+
+ForeCache.LogObj.prototype.clear = function() {
+  this.records = [];
+};
 
 // all objects using the LogObj pass information in the form of dictionaries
 // the log object will automatically handle formatting for csv/tsv

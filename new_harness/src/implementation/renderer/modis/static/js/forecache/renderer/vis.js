@@ -20,6 +20,7 @@ ForeCache.Renderer.Vis.getVis = function(root,options) {
 // dictionary mapping visualization types to their corresponding visualization objects
 ForeCache.Renderer.Vis.__visTypes = {
   "heatmap":ForeCache.Renderer.Vis.HeatmapObj,
+  "rgbheatmap":ForeCache.Renderer.Vis.RGBHeatmapObj,
   "spectrogram":ForeCache.Renderer.Vis.SpectrogramObj,
   "line":ForeCache.Renderer.Vis.LineObj
 };

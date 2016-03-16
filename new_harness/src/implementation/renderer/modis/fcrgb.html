@@ -15,14 +15,25 @@
     <script type="text/javascript" src="static/js/forecache/backend/request.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/renderer/vis/visobj.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/renderer/vis/heatmap.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/rgbheatmap.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/renderer/vis.js" charset="utf-8"></script>
     <script type="text/javascript">
       $(document).ready(function() {
+        var rgbview = {
+          "name":"rgb2",
+          "query":"scan(rgb2)",
+          "attributeNames":["red","green","blue"],
+          "summaries":["avg(red) as red","avg(green) as green","avg(blue) as blue"],
+          "summaryNames":["red","green","blue"],
+          "connectionType":"scidb"
+        };
+        var rgbts = new ForeCache.Backend.Structures.TileStructure([[4,4],[2,2],[1,1]],[180,180]);
         var renderFunc = function(d) {
+
             // these variables are for changing the # tiles visible in the viewport
             var cacheSizeSets = [1,2,3];
             var startingPosSets = [
-              [new ForeCache.Backend.Structures.NewTileKey([0,0],0)],
+              [new ForeCache.Backend.Structures.NewTileKey([1,1],0)],
 
               [new ForeCache.Backend.Structures.NewTileKey([0,0],0),
               new ForeCache.Backend.Structures.NewTileKey([0,1],0),
@@ -39,21 +50,11 @@
               new ForeCache.Backend.Structures.NewTileKey([2,1],0),
               new ForeCache.Backend.Structures.NewTileKey([2,2],0)]
             ];
-            // this variable is for testing out different tile sizes
-            var tileWidthsSets = [
-              //[5,5],
-              //[10,10],
-              //[50,50],
-              [100,100],
-              //[150,150],
-              [200,200],
-              //[250,250],
-              [300,300] ];
             var vis =
-            ForeCache.Renderer.Vis.getVis($("#view"),{"visType":"heatmap",
-                                  "xname":"longitude_e4ndsi_06_03_2013","xlabel":"lon",
-                                  "yname":"latitude_e4ndsi_06_03_2013","ylabel":"lat",
-                                  "zlabel":"avg_ndsi","zname":"avg_ndsi",
+            ForeCache.Renderer.Vis.getVis($("#view"),{"visType":"rgbheatmap",
+                                  "xname":"x","xlabel":"x",
+                                  "yname":"y","ylabel":"y",
+                                  "zlabel":"red","zname":"red",
                                   //"width":400,
                                   "width":700,
                                   //"height":400,
@@ -61,11 +62,14 @@
                                   "padding":{"left":50,"right":50,"top":50,"bottom":50},
                                   "inverted":{"x":false,"y":true},
                                   "startingPos":startingPosSets[0],
-                                  "cacheSize": cacheSizeSets[0],
-                                  "tileWidths": tileWidthsSets[0]
+                                  "cacheSize": cacheSizeSets[0]
             });
         };
-        ForeCache.Backend.Request.simpleReset(renderFunc);
+        ForeCache.Backend.Request.simpleReset(function() {
+          ForeCache.Backend.Request.setView(rgbview,function() {
+            ForeCache.Backend.Request.setTileStructure(rgbts,renderFunc);
+          });
+        });
       });
 
     </script>
