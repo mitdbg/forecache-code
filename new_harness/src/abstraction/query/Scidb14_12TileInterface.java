@@ -331,6 +331,7 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 			String oldLabel = oldLabels.get(i);
 			olm.put(oldLabel,true);
 		}
+		int collisions = 0;
 		for(int i = 0; i < operations.size();i++) {
 			String op = operations.get(i);
 			String newLabel = newLabels.get(i);
@@ -339,9 +340,14 @@ public abstract class Scidb14_12TileInterface extends NewTileInterface {
 				sb.append(newLabel);
 				sb.append(",");
 				sb.append(op);
+			} else {
+				collisions++;
 			}
 		}
 		sb.append(")");
+		if(collisions == olm.size()) {
+			return query; // don't use apply if nothing has changed
+		}
 		return sb.toString();
 	}
 	
