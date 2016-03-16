@@ -92,6 +92,8 @@ public class View implements java.io.Serializable {
 			this.name = vjson.name;
 			this.query = vjson.query;
 			this.summaries = Arrays.asList(vjson.summaries);
+			this.attributeNames = Arrays.asList(vjson.attributeNames);
+			this.summaryNames = Arrays.asList(vjson.summaryNames);
 			return true;
 		}
 		return false;
