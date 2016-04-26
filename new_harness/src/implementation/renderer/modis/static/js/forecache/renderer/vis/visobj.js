@@ -15,6 +15,7 @@ ForeCache.Renderer.Vis = ForeCache.Renderer.Vis || {};
 ForeCache.Renderer.Vis.VisObj = function(chart, options) {
 	var self = this;
 
+  this.statesRenderObj = new StatesRenderer.renderObj();
   // bookkeeping data structures
   this.currentTiles = []; // used to keep track of the current tile keys
   this.tileMap = new ForeCache.Backend.Structures.TileMap();
@@ -29,6 +30,8 @@ ForeCache.Renderer.Vis.VisObj = function(chart, options) {
   this.scaleType = options.scaleType || {};
 	this.fixYDomain = false;
 	this.mousebusy = false;
+  // list of color values
+  this.colorRange = options.colorRange || colorbrewer.YlOrRd[9];
 
 	this.options = options || {};
 	this.chart = (chart.toArray())[0]; // get dom element from jquery
@@ -150,7 +153,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function(startingTiles) {
     var zdom = this.options.zdomain;
     this.colorScale = d3.scale.quantize()
       .domain(zdom)
-      .range(colorbrewer.YlOrRd[9]);
+      .range(this.colorRange);
       //.range(colorbrewer.Spectral[9]);
   }
 
@@ -171,13 +174,13 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function(startingTiles) {
 	this.xAxis = d3.svg.axis().scale(this.x).orient("bottom");
 	this.yAxis = d3.svg.axis().scale(this.y).orient("left");
 
-	this.vis = d3.select(this.chart).append("svg")
+  this.svg = d3.select(this.chart).append("svg")
 		.attr("width",	this.cx)
 		.attr("height", this.cy)
-		.attr("class","forecache-vis")
-		.append("g")
-			.attr("transform", "translate(" + this.padding.left + "," + this.padding.top + ")");
+		.attr("class","forecache-vis");
 
+	this.vis = this.svg.append("g")
+			.attr("transform", "translate(" + this.padding.left + "," + this.padding.top + ")");
 	
 	this.plot = this.vis.append("rect")
 			.attr("width", this.size.width)
@@ -191,13 +194,11 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function(startingTiles) {
 
 	//this.plot.call(d3.behavior.zoom().x(this.x).y(this.y).on("zoom", this.redraw()));
 
-	this.svg = this.vis.append("svg")
-			.attr("top", 0)
-			.attr("left", 0)
-			.attr("width", this.size.width)
-			.attr("height", this.size.height)
-			//.attr("viewBox", "0 0 "+this.size.width+" "+this.size.height)
-			.attr("class", "line");
+
+	this.legend = this.svg.append("g")
+			.attr("transform", "translate(" + (this.padding.left+this.size.width) + "," + this.padding.top + ")")
+			.attr("class", "forecache-legend");
+
 
 	// add Chart Title
 	if (this.options.title) {
@@ -226,6 +227,9 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function(startingTiles) {
 			.style("text-anchor","middle")
 			.attr("transform","translate(" + (-this.padding.left+12) + " " + this.size.height/2+") rotate(-90)");
 	}
+
+
+  this.drawLegend(this.options.zlabel,this.padding.right,150,zdom,this.colorScale);
 
 	this.base = d3.select(this.chart);
 	this.canvas = this.base.append("canvas")
@@ -393,6 +397,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
     console.log(["time to render tile",e-s]); // console statements take ~3ms of time
     //ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,{'action':'renderTile','tileId':id.name,'start':s,'end':e});
   };
+  this.statesRenderObj.renderUsa(this.ts.aggregationWindows[this.currentZoom][this.xindex],this.ts.aggregationWindows[this.currentZoom][this.yindex],this.ctx,this.x,this.y,this.padding);
    var end = Date.now(); // in seconds
   console.log(["time to render all tiles",end - start]);
   ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,
@@ -537,6 +542,43 @@ ForeCache.Renderer.Vis.VisObj.prototype.afterZoom = function() {
 				}
 			}
 	};
+}
+
+/*
+Draws the legend for the graph. Needs the container to draw the legend in,
+desired dimensions of the legend, and the color scale.
+*/
+ForeCache.Renderer.Vis.VisObj.prototype.drawLegend = function(title,l_w,l_h,colorDomain,colorFunc) {
+    var offsets={"x":5,"y":14};
+    var numcolors = 9; // number of colors in color scale
+    var temp = this;
+    var color_domain = [Math.max.apply(null,colorDomain),Math.min.apply(null,colorDomain)];
+    var scale =
+d3.scale.linear().domain([color_domain[0],color_domain[1]]).range([offsets.y,l_h]);
+    var ticks = [color_domain[0]];
+    var step = 1.0 *(color_domain[1] - color_domain[0]) / numcolors; // divide domain by number of colors in the scale
+    for(var i = 1; i < numcolors; i++) { // loop over number of colors in scale - 1 to get ticks, I only use 9 by default
+        ticks.push(color_domain[0]+i*step);
+    }
+    ticks.push(color_domain[1]);
+    console.log(["ticks",ticks]);
+    var axis = d3.svg.axis().scale(scale).orient("right").tickValues(ticks).tickFormat(d3.format(".2f"));
+    this.legend.selectAll("rect")
+        .data(ticks.slice(0,ticks.length-1))
+        .enter().append("rect")
+        .attr("x", 10)
+        .attr("y", function(d) { return scale(d); })
+        .attr("width",15)
+        .attr("height",Math.round(l_h/numcolors))
+        .attr("fill",function(d) { return colorFunc(d) });
+    this.legend.append("text")
+			.attr("class", "x forecache-axis")
+      .text(title)
+      .attr("x",l_w/2)
+      .attr("y",offsets.y/2)
+			.style("text-anchor","middle");
+
+    this.legend.append("g").attr("class","legend-axis").attr("transform","translate("+25+",0)").call(axis);
 }
 
 

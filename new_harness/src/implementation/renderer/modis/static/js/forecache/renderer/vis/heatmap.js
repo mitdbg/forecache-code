@@ -63,6 +63,7 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
 };
 
 ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
+  console.log(["tile",tile,xt,yt,"zdomain",this.colorScale.domain(),this.options.boxwidth.x,this.options.boxwidth.y]);
   var rows = tile.getSize();
   //TODO: this is a hack, maybe fix later?
   if(rows == 0) return; // don't render empty tiles...
@@ -70,7 +71,6 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
   var yw = this.options.boxwidth.y;
   var xt = 1.0 * tile.id.dimindices[0]*this.ts.tileWidths[0];
   var yt = 1.0 * tile.id.dimindices[1]*this.ts.tileWidths[1];
-  //console.log(["tile",tile,xt,yt]);
 	for(var i=0; i < rows;i++) {
     var xval = Number(tile.columns[this.xindex][i]) + xt;
     var yval = Number(tile.columns[this.yindex][i]) + yt;
@@ -89,30 +89,32 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
 		this.ctx.fillRect(x,y, xw, yw);
 		this.ctx.closePath();
 	}
+
   var xmin = this.x(tile.id.dimindices[0] * this.ts.tileWidths[0]) + this.padding.left;
   var ymin = this.y(tile.id.dimindices[1] * this.ts.tileWidths[1]) + this.padding.top;
   var xmax = this.x((tile.id.dimindices[0]+1) * this.ts.tileWidths[0]) + this.padding.left;
   ymax = this.y((tile.id.dimindices[1]+1) * this.ts.tileWidths[1]) + this.padding.top;
   //console.log(["tile",tile.id.zoom,tile.id.dimindices,"drawing lines",xmin,xmax,ymin,ymax]);
 
+  this.ctx.save();
 	this.ctx.beginPath();
+  this.ctx.setLineDash([6,3]);
  	this.ctx.strokeStyle = "black";
+  this.ctx.strokeWidth = 2;
 	this.ctx.moveTo(xmin,ymin);
 	this.ctx.lineTo(xmin,ymax);
-	this.ctx.stroke();
 
 	this.ctx.moveTo(xmax,ymin);
 	this.ctx.lineTo(xmax,ymax);
-	this.ctx.stroke();
 
   this.ctx.moveTo(xmin,ymin);
 	this.ctx.lineTo(xmax,ymin);
-	this.ctx.stroke();
 
   this.ctx.moveTo(xmin,ymax);
 	this.ctx.lineTo(xmax,ymax);
 	this.ctx.stroke();
 	this.ctx.closePath();
+  this.ctx.restore();
 
 
 /*

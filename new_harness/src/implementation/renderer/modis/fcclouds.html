@@ -1,0 +1,196 @@
+<html> <head> <META NAME="ROBOTS" CONTENT="NOINDEX">
+<META NAME="ROBOTS" CONTENT="NOFOLLOW">
+	<link rel="stylesheet" type="text/css" href="static/css/forecache_heatmap.css">
+	<title> Heatmap Test</title>
+    <script type="text/javascript" src="static/js/colorbrewer.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/jquery.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/d3.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/text-encoding/encoding.js"></script>
+
+    <script type="text/javascript" src="static/js/states.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/coordinates.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/tracker.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/backend/structures.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/backend/decoder.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/backend/request.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/visobj.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/heatmap.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/rgbheatmap.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis.js" charset="utf-8"></script>
+    <script type="text/javascript">
+      var cacheSizeSets = [1,2,3];
+      var startingPosSets = [
+          [new ForeCache.Backend.Structures.NewTileKey([0,0],0)],
+
+          [new ForeCache.Backend.Structures.NewTileKey([0,1],0)],
+
+          [new ForeCache.Backend.Structures.NewTileKey([1,1],0)],
+
+          [new ForeCache.Backend.Structures.NewTileKey([0,0],0),
+          new ForeCache.Backend.Structures.NewTileKey([0,1],0),
+          new ForeCache.Backend.Structures.NewTileKey([1,0],0),
+          new ForeCache.Backend.Structures.NewTileKey([1,1],0)],
+
+          [new ForeCache.Backend.Structures.NewTileKey([0,0],0),
+          new ForeCache.Backend.Structures.NewTileKey([0,1],0),
+          new ForeCache.Backend.Structures.NewTileKey([0,2],0),
+          new ForeCache.Backend.Structures.NewTileKey([1,0],0),
+          new ForeCache.Backend.Structures.NewTileKey([1,1],0),
+          new ForeCache.Backend.Structures.NewTileKey([1,2],0),
+          new ForeCache.Backend.Structures.NewTileKey([2,0],0),
+          new ForeCache.Backend.Structures.NewTileKey([2,1],0),
+          new ForeCache.Backend.Structures.NewTileKey([2,2],0)]
+        ];
+
+      var views = [
+      {//0
+        "name":"all_bands_1granule",
+        "query":"scan(all_bands_1granule)",
+        "attributeNames":["b1ref","b2ref","b3ref","b4ref","b6ref","b26rad","b26ref","b29rad","b31rad"],
+        "summaries":["avg(b1ref) as b1ref",
+          "avg(b2ref) as b2ref",
+          "avg(b3ref) as b3ref",
+          "avg(b4ref) as b4ref",
+          "avg(b6ref) as b6ref",
+          "avg(b26rad) as b26rad",
+          "avg(b26ref) as b26ref",
+          "avg(b29rad) as b29rad",
+          "avg(b31rad) as b31rad"],
+        "summaryNames":["b1ref","b2ref","b3ref","b4ref","b6ref","b26rad","b26ref","b29rad","b31rad"],
+        "connectionType":"scidb"
+      },
+      {//1
+        "name":"rgb_1granule",
+        "query":"project(apply(all_bands_1granule,red,b1,green,b4,blue,b3),red,green,blue)",
+        "attributeNames":["red","green","blue"],
+        "summaries":["avg(red) as red",
+          "avg(green) as green",
+          "avg(blue) as blue"],
+        "summaryNames":["red","green","blue"],
+        "connectionType":"scidb"
+      },
+      {//2
+        "name":"bt_1granule",
+        "query":"scan(brightness_temp)",
+        "attributeNames":["brightness_temp_29,brightness_temp_31,brightness_temp_32,temp_diff,temp_diff2"],
+        "summaries":["min(brightness_temp_29) as brightness_temp_29",
+            "min(brightness_temp_31) as brightness_temp_31",
+            "min(brightness_temp_32) as brightness_temp_32",
+            "max(temp_diff) as temp_diff",
+            "max(temp_diff2) as temp_diff2"],
+        "summaryNames":["brightness_temp_29","brightness_temp_31","brightness_temp_32","temp_diff","temp_diff2"],
+        "connectionType":"scidb"
+      },
+      {//3
+        "name":"ndsi_1granule",
+        "query":"project(apply(all_bands_1granule,ndsi,(b4ref-b6ref)/(b4ref+b6ref)),ndsi)",
+        "attributeNames":["ndsi"],
+        "summaries":["max(ndsi) as ndsi"],
+        "summaryNames":["ndsi"],
+        "connectionType":"scidb"
+      },
+      {//4
+        "name":"ndvi_1granule",
+        "query":"project(apply(all_bands_1granule,ndvi,(b2ref-b1ref)/(b2ref+b1ref)),ndvi)",
+        "attributeNames":["ndvi"],
+        "summaries":["max(ndvi) as ndvi"],
+        "summaryNames":["ndvi"],
+        "connectionType":"scidb"
+      },
+      {//5
+        "name":"ndvi_test_april",
+        "query":"scan(ndvi_test_april)",
+        "attributeNames":["ndvi"],
+        "summaries":["max(ndvi) as ndvi"],
+        "summaryNames":["ndvi"],
+        "connectionType":"scidb"
+      }
+      ];
+      var currview = views[5];
+      var visType = "heatmap";
+      var tss = [
+        new ForeCache.Backend.Structures.TileStructure([[10000,10000],[5000,5000],[2500,2500],[1250,1250],[750,750]],[360,180]),
+
+        new ForeCache.Backend.Structures.TileStructure([[5000,5000],[2500,2500],[1250,1250],[750,750],[375,375],[188,188]],[360,180]),
+        new
+ForeCache.Backend.Structures.TileStructure([[5000,5000],[2500,2500],[1250,1250],[750,750],[375,375],[188,188],[94,94],[47,47],[24,24],[12,12]],[360,180])
+      ];
+      var currts = tss[2];
+
+
+      // an attribute was selected from the menu. Create a new visualization
+      function renderAttribute(id,visType) {
+          $("#view").empty(); // clear the old view
+          ForeCache.Backend.Request.simpleReset(function() {
+              ForeCache.Backend.Request.setView(currview,function() {
+                  ForeCache.Backend.Request.setTileStructure(currts,function(){renderFunc(id,visType);});
+              });
+          });         
+      };
+
+      var renderFunc = function(id,visType) {
+          // these variables are for changing the # tiles visible in the viewport
+          var zname = currview.summaryNames[id];
+          var vis =
+          ForeCache.Renderer.Vis.getVis($("#view"),{"visType":visType,
+                                //"xname":"x","xlabel":"x",
+                                //"yname":"y","ylabel":"y",
+                                "xname":"longitude_e4","xlabel":"longitude_e4",
+                                "yname":"latitude_e4","ylabel":"latitude_e4",
+                                //"zlabel":"red","zname":"red",
+                                "zname":zname,"zlabel":zname,
+                                //"width":400,
+                                "width":840,
+                                //"height":400,
+                                "height":820,
+                                "padding":{"left":50,"right":70,"top":50,"bottom":50},
+                                "inverted":{"x":false,"y":true,"color":true},
+                                "colorRange":colorbrewer.Spectral[11],
+                                "startingPos":startingPosSets[1],
+                                "cacheSize": cacheSizeSets[0]
+          });
+      };
+
+      $(document).ready(function() {
+        for(var i = 0; i < currview.summaryNames.length; i++) {
+          var d = currview.summaryNames[i];
+          var opt = $("<option value='"+i+"'>"+d+"</option>");
+          opt.appendTo("#attribute-menu");
+        }
+        var visTypes = Object.keys(ForeCache.Renderer.Vis.__visTypes);
+        for(var i = 0; i < visTypes.length; i++) {
+          var d = visTypes[i];
+          var opt = $("<option value='"+d+"'>"+d+"</option>");
+          opt.appendTo("#vis-menu");
+        }
+        $("#attribute-button").click(function() { var attrid = $("#attribute-menu").val(); var visType = $("#vis-menu").val();
+          console.log(["attribute id",attrid,"vis type",visType]);
+          renderAttribute(attrid,visType);
+        });
+      });
+
+    </script>
+</head>
+
+
+<body>
+  <div class="main">
+			<h1>Cloud Test</h1>
+			<div id="content">
+         <label>
+          Choose an attribute:
+         <select id="attribute-menu"></select>
+          </label>
+         <label>
+          Choose a visualization:
+         <select id="vis-menu"></select>
+         </label>
+
+         <button id="attribute-button">submit</button>
+         <div id="view" class="view"></div>
+			</div>
+	</div>
+</body>
+
+</html>
+

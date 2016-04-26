@@ -6,7 +6,9 @@ svg.forecache-vis {
 }
 
 .forecache-axis path,
-.forecache-axis line {
+.forecache-axis line,
+.forecache-legend line,
+.forecache-legend path {
   fill: none;
   stroke: #000;
   shape-rendering: crispEdges;

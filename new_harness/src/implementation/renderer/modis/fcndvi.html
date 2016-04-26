@@ -19,17 +19,16 @@
     <script type="text/javascript" src="static/js/forecache/renderer/vis.js" charset="utf-8"></script>
     <script type="text/javascript">
       $(document).ready(function() {
-        var rgbview = {
-          "name":"rgb_test",
-          //"name":"rgb2",
-          //"query":"scan(rgb2)",
-          "query":"scan(rgb_test)",
-          "attributeNames":["red","green","blue"],
-          "summaries":["avg(red) as red","avg(green) as green","avg(blue) as blue"],
-          "summaryNames":["red","green","blue"],
+        var ndviview = {
+          "name":"ndvi_test",
+          "query":"scan(ndvi_test)",
+          "attributeNames":["ndvi"],
+          "summaries":["avg(ndvi) as ndvi"],
+          "summaryNames":["ndvi"],
           "connectionType":"scidb"
         };
-        var rgbts = new ForeCache.Backend.Structures.TileStructure([[4,4],[2,2],[1,1]],[180,180]);
+
+        var ndvits = new ForeCache.Backend.Structures.TileStructure([[4,4],[2,2],[1,1]],[180,180]);
         var renderFunc = function(d) {
 
             // these variables are for changing the # tiles visible in the viewport
@@ -53,23 +52,26 @@
               new ForeCache.Backend.Structures.NewTileKey([2,2],0)]
             ];
             var vis =
-            ForeCache.Renderer.Vis.getVis($("#view"),{"visType":"rgbheatmap",
+            ForeCache.Renderer.Vis.getVis($("#view"),{"visType":"heatmap",
                                   "xname":"x","xlabel":"x",
                                   "yname":"y","ylabel":"y",
-                                  "zlabel":"red","zname":"red",
+                                  //"zlabel":"red","zname":"red",
+                                  "zname":"ndvi","zlabel":"ndvi",
                                   //"width":400,
                                   "width":700,
                                   //"height":400,
                                   "height":700,
                                   "padding":{"left":50,"right":50,"top":50,"bottom":50},
                                   "inverted":{"x":false,"y":true},
+                                  "colorRange":colorbrewer.Greens[9],
                                   "startingPos":startingPosSets[0],
                                   "cacheSize": cacheSizeSets[0]
             });
         };
         ForeCache.Backend.Request.simpleReset(function() {
-          ForeCache.Backend.Request.setView(rgbview,function() {
-            ForeCache.Backend.Request.setTileStructure(rgbts,renderFunc);
+          //ForeCache.Backend.Request.setView(rgbview,function() {
+          ForeCache.Backend.Request.setView(ndviview,function() {
+            ForeCache.Backend.Request.setTileStructure(ndvits,renderFunc);
           });
         });
       });

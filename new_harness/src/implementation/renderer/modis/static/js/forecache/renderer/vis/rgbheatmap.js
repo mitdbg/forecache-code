@@ -86,9 +86,9 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.renderTile = function(tile) {
 		
 		this.ctx.beginPath();
  		this.ctx.fillStyle = "rgb("
-      +Number(Math.floor(255*tile.columns[tile.getIndex("red")][i]))+","
-      +Number(Math.floor(255*tile.columns[tile.getIndex("green")][i]))+","
-      +Number(Math.floor(255*tile.columns[tile.getIndex("blue")][i]))+")";
+      +Number(Math.max(0,Math.min(255,Math.floor(255*tile.columns[Number(tile.getIndex("red"))][i]))))+","
+      +Number(Math.max(0,Math.min(255,Math.floor(255*tile.columns[Number(tile.getIndex("green"))][i]))))+","
+      +Number(Math.max(0,Math.min(255,Math.floor(255*tile.columns[Number(tile.getIndex("blue"))][i]))))+")";
     //console.log(["fill style:",this.ctx.fillStyle,x,y,xw,yw]);
 		this.ctx.fillRect(x,y, xw, yw);
 		this.ctx.closePath();
