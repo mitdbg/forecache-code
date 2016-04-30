@@ -41,14 +41,16 @@ function getBezierMapFromFunction(bezierFunction) { // dynamically make a map th
 function computeBlueCubicBezier() {
   p0 = {x:0.0,y:0.0};
   p1 = {x:12,y:79.7};
-  p2 = {x:150.0,y:149.0};
+  p2 = {x:173.0,y:229.0};
+  //p2 = {x:150.0,y:149.0};
   p3 = {x:255.0,y:255.0};
   return computeCubicBezier(p0,p1,p2,p3);
 }
 
 function computeGreenCubicBezier() {
   p0 = {x:0.0,y:0.0};
-  p1 = {x:-2.6,y:85.0};
+  p1 = {x:-1.0,y:66.0};
+  //p1 = {x:-2.6,y:85.0};
   p2 = {x:150.0,y:149.0};
   p3 = {x:255.0,y:255.0};
   return computeCubicBezier(p0,p1,p2,p3);
@@ -56,8 +58,8 @@ function computeGreenCubicBezier() {
 
 function computeRedCubicBezier() {
   p0 = {x:0.0,y:0.0};
+  p1 = {x:-1.0,y:66.0};
   //p1 = {x:-1.0,y:105.0};
-  p1 = {x:0.,y:120.4};
   p2 = {x:150.0,y:149.0};
   p3 = {x:255.0,y:255.0};
   return computeCubicBezier(p0,p1,p2,p3);
