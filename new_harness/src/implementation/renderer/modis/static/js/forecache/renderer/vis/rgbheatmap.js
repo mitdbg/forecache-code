@@ -145,12 +145,18 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.renderTile = function(tile) {
       Math.min(255,Math.max(0,Math.floor(this.blueBrightnessScale(tile.columns[Number(tile.getIndex("blue"))][i]))))+")";
 */
 
+/*
+    this.ctx.fillStyle = "rgb("+
+      this.redBezierMap[Math.min(255,Math.max(0,Math.floor(255*tile.columns[Number(tile.getIndex("red"))][i])))]+","+
+      this.greenBezierMap[Math.min(255,Math.max(0,Math.floor(255*tile.columns[Number(tile.getIndex("green"))][i])))]+","+
+      this.blueBezierMap[Math.min(255,Math.max(0,Math.floor(255*tile.columns[Number(tile.getIndex("blue"))][i])))]+")";
+*/
 
     this.ctx.fillStyle = "rgb("+
-      this.redBezierMap[Math.min(255,Math.max(0,Math.floor(this.redBrightnessScale(tile.columns[Number(tile.getIndex("red"))][i]))))]+","+
-      this.greenBezierMap[Math.min(255,Math.max(0,Math.floor(this.greenBrightnessScale(tile.columns[Number(tile.getIndex("green"))][i]))))]+","+
+      this.bezierMap[Math.min(255,Math.max(0,Math.floor(this.redBrightnessScale(tile.columns[Number(tile.getIndex("red"))][i]))))]+","+
+      this.bezierMap[Math.min(255,Math.max(0,Math.floor(this.greenBrightnessScale(tile.columns[Number(tile.getIndex("green"))][i]))))]+","+
       //Math.min(255,Math.max(0,Math.floor(this.blueBrightnessScale(tile.columns[Number(tile.getIndex("blue"))][i]))))+")";
-      this.blueBezierMap[Math.min(255,Math.max(0,Math.floor(this.blueBrightnessScale(tile.columns[Number(tile.getIndex("blue"))][i]))))]+")";
+      this.bezierMap[Math.min(255,Math.max(0,Math.floor(this.blueBrightnessScale(tile.columns[Number(tile.getIndex("blue"))][i]))))]+")";
 
     //console.log(["fill style:",this.ctx.fillStyle,x,y,xw,yw]);
 		this.ctx.fillRect(x,y, xw, yw);
