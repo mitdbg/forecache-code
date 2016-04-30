@@ -10,7 +10,43 @@ ForeCache.Renderer.Vis.Heatmap = {}
 /* chart parameter is a jquery object. */
 ForeCache.Renderer.Vis.RGBHeatmapObj = function(chart, options) {
   ForeCache.Renderer.Vis.VisObj.call(this,chart,options);
-};
+/*
+{i} red_max,green_max,blue_max
+{0} 0.889761,0.862038,0.897079
+
+{i} red_min,green_min,blue_min
+{0} 0.020844,0.0294212,0.0520942
+*/
+
+  //landsat: 0.07058823529412,0.835294
+  this.redBrightnessScale = d3.scale.linear()
+    //.domain([0,0.889761]) // original
+    .domain([0.02,0.54]) // manually white-balanced
+    //.domain([0.,0.835294]) // landsat, 13 points below original
+    //.domain([0.070588,0.835294])
+    .range([0, 255]);
+  //landsat: 0.07843137254902,0.7921568627451
+  this.greenBrightnessScale = d3.scale.linear()
+    //.domain([0,0.862038]) // original
+    .domain([0.029,0.54]) // manually white-balanced
+    //.domain([0.,0.792157]) // landsat
+    //.domain([0.,0.80784]) // chosen to be 13 points below original
+    //.domain([0.078431,0.792157])
+    .range([0, 255]);
+  //landsat: 0.09411764705882,0.78823529411765
+  this.blueBrightnessScale = d3.scale.linear()
+    //.domain([0,0.897079]) // original
+    .domain([0.052,0.62]) // manually white-balanced
+    //.domain([0.,0.788235]) // landsat
+    //.domain([0.,0.843137]) // chosen to be 13 points below original
+    //.domain([0.094118,0.788235])
+    .range([0, 255]);
+  this.bezierMap = bezierMap;
+  this.redBezierMap = getRedBezierMap();
+  this.greenBezierMap = getGreenBezierMap();
+  this.blueBezierMap = getBlueBezierMap();
+  console.log(["red bezier map",this.redBezierMap]);
+  };
 ForeCache.Renderer.Vis.RGBHeatmapObj.prototype = Object.create(ForeCache.Renderer.Vis.VisObj.prototype);
 ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.constructor = ForeCache.Renderer.Vis.RGBHeatmapObj;
 
@@ -63,6 +99,7 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.updateOpts = function() {
 };
 
 ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.renderTile = function(tile) {
+  console.log(["tile",tile,xt,yt,this.options.boxwidth.x,this.options.boxwidth.y]);
   var rows = tile.getSize();
   //TODO: this is a hack, maybe fix later?
   if(rows == 0) return; // don't render empty tiles...
@@ -85,10 +122,36 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.renderTile = function(tile) {
     }
 		
 		this.ctx.beginPath();
+   
+/*
  		this.ctx.fillStyle = "rgb("
       +Number(Math.max(0,Math.min(255,Math.floor(255*tile.columns[Number(tile.getIndex("red"))][i]))))+","
       +Number(Math.max(0,Math.min(255,Math.floor(255*tile.columns[Number(tile.getIndex("green"))][i]))))+","
       +Number(Math.max(0,Math.min(255,Math.floor(255*tile.columns[Number(tile.getIndex("blue"))][i]))))+")";
+*/
+
+/*
+ 		this.ctx.fillStyle = "rgb("
+      +this.bezierMap[Math.max(0,Math.min(255,Math.floor(255*tile.columns[Number(tile.getIndex("red"))][i])))]+","
+      +this.bezierMap[Math.max(0,Math.min(255,Math.floor(255*tile.columns[Number(tile.getIndex("green"))][i])))]+","
+      +this.bezierMap[Math.max(0,Math.min(255,Math.floor(255*tile.columns[Number(tile.getIndex("blue"))][i])))]+")";
+*/
+
+
+/*
+    this.ctx.fillStyle = "rgb("+
+      Math.min(255,Math.max(0,Math.floor(this.redBrightnessScale(tile.columns[Number(tile.getIndex("red"))][i]))))+","+
+      Math.min(255,Math.max(0,Math.floor(this.greenBrightnessScale(tile.columns[Number(tile.getIndex("green"))][i]))))+","+
+      Math.min(255,Math.max(0,Math.floor(this.blueBrightnessScale(tile.columns[Number(tile.getIndex("blue"))][i]))))+")";
+*/
+
+
+    this.ctx.fillStyle = "rgb("+
+      this.redBezierMap[Math.min(255,Math.max(0,Math.floor(this.redBrightnessScale(tile.columns[Number(tile.getIndex("red"))][i]))))]+","+
+      this.greenBezierMap[Math.min(255,Math.max(0,Math.floor(this.greenBrightnessScale(tile.columns[Number(tile.getIndex("green"))][i]))))]+","+
+      //Math.min(255,Math.max(0,Math.floor(this.blueBrightnessScale(tile.columns[Number(tile.getIndex("blue"))][i]))))+")";
+      this.blueBezierMap[Math.min(255,Math.max(0,Math.floor(this.blueBrightnessScale(tile.columns[Number(tile.getIndex("blue"))][i]))))]+")";
+
     //console.log(["fill style:",this.ctx.fillStyle,x,y,xw,yw]);
 		this.ctx.fillRect(x,y, xw, yw);
 		this.ctx.closePath();

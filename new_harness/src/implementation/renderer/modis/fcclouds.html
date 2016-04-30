@@ -7,6 +7,7 @@
     <script type="text/javascript" src="static/js/d3.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/text-encoding/encoding.js"></script>
 
+    <script type="text/javascript" src="static/js/bezier.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/states.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/coordinates.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/tracker.js" charset="utf-8"></script>
@@ -104,9 +105,84 @@
         "summaries":["max(ndvi) as ndvi"],
         "summaryNames":["ndvi"],
         "connectionType":"scidb"
+      },
+      {//6
+        "name":"ndsi_test_april",
+        "query":"scan(ndsi_test_april)",
+        "attributeNames":["ndsi","total_snow","total_pixiels","avg_snow"],
+        "summaries":["max(ndsi) as ndsi",
+            "sum(total_snow) as total_snow",
+            "sum(total_pixels) as total_pixels",
+            "avg(avg_snow) as avg_snow"],
+        "summaryNames":["ndsi","total_snow","total_pixels","avg_snow"],
+        "connectionType":"scidb"
+      }
+      ,{//7
+        "name":"ndsi_raw_test_april",
+        "query":"scan(ndsi_raw_test_april)",
+        "attributeNames":["ndsi","total_snow","total_pixiels","avg_snow"],
+        "summaries":["max(ndsi) as ndsi",
+            "sum(total_snow) as total_snow",
+            "sum(total_pixels) as total_pixels",
+            "avg(avg_snow) as avg_snow"],
+        "summaryNames":["ndsi","total_snow","total_pixels","avg_snow"],
+        "connectionType":"scidb"
+      },
+      {//8
+        "name":"ndsi_test_december",
+        "query":"scan(ndsi_test_december)",
+        "attributeNames":["ndsi","total_snow","total_pixiels","avg_snow"],
+        "summaries":["max(ndsi) as ndsi",
+            "sum(total_snow) as total_snow",
+            "sum(total_pixels) as total_pixels",
+            "avg(avg_snow) as avg_snow"],
+        "summaryNames":["ndsi","total_snow","total_pixels","avg_snow"],
+        "connectionType":"scidb"
+      },
+      {//9
+        "name":"bt_april",
+        "query":"scan(brightness_temp_april)",
+        "attributeNames":["b26rad","brightness_temp_29,brightness_temp_31,temp_diff"],
+        "summaries":["max(b26rad) as b26rad",
+            "min(brightness_temp_29) as brightness_temp_29",
+            "min(brightness_temp_31) as brightness_temp_31",
+            "max(temp_diff) as temp_diff"],
+        "summaryNames":["b26rad","brightness_temp_29","brightness_temp_31","temp_diff"],
+        "connectionType":"scidb"
+      },
+      {//10
+        "name":"bt_december",
+        "query":"scan(brightness_temp_december)",
+        "attributeNames":["b26rad","brightness_temp_29,brightness_temp_31,temp_diff"],
+        "summaries":["max(b26rad) as b26rad",
+            "min(brightness_temp_29) as brightness_temp_29",
+            "min(brightness_temp_31) as brightness_temp_31",
+            "max(temp_diff) as temp_diff"],
+        "summaryNames":["b26rad","brightness_temp_29","brightness_temp_31","temp_diff"],
+        "connectionType":"scidb"
+      },
+      {//11
+        "name":"rgb_april",
+        "query":"scan(rgb_april)",
+        "attributeNames":["red","green","blue"],
+        "summaries":["avg(red) as red",
+          "avg(green) as green",
+          "avg(blue) as blue"],
+        "summaryNames":["red","green","blue"],
+        "connectionType":"scidb"
+      },
+      {//12
+        "name":"rgb_test_",
+        "query":"scan(rgb)",
+        "attributeNames":["red","green","blue"],
+        "summaries":["avg(red) as red",
+          "avg(green) as green",
+          "avg(blue) as blue"],
+        "summaryNames":["red","green","blue"],
+        "connectionType":"scidb"
       }
       ];
-      var currview = views[5];
+      var currview = views[11];
       var visType = "heatmap";
       var tss = [
         new ForeCache.Backend.Structures.TileStructure([[10000,10000],[5000,5000],[2500,2500],[1250,1250],[750,750]],[360,180]),
