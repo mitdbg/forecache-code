@@ -21,14 +21,14 @@ ForeCache.Renderer.Vis.RGBHeatmapObj = function(chart, options) {
   //landsat: 0.07058823529412,0.835294
   this.redBrightnessScale = d3.scale.linear()
     //.domain([0,0.889761]) // original
-    .domain([0.02,0.54]) // manually white-balanced
+    .domain([0.033,0.54]) // manually white-balanced
     //.domain([0.,0.835294]) // landsat, 13 points below original
     //.domain([0.070588,0.835294])
     .range([0, 255]);
   //landsat: 0.07843137254902,0.7921568627451
   this.greenBrightnessScale = d3.scale.linear()
     //.domain([0,0.862038]) // original
-    .domain([0.029,0.54]) // manually white-balanced
+    .domain([0.039,0.54]) // manually white-balanced
     //.domain([0.,0.792157]) // landsat
     //.domain([0.,0.80784]) // chosen to be 13 points below original
     //.domain([0.078431,0.792157])
@@ -36,7 +36,7 @@ ForeCache.Renderer.Vis.RGBHeatmapObj = function(chart, options) {
   //landsat: 0.09411764705882,0.78823529411765
   this.blueBrightnessScale = d3.scale.linear()
     //.domain([0,0.897079]) // original
-    .domain([0.052,0.62]) // manually white-balanced
+    .domain([0.062,0.62]) // manually white-balanced
     //.domain([0.,0.788235]) // landsat
     //.domain([0.,0.843137]) // chosen to be 13 points below original
     //.domain([0.094118,0.788235])
