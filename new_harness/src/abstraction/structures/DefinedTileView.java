@@ -167,11 +167,6 @@ public class DefinedTileView {
 		return this.allKeys.containsKey(key);
 	}
 	
-	// get the corresponding tile at the coarser zoom level
-	public NewTileKey getCoarserTile(NewTileKey original, int zoomLevel) {
-		return this.ts.getCoarserTile(original, zoomLevel);
-	}
-	
 	// this function is a back door function used to quickly get tiles for
 	// metadata purposes
 	public ColumnBasedNiceTile getTileForMetadata(NewTileKey key) {
