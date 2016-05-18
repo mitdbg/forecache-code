@@ -1,10 +1,9 @@
-package abstraction.structures;
+package abstraction.mdstructures;
 
 import java.io.IOException;
 import java.util.Arrays;
-
-
-import abstraction.query.BigDawgScidbTileInterface.BigDawgResponseObject;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -27,6 +26,7 @@ public class MultiDimTileStructure implements java.io.Serializable {
 	public int[][] dimensionGroups;
 	public int[] tileWidths; // one per dimension
 	protected int[] dimensionPositions = null;
+	protected Map<Integer,int[]> dimGroupMap = null;
 	
 	/**
 	 * For a zoom id, return the corresponding aggregation windows. Supports dimension groups.
@@ -50,6 +50,70 @@ public class MultiDimTileStructure implements java.io.Serializable {
 	}
 	
 	/**
+	 * given an old zoom position and new zoom position, calculate the new midpoint for the
+	 * new zoom position using the old midpoint as reference.
+	 * @param oldZoomPos old zoom position with existing midpoint
+	 * @param newZoomPos new zoom position to get the new midpoint for
+	 * @param oldMid existing midpoint, array with length equal to number of dimensions
+	 * @return the new midpoint
+	 */
+	public double[] getNewMid(int[] oldZoomPos, int[] newZoomPos, double[] oldMid) {
+		getDimensionPositions();
+		int[] newWindows = getAggregationWindow(newZoomPos); // windows for each dimension at this zoom level
+		int[] oldWindows = getAggregationWindow(oldZoomPos);
+		
+		double[] newMid = new double[oldMid.length];
+		for(int i = 0; i < oldMid.length; i++) { // for each dimenison
+			newMid[i] = oldMid[i] * oldWindows[i] / newWindows[i];
+		}
+		
+		return newMid;
+	}
+	
+	/**
+	 * takes a tile and finds the corresponding parent tile at the given zoom level. First
+	 * computes the midpoint of the tile, then translates this midpoint to the desired zoom level.
+	 * Then calculates which tile this point resides in at the higher zoom level.
+	 * @param k the key for the tile to translate
+	 * @param newZoomPos the parent zoom level to get the parent tile from
+	 * @return the key of the parent tile
+	 */
+	public MultiDimTileKey getParentTile(MultiDimTileKey k, int[] newZoomPos) {
+		double[] oldMid = getMidpointForTile(k);
+		double[] newMid = getNewMid(k.zoom,newZoomPos,oldMid);
+		return getTileForPoint(newZoomPos,newMid);
+	}
+	
+	/**
+	 * compute the midpoint (i.e., center value along each dimension) for the given tile
+	 * @param k the key for this particular tile
+	 * @return the midpoint of the tile
+	 */
+	public double[] getMidpointForTile(MultiDimTileKey k) {
+		double[] mid = new double[k.dimIndices.length];
+		for(int i = 0; i < mid.length; i++) { // for each dimension
+			mid[i] = (k.dimIndices[i]*1.0 + 0.5)*tileWidths[i]; // compute the tile id along this dimension
+		}
+		return mid;
+	}
+	
+	/**
+	 * Computes the corresponding tile key for a given zoom position and point
+	 * @param zoomPos the zoom level of the midpoint
+	 * @param point the point to calculate the corresponding tile for
+	 * @return the key of the tile that owns the point
+	 */
+	public MultiDimTileKey getTileForPoint(int[] zoomPos, double[] point) {
+		MultiDimTileKey k = new MultiDimTileKey();
+		k.zoom = Arrays.copyOf(zoomPos, zoomPos.length);
+		k.dimIndices = new int[point.length];
+		for(int i = 0; i < point.length; i++) { // for each dimension
+			k.dimIndices[i] = (int) Math.floor(point[i] / tileWidths[i]); // compute the tile id along this dimension
+		}
+		return k;
+	}
+	
+	/**
 	 * Creates a JSON version of the tile structure, in case the client
 	 * needs it to track user stuff.
 	 * @return the tile structure as a json object
@@ -65,10 +129,10 @@ public class MultiDimTileStructure implements java.io.Serializable {
 	 * @return whether the parse was successful or not
 	 */
 	public boolean fromJson(String jsonstring) {
-		MultiDimTileStructureJson tsjson = null;
+		MultiDimTileStructureJson mdtsjson = null;
 		ObjectMapper o = new ObjectMapper();
 		try {
-			tsjson = o.readValue(jsonstring, MultiDimTileStructureJson.class);
+			mdtsjson = o.readValue(jsonstring, MultiDimTileStructureJson.class);
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -79,10 +143,12 @@ public class MultiDimTileStructure implements java.io.Serializable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		if(tsjson != null) {
-			this.aggregationWindows = tsjson.aggregationWindows;
+		if(mdtsjson != null) {
+			this.aggregationWindows = mdtsjson.aggregationWindows;
 			//this.dimensionLabels = tsjson.dimensionLabels;
-			this.tileWidths = tsjson.tileWidths;
+			this.tileWidths = mdtsjson.tileWidths;
+			this.dimensionGroups = mdtsjson.dimensionGroups;
+			this.dimensionPositions = null;
 			return true;
 		}
 		return false;
@@ -111,14 +177,16 @@ public class MultiDimTileStructure implements java.io.Serializable {
 	}
 	
 	protected void getDimensionPositions() {
-		if(dimensionPositions != null) return;
+		if(dimensionPositions != null && dimGroupMap != null) return;
 		dimensionPositions = new int[tileWidths.length];
+		dimGroupMap = new HashMap<Integer,int[]>();
 		int index = 0;
 		for(int i = 0; i < dimensionGroups.length; i++) {
 			int[] group = dimensionGroups[i];
 			for(int j = 0; j < group.length; j++) {
 				dimensionPositions[index] = group[j];
-						index++;
+				dimGroupMap.put(group[j], new int[]{i,j});
+				index++;
 			}
 		}
 	}

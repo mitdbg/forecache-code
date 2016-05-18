@@ -97,6 +97,14 @@
             <classpath refid="forecache2.classpath"/>
         </java>
     </target>
+
+    <target name="MdModisMainThread">
+        <java classname="implementation.mdmodis.ModisMainThread" failonerror="true" fork="yes">
+            <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>
+            <arg line="10001 0 1 vm false"/>
+            <classpath refid="forecache2.classpath"/>
+        </java>
+    </target>
     <target name="MimicMainThread">
         <java classname="implementation.mimic.MimicMainThread" failonerror="true" fork="yes">
             <jvmarg line="-Djava.net.preferIPv4Stack=true -Xmx1024m -Djava.library.path='/usr/local/share/OpenCV/java'"/>

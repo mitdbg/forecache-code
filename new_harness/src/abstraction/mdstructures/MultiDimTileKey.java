@@ -1,4 +1,4 @@
-package abstraction.structures;
+package abstraction.mdstructures;
 
 import java.util.Arrays;
 
@@ -8,7 +8,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 /**
  * @author leibatt
  * Class for storing tile ID's. Also responsible for computing distance metrics.
- * Class fields are immutable
  */
 public class MultiDimTileKey implements java.io.Serializable {
 	/**
@@ -50,6 +49,12 @@ public class MultiDimTileKey implements java.io.Serializable {
 	}
 	
 	// pretty much the name of the tile key
+	/**
+	 * Generates the name of the tile key for easy identification in storage environments
+	 * (filesystem, database table/arrays, etc.). Format is "zoom_0_0_pos_1_1" for a tile
+	 * key with zoomPos = [0,0], and dimIndices [1,1].
+	 * @return
+	 */
 	public synchronized String buildTileStringForFile() {
 		if(this.name == null) {
 			StringBuilder tile_id = new StringBuilder();
@@ -57,7 +62,7 @@ public class MultiDimTileKey implements java.io.Serializable {
 				return null;
 			}
 	
-			tile_id.append("_zoom");
+			tile_id.append("zoom");
 			for(int i = 0; i < this.zoom.length; i++) {
 				tile_id.append("_").append(this.zoom[i]);
 			}
@@ -68,6 +73,25 @@ public class MultiDimTileKey implements java.io.Serializable {
 			this.name = tile_id.toString();
 		}
 		return name;
+	}
+	
+	/**
+	 * returns whether the zoom position of this key is lower, higher, or equal
+	 * to the zoom position of another key. An ordering is imposed on the zoom positions
+	 * (and thus on the dimension groups),
+	 * such that index 0 of the zoom positions is considered before index 1
+	 * (i.e., dimension group 0 is ranked higher than dimension group 1),
+	 * index 1 before index 2, and so on. Thus, dimension groups should be sorted on
+	 * precedence for this to work properly.
+	 * @param other the other key to compare to.
+	 * @return -1 if this key is lower, +1 if this key is higher, and 0 if they are equal.
+	 */
+	public int compareZoom(MultiDimTileKey other) {
+		for(int i = 0; i < zoom.length; i++) {
+			if(zoom[i] < other.zoom[i]) return -1;
+			else if (zoom[i] > other.zoom[i]) return 1;
+		}
+		return 0;
 	}
 	
 	@Override

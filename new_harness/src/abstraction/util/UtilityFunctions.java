@@ -10,6 +10,8 @@ import abstraction.enums.CacheLevel;
 import abstraction.enums.Direction;
 import abstraction.enums.DirectionClass;
 import abstraction.enums.Model;
+import abstraction.mdstructures.MultiDimTileKey;
+import abstraction.mdstructures.MultiDimTileStructure;
 import abstraction.structures.NewTileKey;
 import abstraction.structures.UserRequest;
 
@@ -113,6 +115,10 @@ public class UtilityFunctions {
 			System.out.println("error occured while converting string to double");
 		}
 		return myresult;
+	}
+	
+	public static int[] parseZoom(String zoom) {
+		return parseTileIdIntegerNoBrackets(zoom,",");
 	}
 	
 	public static int[] parseTileIdInteger(String tile_id, String delim) {
@@ -425,6 +431,52 @@ public class UtilityFunctions {
 		//}
 		//System.out.println();
 		return path;
+	}
+	
+	/**
+	 * Computes the manhattan distance between two multidimensional tile keys a and b.
+	 * If two keys are on the same level, then this method returns the manhattan distance
+	 * between their dimIndices. If they are on different zoom levels, the key on the lower
+	 * zoom level is "zoomed out" to the corresponding parent key on the coarser zoom level.
+	 * Then manhattan distance is calculated on the resulting dimIndices for the parent key
+	 * and the original dimIndices for the other key.
+	 * @param a key a
+	 * @param b key b
+	 * @param ts the tiling structure these keys are based on. Needed to find midpoints for zooming out.
+	 * @return the manhattan distance between these two keys
+	 */
+	public static double manhattanDist(MultiDimTileKey a, MultiDimTileKey b, MultiDimTileStructure ts) {
+		double zoomDist = manhattanDist(a.zoom,b.zoom);
+		if(zoomDist > 0) { // at different zoom levels
+			// which one is at the lower zoom level?
+			if(a.compareZoom(b) < 0) { // a.zoom < b.zoom
+				// zoom out on a
+				MultiDimTileKey parentForA = ts.getParentTile(a, b.zoom);
+				// compute distance between parentA and b
+				return zoomDist + manhattanDist(parentForA.dimIndices,b.dimIndices);
+			} else { // a.zoom > b.zoom
+				// zoom out on b
+				MultiDimTileKey parentForB = ts.getParentTile(b, a.zoom);
+				// compute distance between parentB and a
+				return zoomDist + manhattanDist(parentForB.dimIndices,a.dimIndices);
+			}
+		} else { // at the same zoom level
+			return manhattanDist(a.dimIndices,b.dimIndices);
+		}
+	}
+	
+	/**
+	 * computes the manhattan distance between two integer arrays
+	 * @param a array a
+	 * @param b array b
+	 * @return the manhattan distance between a and b
+	 */
+	public static double manhattanDist(int[] a, int[] b) {
+		int dist = 0;
+		for(int i = 0; i < a.length; i++) {
+			dist += Math.abs(a[i] - b[i]);
+		}
+		return dist;
 	}
 	
 	public static double manhattanDist(NewTileKey a, NewTileKey b) {
