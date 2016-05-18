@@ -79,6 +79,7 @@ ForeCache.Backend.TileDecoder.prototype.unpackStrings = function(offset) {
 
 ForeCache.Backend.TileDecoder.prototype.unpackKey = function(offset) {
   var offset2 = offset;
+  // TODO: change this to make zoom levels an array
   var zoom = this.getDouble(offset2);
   offset2 += this.doubleSize;
   var numvals = this.getDouble(offset2);

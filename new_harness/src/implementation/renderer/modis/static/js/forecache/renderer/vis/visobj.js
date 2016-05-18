@@ -293,16 +293,10 @@ ForeCache.Renderer.Vis.VisObj.prototype.getXRangeForZoom = function(currzoom,new
 	var xmid = xdomain[0] + 1.0*(xdiff)/2; // midpoint
 	//console.log(["xmid",xmid,"xdomain",xdomain]);
 
-  // old aggregation window
-	var oldWindow = self.ts.aggregationWindows[currzoom][xindex];
-  // new aggregation window
-	var newWindow = self.ts.aggregationWindows[newzoom][xindex];
-  // translate this midpoint to the equivalent midpoint on the new zoom level
-	var newXmid = 1.0*xmid * oldWindow / newWindow;
+  var newXmid = self.ts.getNewMid(currzoom,newzoom,xindex,xmid);
 	var halfWidth = self.ts.tileWidths[xindex] * self.cacheSize / 2.0;
 	var newXDomain = [newXmid-halfWidth,newXmid+halfWidth];
-	//console.log(["x","oldWindow",oldWindow,"newWindow",newWindow,"newXmid",newXmid,
-	//								"halfWidth",halfWidth,"newXdomain",newXDomain]);
+  //console.log(["x","old mid",xmid,"new mid",newXmid]);
 		
   return newXDomain;
 };
@@ -316,16 +310,10 @@ ForeCache.Renderer.Vis.VisObj.prototype.getYRangeForZoom = function(currzoom,new
 	var ymid = ydomain[0] + 1.0*(ydiff)/2; // midpoint
 	//console.log(["xmid",ymid,"xdomain",ydomain]);
 
-  // old aggregation window
-	var oldWindow = self.ts.aggregationWindows[currzoom][yindex];
-  // new aggregation window
-	var newWindow = self.ts.aggregationWindows[newzoom][yindex];
-  // translate this midpoint to the equivalent midpoint on the new zoom level
-	var newYmid = 1.0*ymid * oldWindow / newWindow;
+  var newYmid = self.ts.getNewMid(currzoom,newzoom,yindex,ymid);
 	var halfWidth = self.ts.tileWidths[yindex] * self.cacheSize / 2.0;
 	var newYDomain = [newYmid-halfWidth,newYmid+halfWidth];
-	//console.log(["y","oldWindow",oldWindow,"newWindow",newWindow,"newYmid",newYmid,
-	//								"halfWidth",halfWidth,"newYdomain",newYDomain]);
+  //console.log(["y","old mid",ymid,"new mid",newYmid]);
 		
   return newYDomain;
 };
@@ -339,12 +327,10 @@ ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
 			$('body').css("cursor", "wait");
 		}
 		var zoomDiff = Number(this.getAttribute("data-zoom"));
-		//if(zoomDiff < 0) console.log("zoom out");
-		//else console.log("zoom in");
-		var newZoom = Math.min(Math.max(0,self.currentZoom+zoomDiff),self.ts.totalLevels-1);
-		//console.log(["zoomDiff",zoomDiff,"currentZoom",self.currentZoom,"newZoom",newZoom]);
+    var newZoom = self.ts.getNewZoomPosition(self.currentZoom,[self.xindex,self.yindex],[zoomDiff,zoomDiff]);
+		console.log(["zoomDiff",zoomDiff,"currentZoom",self.currentZoom,"newZoom",newZoom]);
 
-		if(newZoom == self.currentZoom) { // no change
+		if(!self.ts.zoomLevelChanged(self.currentZoom,newZoom)) { // no change
 			self.mousebusy = false;
 		  $("body").css("cursor", "default");
       return; // don't do anything
@@ -361,8 +347,6 @@ ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
 		self.currentZoom = newZoom;
 		self.tileMap.clear();
 		self.currentTiles = [];
-		//self.x.domain(newXDomain);
-		//self.y.domain(newYDomain);
 		self.x.domain(self.adjustForViewportRatio(newXDomain));
     if(self.getZoomDims() == 2) {
 		  self.y.domain(self.adjustForViewportRatio(newYDomain));
@@ -397,7 +381,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
     console.log(["time to render tile",e-s]); // console statements take ~3ms of time
     //ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,{'action':'renderTile','tileId':id.name,'start':s,'end':e});
   };
-  this.statesRenderObj.renderUsa(this.ts.aggregationWindows[this.currentZoom][this.xindex],this.ts.aggregationWindows[this.currentZoom][this.yindex],this.ctx,this.x,this.y,this.padding);
+  this.statesRenderObj.renderUsa(this.ts.getAggregationWindow(this.currentZoom,this.xindex),this.ts.getAggregationWindow(this.currentZoom,this.yindex),this.ctx,this.x,this.y,this.padding);
    var end = Date.now(); // in seconds
   console.log(["time to render all tiles",end - start]);
   ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,
@@ -439,8 +423,8 @@ ForeCache.Renderer.Vis.VisObj.prototype.getXRange = function() {
 	var high = Math.max(0,parseInt(xdom[1],10));
 
   //console.log(["x","low",low,"high",high]);
-	var minID = Math.floor(low / self.ts.tileWidths[0]);
-	var maxID = Math.floor(high / self.ts.tileWidths[0]);
+	var minID = Math.floor(low / self.ts.tileWidths[self.xindex]);
+	var maxID = Math.floor(high / self.ts.tileWidths[self.xindex]);
 	var newIDs = [];
 	var newTileMap = {};
 	var toFetch = [];
@@ -458,8 +442,8 @@ ForeCache.Renderer.Vis.VisObj.prototype.getYRange = function() {
 	var high = Math.max(0,parseInt(ydom[1],10));
 
   //console.log(["y","low",low,"high",high]);
-	var minID = Math.floor(low / self.ts.tileWidths[1]);
-	var maxID = Math.floor(high / self.ts.tileWidths[1]);
+	var minID = Math.floor(low / self.ts.tileWidths[self.yindex]);
+	var maxID = Math.floor(high / self.ts.tileWidths[self.yindex]);
 	var newIDs = [];
 	var newTileMap = {};
 	var toFetch = [];
@@ -482,7 +466,12 @@ ForeCache.Renderer.Vis.VisObj.prototype.getFutureTiles = function() {
       }
     } else if (this.ts.numdims == 2) { // navigation along 1 dim doesn't mean there is only one dim
       for(var x = 0; x < xtiles.length; x++) {
-        var newkey = new ForeCache.Backend.Structures.NewTileKey([xtiles[x],0],this.currentZoom);
+        var di = [];
+        for(var i = 0; i < this.ts.numdims; i++) {
+          di.push(0);
+        }
+        di[this.xindex] = xtiles[x];
+        var newkey = new ForeCache.Backend.Structures.NewTileKey(di,this.currentZoom);
         //console.log(["new key",newkey]);
         futuretiles.push(newkey); // push the pair
       }
@@ -491,7 +480,14 @@ ForeCache.Renderer.Vis.VisObj.prototype.getFutureTiles = function() {
     var ytiles = this.getYRange();
     for(var x = 0; x < xtiles.length; x++) {
       for(var y = 0; y < ytiles.length; y++) {
-        var newkey = new ForeCache.Backend.Structures.NewTileKey([xtiles[x],ytiles[y]],this.currentZoom);
+        var di = [];
+        for(var i = 0; i < this.ts.numdims; i++) {
+          di.push(0);
+        }
+        di[this.xindex] = xtiles[x];
+        di[this.yindex] = ytiles[y];
+        var newkey = new ForeCache.Backend.Structures.NewTileKey(di,this.currentZoom);
+        //console.log(["new key",newkey]);
         futuretiles.push(newkey);
       }
     }
