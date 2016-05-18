@@ -117,7 +117,7 @@ public class MultiDimTileDecoder {
 	
 	/***************** Helper Functions ********************/
 	public static byte[] packKey(MultiDimColumnBasedNiceTile tile) {
-		byte[] data = new byte[(tile.id.dimIndices.length+2)*doubleSize];
+		byte[] data = new byte[(tile.id.dimIndices.length+tile.id.zoom.length+2)*doubleSize];
 		ByteBuffer buffer = ByteBuffer.wrap(data);
 		int offset = 0;
 		//for zoom
