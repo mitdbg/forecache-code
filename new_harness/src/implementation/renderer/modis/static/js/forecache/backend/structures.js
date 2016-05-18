@@ -53,7 +53,7 @@ ForeCache.Backend.Structures.getDomain = function(tiles,index) {
 ForeCache.Backend.Structures.MultiDimTileKey = function(dimindices,zoom) {
   this.dimindices = dimindices; // array
   this.zoom = zoom; // array, for dim groups
-  this.name = ["_zoom",zoom.join("_"),"_pos",dimindices.join("_")].join("_");
+  this.name = ["zoom",zoom.join("_"),"pos",dimindices.join("_")].join("_");
 };
 
 // NewTileKey object
@@ -84,6 +84,7 @@ ForeCache.Backend.Structures.TileMap.prototype.get = function(id) {
 
 ForeCache.Backend.Structures.TileMap.prototype.insert = function(tile) {
   this.tiles[tile.id.name] = tile;
+  console.log(["inserting tile",tile.id.name,tile]);
 };
 
 ForeCache.Backend.Structures.TileMap.prototype.containsKey = function(id) {
@@ -143,6 +144,7 @@ ForeCache.Backend.Structures.Tile.prototype.getDomain = function(index) {
 // NOTE: It is not safe to access these fields directly. only tileWidths and numdims makes sense
 // to access directly from this object.
 ForeCache.Backend.Structures.TileStructure = function(aggregationWindows,tileWidths) {
+  this.jsonFields = ["aggregationWindows","tileWidths"];
   this.aggregationWindows = aggregationWindows;
   this.tileWidths = tileWidths;
   this.numdims = this.tileWidths.length;
@@ -196,22 +198,23 @@ ForeCache.Backend.Structures.TileStructure.prototype.makeValid = function(zoomPo
 
 // MultiDimTileStructure object
 ForeCache.Backend.Structures.MultiDimTileStructure = function(aggregationWindows,dimensionGroups,tileWidths) {
+  this.jsonFields = ["aggregationWindows","dimensionGroups","tileWidths"];
   // lvl 1 = dimension groups, lvl 2 = zoom levels, lvl 3 = aggregation window per dim in group
   this.aggregationWindows = aggregationWindows;
   // lvl 1 = dimension groups, lvl 2 = dimensions in group
   this.dimensionGroups = dimensionGroups;
   this.tileWidths = tileWidths; // per dimension
   this.numdims = this.tileWidths.length;
-  this.totalLevels = this.aggregationWindows.length;
+  this.totalLevels = this.aggregationWindows.length; // per dimension group
   this.totalLevels = [];
   for(var i = 0; i < this.aggregationWindows.length; i++) { // per dimension group
-    totalLevels.push(this.aggregationWindows[i].length); // count the zoom levels for this dim group
+    this.totalLevels.push(this.aggregationWindows[i].length); // count the zoom levels for this dim group
   }
 
   // used to quickly look up each dimension's corresponding dimension group
   this.dimGroupMap = {};
-  for(var i = 0; i < this.aggregationWindows.length; i++) { // for each dimension group
-    var group = this.aggregationWindows[i]
+  for(var i = 0; i < this.dimensionGroups.length; i++) { // for each dimension group
+    var group = this.dimensionGroups[i]
     for(var j = 0; j < group.length; j++) { // for each dimension in the group
       this.dimGroupMap[group[j]] = {'groupId':i,'groupPos':j}; // record group id and position for each dimension
     }
@@ -288,24 +291,3 @@ ForeCache.Backend.Structures.MultiDimTileStructure.prototype.makeValid = functio
   return zoomPos;
 };
 
-/*
-// is this zoom position at the minimum zoom level?
-ForeCache.Backend.Structures.MultiDimTileStructure.prototype.isMinZoomLevel = function(zoomPos) {
-  for(var i = 0; i < zoomPos.length; i++) {
-    if(zoomPos[i] != 0) {
-      return false;
-    }
-  }
-  return true;
-};
-
-// is this zoom position at the maximum zoom level?
-ForeCache.Backend.Structures.MultiDimTileStructure.prototype.isMaxZoomLevel = function(zoomPos) {
-  for(var i = 0; i < zoomPos.length; i++) { // per dimension group
-    if(zoomPos[i] < (this.totalLevels[i] - 1)) {
-      return false;
-    }
-  }
-  return true;
-};
-*/

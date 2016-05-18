@@ -29,7 +29,15 @@ ForeCache.Backend.Request.getView = function(callback) {
 ForeCache.Backend.Request.updateTileWidths = function(oldts,tileWidths,callback) {
   var dat = {};
   dat.setts = true;
-  dat.ts = {"aggregationWindows":oldts.aggregationWindows,"tileWidths":tileWidths};
+  //dat.ts = {"aggregationWindows":oldts.aggregationWindows,"tileWidths":tileWidths};
+  console.log("updating tile widths in tile Structure");
+  dat.ts = {};
+  var properties = oldts.jsonFields;
+  for(var i = 0; i < properties.length; i++) {
+    console.log(["property",properties[i]]);
+    dat.ts[properties[i]] = oldts[properties[i]];
+  }
+  dat.ts.tileWidths = oldts.tileWidths;
   var confirmTileStructure = function(jsondata) {
     callback(jsondata);
   };
@@ -49,7 +57,14 @@ ForeCache.Backend.Request.setView = function(newview,callback) {
 ForeCache.Backend.Request.setTileStructure = function(newts,callback) {
   var dat = {};
   dat.setts = true;
-  dat.ts = {"aggregationWindows":newts.aggregationWindows,"tileWidths":newts.tileWidths};
+  //dat.ts = {"aggregationWindows":newts.aggregationWindows,"tileWidths":newts.tileWidths};
+  dat.ts = {};
+  console.log("setting tile Structure");
+  var properties = newts.jsonFields
+  for(var i = 0; i < properties.length; i++) {
+    console.log(["property",properties[i]]);
+    dat.ts[properties[i]] = newts[properties[i]];
+  }
   var confirmTileStructure = function(jsondata) {
     callback(jsondata === "true");
   };
@@ -60,6 +75,7 @@ ForeCache.Backend.Request.getTileStructure = function(callback) {
   var dat = {};
   dat.getts=true;
   var createTileStructure = function(jsondata) {
+/*
     var aggregationWindows = [];
     var tileWidths = [];
     var totalLevels = jsondata.aggregationWindows.length;
@@ -74,7 +90,12 @@ ForeCache.Backend.Request.getTileStructure = function(callback) {
     for(var d = 0; d < numdims; d++) {
         tileWidths.push(parseInt(jsondata.tileWidths[d]));
     }
-    var ts = new ForeCache.Backend.Structures.TileStructure(aggregationWindows,tileWidths);
+*/
+    //var ts = new ForeCache.Backend.Structures.TileStructure(jsondata.aggregationWindows,jsondata.tileWidths);
+    var ts = new ForeCache.Backend.Structures.MultiDimTileStructure(
+      jsondata.aggregationWindows,
+      jsondata.dimensionGroups,
+      jsondata.tileWidths);
     callback(ts);
   };
   ForeCache.Backend.Request.sendJsonGetRequest(dat,createTileStructure);
@@ -84,7 +105,8 @@ ForeCache.Backend.Request.getTileStructure = function(callback) {
 ForeCache.Backend.Request.getTileBinary = function(tileid,requestid,callback) {
 var dat = {};
   dat.binary = true;
-  dat.zoom = tileid.zoom;
+  //dat.zoom = tileid.zoom;
+  dat.zoom = tileid.zoom.join(",");
   dat.tile_id = tileid.dimindices.join("_");
   dat.requestid = requestid;
   var createTile = function(arrayBuffer) {
@@ -95,7 +117,8 @@ var dat = {};
     //console.log(["arrayBuffer length",arrayBuffer.byteLength]);
     var decodeStart = Date.now();
     var tdecoder = new ForeCache.Backend.TileDecoder(arrayBuffer);
-    var tile = tdecoder.unpackTile();
+    //var tile = tdecoder.unpackTile();
+    var tile = tdecoder.unpackMdTile();
     var decodeEnd = Date.now();
     ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,
       {'action':'decodeTile','tileId':tileid.name,'start':decodeStart,'end':decodeEnd});

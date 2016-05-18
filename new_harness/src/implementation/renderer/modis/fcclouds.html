@@ -22,17 +22,22 @@
     <script type="text/javascript">
       var cacheSizeSets = [1,2,3];
       var startingPosSets = [
+          // 0
           [new ForeCache.Backend.Structures.NewTileKey([0,0],0)],
 
+          // 1
           [new ForeCache.Backend.Structures.NewTileKey([0,1],0)],
 
+          // 2
           [new ForeCache.Backend.Structures.NewTileKey([1,1],0)],
 
+          // 3
           [new ForeCache.Backend.Structures.NewTileKey([0,0],0),
           new ForeCache.Backend.Structures.NewTileKey([0,1],0),
           new ForeCache.Backend.Structures.NewTileKey([1,0],0),
           new ForeCache.Backend.Structures.NewTileKey([1,1],0)],
 
+          // 4
           [new ForeCache.Backend.Structures.NewTileKey([0,0],0),
           new ForeCache.Backend.Structures.NewTileKey([0,1],0),
           new ForeCache.Backend.Structures.NewTileKey([0,2],0),
@@ -41,7 +46,10 @@
           new ForeCache.Backend.Structures.NewTileKey([1,2],0),
           new ForeCache.Backend.Structures.NewTileKey([2,0],0),
           new ForeCache.Backend.Structures.NewTileKey([2,1],0),
-          new ForeCache.Backend.Structures.NewTileKey([2,2],0)]
+          new ForeCache.Backend.Structures.NewTileKey([2,2],0)],
+
+          // 5, multi dim
+          [new ForeCache.Backend.Structures.MultiDimTileKey([0,1],[0])]
         ];
 
       var views = [
@@ -190,9 +198,12 @@
 
         new ForeCache.Backend.Structures.TileStructure([[5000,5000],[2500,2500],[1250,1250],[750,750],[375,375],[188,188]],[360,180]),
         new
-ForeCache.Backend.Structures.TileStructure([[5000,5000],[2500,2500],[1250,1250],[750,750],[375,375],[188,188],[94,94],[47,47],[24,24],[12,12]],[360,180])
+ForeCache.Backend.Structures.TileStructure([[5000,5000],[2500,2500],[1250,1250],[750,750],[375,375],[188,188],[94,94],[47,47],[24,24],[12,12]],[360,180]),
+        new
+ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[1250,1250],[750,750],[375,375],[188,188],[94,94],[47,47],[24,24],[12,12]]],[[0,1]],[360,180])
+
       ];
-      var currts = tss[2];
+      var currts = tss[3];//tss[2];
 
 
       // an attribute was selected from the menu. Create a new visualization
@@ -223,7 +234,8 @@ ForeCache.Backend.Structures.TileStructure([[5000,5000],[2500,2500],[1250,1250],
                                 "padding":{"left":50,"right":70,"top":50,"bottom":50},
                                 "inverted":{"x":false,"y":true,"color":true},
                                 "colorRange":colorbrewer.Spectral[11],
-                                "startingPos":startingPosSets[1],
+                                //"startingPos":startingPosSets[1],
+                                "startingPos":startingPosSets[5],
                                 "cacheSize": cacheSizeSets[0]
           });
       };

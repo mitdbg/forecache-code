@@ -20,6 +20,32 @@ ForeCache.Backend.TileDecoder = function(buffer) {
   this.decoder = new TextDecoder(this.encoding);
 };
 
+ForeCache.Backend.TileDecoder.prototype.unpackMdTile = function() {
+  var offset = 0;
+
+  var res = this.unpackMdKey(offset);
+  var id = res.result;
+  offset = res.offset;
+  console.log(["decoded md key",id,"new offset",offset]);
+
+  var res = this.unpackAttributes(offset);
+  offset = res.offset;
+  var attributes = res.result;
+
+  var res = this.unpackDataTypes(offset);
+  var dataTypes = res.result;
+  offset = res.offset;
+
+  var cols = [];
+  for(var i = 0; i < dataTypes.length; i++) {
+    res = this.unpackColumn(offset,dataTypes[i]);
+    offset = res.offset;
+    cols.push(res.result);
+  }
+  //console.log(["attributes",attributes,"dataTypes",dataTypes,"cols",cols]);
+  return new ForeCache.Backend.Structures.Tile(cols,attributes,dataTypes,id);
+};
+
 ForeCache.Backend.TileDecoder.prototype.unpackTile = function() {
   var offset = 0;
 
@@ -75,6 +101,26 @@ ForeCache.Backend.TileDecoder.prototype.unpackStrings = function(offset) {
     offset2 += strlen;
   }
   return {"result":finalStrings,"offset":offset2};
+};
+
+ForeCache.Backend.TileDecoder.prototype.unpackMdKey = function(offset) {
+  var offset2 = offset;
+  // for zoom
+  var zoomLength = this.getDouble(offset2);
+  offset2 += this.doubleSize;
+  var zoom = [];
+  for(var i = 0; i < zoomLength; i++,offset2+=this.doubleSize) {
+    zoom.push(this.getDouble(offset2));
+  }
+  // for dimindices
+  var numvals = this.getDouble(offset2);
+  offset2 += this.doubleSize;
+  var dimindices = [];
+  for(var i = 0; i < numvals; i++,offset2+= this.doubleSize) {
+    dimindices.push(this.getDouble(offset2));
+  }
+  //console.log([zoom,dimindices,offset2]);
+  return {"result": new ForeCache.Backend.Structures.MultiDimTileKey(dimindices,zoom), "offset":offset2};
 };
 
 ForeCache.Backend.TileDecoder.prototype.unpackKey = function(offset) {

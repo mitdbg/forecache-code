@@ -38,6 +38,7 @@ ForeCache.Renderer.Vis.VisObj = function(chart, options) {
 
   ForeCache.Backend.Request.getTileStructure(function(ts) {
     self.ts = ts; // store the tile structure
+    console.log(["tile structure",self.ts]);
     var newTileWidths = options.tileWidths || ts.tileWidths;
     ForeCache.Backend.Request.updateTileWidths(ts, newTileWidths, function(changed) {
       if(changed) { // successfully updated tile widths
@@ -51,8 +52,10 @@ ForeCache.Renderer.Vis.VisObj = function(chart, options) {
         for(var i = 0; i < self.ts.numdims; i++) {
           dimindices.push(0);
         }
-        self.currentTiles = [new ForeCache.Backend.Structures.NewTileKey(dimindices,0)];
+        //self.currentTiles = [new ForeCache.Backend.Structures.NewTileKey(dimindices,0)];
+        self.currentTiles = [new ForeCache.Backend.Structures.MultiDimTileKey(dimindices,[0])];
       }
+      console.log(["current tiles",self.currentTiles]);
       self.currentZoom = self.currentTiles[0].zoom;
       self.getStartingTiles(); // get the starting data
     });
@@ -461,7 +464,8 @@ ForeCache.Renderer.Vis.VisObj.prototype.getFutureTiles = function() {
   if(numdims == 1) { // one dimension
     if(this.ts.numdims == 1) {
       for(var x = 0; x < xtiles.length; x++) {
-        var newkey = new ForeCache.Backend.Structures.NewTileKey([xtiles[x]],this.currentZoom);
+        //var newkey = new ForeCache.Backend.Structures.NewTileKey([xtiles[x]],this.currentZoom);
+        var newkey = new ForeCache.Backend.Structures.MultiDimTileKey([xtiles[x]],this.currentZoom);
         futuretiles.push(newkey); // push the pair
       }
     } else if (this.ts.numdims == 2) { // navigation along 1 dim doesn't mean there is only one dim
@@ -471,7 +475,8 @@ ForeCache.Renderer.Vis.VisObj.prototype.getFutureTiles = function() {
           di.push(0);
         }
         di[this.xindex] = xtiles[x];
-        var newkey = new ForeCache.Backend.Structures.NewTileKey(di,this.currentZoom);
+        //var newkey = new ForeCache.Backend.Structures.NewTileKey(di,this.currentZoom);
+        var newkey = new ForeCache.Backend.Structures.MultiDimTileKey(di,this.currentZoom);
         //console.log(["new key",newkey]);
         futuretiles.push(newkey); // push the pair
       }
@@ -486,7 +491,8 @@ ForeCache.Renderer.Vis.VisObj.prototype.getFutureTiles = function() {
         }
         di[this.xindex] = xtiles[x];
         di[this.yindex] = ytiles[y];
-        var newkey = new ForeCache.Backend.Structures.NewTileKey(di,this.currentZoom);
+        //var newkey = new ForeCache.Backend.Structures.NewTileKey(di,this.currentZoom);
+        var newkey = new ForeCache.Backend.Structures.MultiDimTileKey(di,this.currentZoom);
         //console.log(["new key",newkey]);
         futuretiles.push(newkey);
       }
