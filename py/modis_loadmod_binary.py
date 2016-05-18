@@ -69,6 +69,7 @@ script_recipient="leibatt@mit.edu"
 # how many times can cleanup fail before we abort?
 not_clean_threshold=2
 scidb_heartbeat_threshold=3
+failures_threshold=10
 
 tsforlog=getTimestamp()
 prefix="logs/" +server+ "_"+str(currinstance)+"_loadmod_binary"
@@ -79,11 +80,41 @@ progressLog=prefix+".progress"
 
 starttime=201400000000
 endtime=201500000000
-chunksize=100000
+chunksize=100000 # this is for the load arrays
 hostname="modis.csail.mit.edu"
 
 # List of bands that should be imported.
 bands=["1","2","3","4","5","6","7","8","9","10","11","12","13lo","13hi","14lo","14hi","15","16","17","18","19","20","21","22","23","24","25","26","27","28","29","30","31","32","33","34","35","36"]
+
+#use this to get the max version for this array
+def getMaxArrayVersion(arrayName):
+	args=["/usr/bin/time","-f",timeFormat,"-a","-o",timeLog,"iquery","--host",hostname,"-o","tsv","-aq","project(filter(list('arrays',true),regex(name,'"+arrayName+"@.*')),name)"]
+	result = executeProcessForResult(args,"could not get max version for array '"+arrayName+"'")
+	if result is not None:
+		maxver = -1
+		lines = result.strip().split("\n")
+		lines.pop(0) # remove the header
+		for line in lines:
+			if len(line) == 0:
+				continue
+			parts = line.split("@")
+			#print "parts:",parts
+			if len(parts) != 2:
+				continue
+			version = int(parts[1])
+			if version > maxver:
+				maxver = version
+		return (maxver,len(lines))
+	return (-1,0)
+
+def removeVersions(arrayName):
+	(versionNo,totalVersions) = getMaxArrayVersion(arrayName)
+	if versionNo < 0:
+		return False
+	if totalVersions == 1: #no need to execute any more queries!
+		return True
+	args=["/usr/bin/time","-f",timeFormat, "-a","-o",timeLog,"iquery","--host",hostname,"-anq","remove_versions("+arrayName+","+str(versionNo)+")"]
+	return executeProcess(args,"could not remove versions for array '"+arrayName+"'")
 
 def loadArray(arrayName,loadSchema,fileName):
 	# remove the first line of the file
@@ -102,6 +133,10 @@ def loadArray(arrayName,loadSchema,fileName):
 	if success:
 		args=["/usr/bin/time","-f",timeFormat,"-a","-o",timeLog,"iquery","--host",hostname,"-anq","insert(redimension(load_"+str(currinstance)+"_"+arrayName+","+arrayName+"),"+arrayName+")"]
 		success &= executeProcess(args,"could not redimension array 'load_"+str(currinstance)+"_"+arrayName+"' and insert into array '"+arrayName+"'")
+	#remove old versions of the array
+	if success:
+		removeVersions(arrayName) # be optimistic
+		#success &= removeVersions(arrayName)
 	return success
 
 def loadArrayBinary(arrayName,loadSchema,binaryFormat,fileName):
@@ -117,6 +152,10 @@ def loadArrayBinary(arrayName,loadSchema,binaryFormat,fileName):
 	if success:
 		args=["/usr/bin/time","-f",timeFormat,"-a","-o",timeLog,"iquery","--host",hostname,"-anq","insert(redimension(load_"+str(currinstance)+"_"+arrayName+","+arrayName+"),"+arrayName+")"]
 		success &= executeProcess(args,"could not redimension array 'load_"+str(currinstance)+"_"+arrayName+"' and insert into array '"+arrayName+"'")
+	#remove old versions of the array
+	if success:
+		#success &= removeVersions(arrayName)
+		removeVersions(arrayName) # be optimistic
 	return success
 
 def checkScidbHeartbeat(attempts_threshold):
@@ -141,6 +180,19 @@ def checkDone(fileName):
 def writeProgressFile(baseFile):
 	with open(progressLog,'a') as f:
 		f.write(baseFile+"\n")
+
+def executeProcessForResult(args,errorMessage):
+	result = None
+	try:
+		#print "executing: "+subprocess.list2cmdline(args)
+		o = subprocess.check_output(args,env=envir)
+		result = o
+	except subprocess.CalledProcessError as e:
+		if errorMessage is not None:
+			print errorMessage
+		print e
+		return result
+	return result
 
 def executeProcess(args,errorMessage):
 	try:
@@ -189,10 +241,27 @@ def loadBandMeasurementData(baseName):
 			break
 	return success
 
+# cleans up binary/csv files created for specified granule
 def cleanUp(baseName):
 	print "Cleaning up."
 	args=["/usr/bin/time","-f",timeFormat,"-a","-o",timeLog,"rm","-rf",os.path.join(baseOutputFolder,baseName)]
 	return executeProcess(args,"error occured during cleanup for file '"+baseName+"'")
+
+
+# returns size of raw data for specified granule
+def getDirSizeForGranule(baseName):
+	return getDirSize(os.path.join(baseOutputFolder,baseName))
+
+# returns size of the specified directory in bytes
+def getDirSize(dirpath):
+	print "getting size of directory: "+dirpath
+	args=["/usr/bin/time","-f",timeFormat,"-a","-o",timeLog,"du","-sb",dirpath]
+	result = executeProcessForResult(args,"could not get size of directory '"+dirpath+"'")
+	if (result is not None) and (len(result) > 0):
+		tokens=result.split("\t")
+		if len(tokens) == 2:
+			return int(tokens[0])
+	return -1
 
 # used to alert me when things go wrong
 def sendEmail(sender,recipient,subject,message):
@@ -209,6 +278,8 @@ def processFiles(fileListFileName):
 	not_cleaned=0
 	failed=0
 	total = 0
+	glens=[] # for capturing how long it takes to load each granule
+	raw_data_sizes=[] # for capturing how big each granule is
 	with open(fileListFileName) as fileList:
 		for line in fileList:
 			total += 1
@@ -229,9 +300,11 @@ def processFiles(fileListFileName):
 					sendEmail(script_sender,script_recipient,"SciDB unreachable ","ERROR: could not reach SciDB. aborting load for SciDB instance '"+str(currinstance)+"', on server '"+server+"'.")
 					sys.exit(1)
 				print "Processing file: "+filePath
+				gstart=getTimestamp()
 				success = True
 				# Convert HDF to CSV.
-				success &= convertHdfToCsv(filePath)
+				converted = convertHdfToCsv(filePath)
+				success &= converted
 				if success:
 					# Load Granule Metadata.
 					success &= loadGranuleMetadata(baseName)
@@ -244,6 +317,8 @@ def processFiles(fileListFileName):
 				if success:
 					# Load Measurement Data.
 					success &= loadBandMeasurementData(baseName)
+				# compute raw granule size before cleanup
+				rawsize=getDirSizeForGranule(baseName)
 				# Clean up
 				cleaned = cleanUp(baseName)
 				success &= cleaned
@@ -256,9 +331,19 @@ def processFiles(fileListFileName):
 				if success:
 					# record this base name in the progress log
 					writeProgressFile(baseName)
+				        gend=getTimestamp()
+					glens.append(gend-gstart)
+					print "individual load completed in "+str(gend-gstart)+" seconds."
+					# track granule sizes
+					raw_data_sizes.append(rawsize)
+					print "loaded "+str(rawsize)+" bytes of raw data for this granule."
 				else:
 					failed += 1
-	return [failed,total]
+					if failed > failures_threshold:
+						print "ERROR: too many failed files. aborting load."
+						sendEmail(script_sender,script_recipient,"too many failures on "+server,"ERROR: too many failures ("+str(failed)+" total failures). aborting load for SciDB instance '"+str(currinstance)+"', on server '"+server+"'.")
+						sys.exit(1)
+	return [failed,total,glens,raw_data_sizes]
 # timestamp in seconds
 start=getTimestamp()
 final_stats=processFiles(sys.argv[1])
@@ -267,5 +352,7 @@ end=getTimestamp()
 #duration in seconds
 elapsed=end - start
 print "executed load in "+str(elapsed)+" seconds."
-sendEmail(script_sender,script_recipient,"data load finished","Finished loading MODIS data specified in file '"+sys.argv[1]+"', using SciDB instance '"+str(currinstance)+"', on server '"+server+"'. "+str(final_stats[0])+" files failed to load out of "+str(final_stats[1])+". Executed load in "+str(elapsed)+" seconds.")
+print "loaded granules in "+str(sum(final_stats[2]) / float(len(final_stats[2])))+" seconds on average."
+print "loaded "+str(sum(final_stats[3]))+" total bytes of raw data."
+sendEmail(script_sender,script_recipient,"data load finished","Finished loading MODIS data specified in file '"+sys.argv[1]+"', using SciDB instance '"+str(currinstance)+"', on server '"+server+"'. "+str(final_stats[0])+" files failed to load out of "+str(final_stats[1])+". Executed load in "+str(elapsed)+" seconds. Loaded granules in "+str(sum(final_stats[2]) / float(len(final_stats[2])))+" seconds on average. loaded "+str(sum(final_stats[3]))+" total bytes of raw data.")
 
