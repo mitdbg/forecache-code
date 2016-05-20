@@ -28,36 +28,31 @@ ForeCache.Renderer.Vis.LineObj.prototype.renderTile = function(tile) {
 	var prevx,prevy;
   var xt = 1.0 * tile.id.dimindices[this.xindex]*this.tileManager.getDimTileWidth(this.xindex);
   //console.log(["tile",tile,xt]);
+
+  this.ctx.beginPath();
+  this.ctx.strokeStyle = this.fillStyle;
+  this.ctx.fillStyle = this.fillStyle;
 	for(var i=0; i < rows;i++) {
     var xval = Number(tile.columns[this.xindex][i]) + xt;
     var yval = Number(tile.columns[this.yindex][i]);
 		var x = this.x(xval)+this.padding.left;
 		var y = this.y(yval)+this.padding.top;
 		
-/*
-    if(i < 10) {
-      console.log(["xval",xval,"yval",yval,"x",x,"y",y]);
-    }
-*/
 		if(start) {
 			start = false;
 		} else {
-			this.ctx.beginPath();
 			this.ctx.moveTo(prevx,prevy);
- 			this.ctx.strokeStyle = this.fillStyle;
 			this.ctx.lineTo(x,y);
-			this.ctx.stroke();
-			this.ctx.closePath();
 		}
-		this.ctx.beginPath();
- 		this.ctx.fillStyle = this.fillStyle;
-		this.ctx.arc(x,y, 3, 0, arcval, false);
- 		this.ctx.fill();
-		this.ctx.closePath();
+    this.ctx.arc(x,y, 3, 0, arcval, false);
 
 		prevx = x;
 		prevy = y;
 	}
+	this.ctx.stroke();
+ 	this.ctx.fill();
+	this.ctx.closePath();
+
   var xmin = this.x(tile.id.dimindices[this.xindex] * this.tileManager.getDimTileWidth(this.xindex)) + this.padding.left;
   var xmax = this.x((tile.id.dimindices[this.xindex]+1) * this.tileManager.getDimTileWidth(this.xindex)) + this.padding.left;
   var ymin = this.padding.top;

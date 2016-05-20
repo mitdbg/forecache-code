@@ -120,31 +120,33 @@ function(dimIndices,diffs) {
   }
 
   // zoom level changed, prepare to get new tiles
+  var changed = [];
+  for(var i = 0; i < this.ts.tileWidths.length; i++) {
+    changed.push(false);
+  }
   for(var i = 0; i < this.visObjects.length; i++) { // for each chart
     var vObj = this.visObjects[i];
 
     // compute the new scale ranges
     var newXRange = this.getDimRangeForZoom(this.currentZoom,newzoom,vObj.xindex,vObj.x,this.cacheSize);
     newXRange = vObj.adjustForViewportRatio(newXRange);
-    // save the range info for later
-    if(vObj.changed && !dimRangeMap.hasOwnProperty(vObj.xindex)) {
+    if(vObj.changed && !changed[vObj.xindex]) { // we found a new change
+      changed[vObj.xindex] = true;
+      dimRangeMap[vObj.xindex] = newXRange;
+    } else if (!dimRangeMap.hasOwnProperty(vObj.xindex)) { // no change yet, but add range anyway
       dimRangeMap[vObj.xindex] = newXRange;
     }
 
-    // tell the vObj to update itself in anticipation of the new tiles
-    vObj.x.domain(newXRange);
-    vObj.fixYDomain = true;
-
     // do the same for y axis
     if(vObj.dimensionality == 2) {
-      var yindex = vObj.yindex;
-      var yScale = vObj.y;
-      var newYRange = this.getDimRangeForZoom(this.currentZoom,newzoom,yindex,yScale,this.cacheSize);
+      var newYRange = this.getDimRangeForZoom(this.currentZoom,newzoom,vObj.yindex,vObj.y,this.cacheSize);
       newYRange = vObj.adjustForViewportRatio(newYRange);
-      if(vObj.changed && !dimRangeMap.hasOwnProperty(yindex)) {
-        dimRangeMap[yindex] = newYRange;
+      if(vObj.changed && !changed[vObj.yindex]) { // we found a new change
+        changed[vObj.yindex] = true;
+        dimRangeMap[vObj.yindex] = newYRange;
+      } else if (!dimRangeMap.hasOwnProperty(vObj.yindex)) { // no change yet, but add range anyway
+        dimRangeMap[vObj.yindex] = newYRange;
       }
-      vObj.y.domain(newYRange);
     }
   }
 
@@ -170,43 +172,60 @@ function(drm) {
   for(var i = 0; i < this.visObjects.length; i++) { // for each chart
     this.visObjects[i].makeBusy();
   }
-
+  var changed = [];
+  for(var i = 0; i < this.ts.tileWidths.length; i++) {
+    changed.push(false);
+  }
   if(arguments.length == 1) { // dimRangeMap already built
     dimRangeMap = drm;
+    for(var i = 0; i < this.visObjects.length; i++) { // for each chart
+      var vObj = this.visObjects[i];
+      if(vObj.changed) {
+        changed[vObj.xindex] = true;
+        if(vObj.dimensionality == 2) {
+          changed[vObj.yindex] = true;
+        }
+      }
+    }
   } else { // build the dimRangeMap
     for(var i = 0; i < this.visObjects.length; i++) { // for each chart
       var vObj = this.visObjects[i];
       // save the range info for later
-      if(vObj.changed && !dimRangeMap.hasOwnProperty(vObj.xindex)) {
+      if(vObj.changed && !changed[vObj.xindex]) { // we found a new change
+        changed[vObj.xindex] = true;
+        dimRangeMap[vObj.xindex] = vObj.x.domain();
         //console.log(["found change in vis obj",i,"dimindex",vObj.xindex,"domain",vObj.x.domain()]);
+      } else if (!dimRangeMap.hasOwnProperty(vObj.xindex)) { // no change yet, but add range anyway
         dimRangeMap[vObj.xindex] = vObj.x.domain();
       }
+
+      // do the same for the y axis
       if(vObj.dimensionality == 2) {
-        if(vObj.changed && !dimRangeMap.hasOwnProperty(vObj.yindex)) {
+        if(vObj.changed && !changed[vObj.yindex]) { // we found a new change
+          changed[vObj.yindex] = true;
+          dimRangeMap[vObj.yindex] = vObj.y.domain();
+        } else if (!dimRangeMap.hasOwnProperty(vObj.yindex)) { // no change yet, but add range anyway
           dimRangeMap[vObj.yindex] = vObj.y.domain();
         }
       }
     }
   }
-  // if anything changed, update the other vis objects to match
-  var changed = false;
-  for(var i = 0; i < this.visObjects.length; i++) { // for each chart
-    var vObj = this.visObjects[i];
-    vObj.changed = false;
-    // update the vis objects to be consistent with each other
-    if(dimRangeMap.hasOwnProperty(vObj.xindex)) {
-      changed = true;
-      //console.log(["old range",vObj.x.domain(),"new range",dimRangeMap[vObj.xindex]]);
-      vObj.x.domain(dimRangeMap[vObj.xindex]);
-    }
-    if(vObj.dimensionality == 2 && dimRangeMap.hasOwnProperty(vObj.yindex)) {
-      changed = true;
+  // if something changed, update the other vis objects to match
+  var cflag = changed.some(function(c){return c;});
+  if(cflag) {
+    for(var i = 0; i < this.visObjects.length; i++) { // for each chart
+      var vObj = this.visObjects[i];
+      vObj.changed = false;
       // update the vis objects to be consistent with each other
-      vObj.y.domain(dimRangeMap[vObj.yindex]);
+      if(dimRangeMap.hasOwnProperty(vObj.xindex)) {
+        //console.log(["old range",vObj.x.domain(),"new range",dimRangeMap[vObj.xindex]]);
+        vObj.x.domain(dimRangeMap[vObj.xindex]);
+      }
+      if(vObj.dimensionality == 2 && dimRangeMap.hasOwnProperty(vObj.yindex)) {
+        vObj.y.domain(dimRangeMap[vObj.yindex]);
+      }
     }
-  }
-  if(changed) { // if there was a change in one or more dimensions
-    // fill in the gaps
+    // fill in the gaps for any missing dimensions
     for(var i = 0; i < this.ts.tileWidths.length; i++) {
       if(!dimRangeMap.hasOwnProperty(i)) {
         dimRangeMap[i] = this.getDimRangeForUnusedDim(this.currentZoom,this.currentZoom,i,this.cacheSize);
@@ -309,7 +328,7 @@ function(currzoom,newzoom,dimindex,dimScale,cacheSize) {
   var newMid = this.ts.getNewMid(currzoom,newzoom,dimindex,mid);
   var halfWidth = this.ts.tileWidths[dimindex] * cacheSize / 2.0;
   var newDomain = [newMid-halfWidth,newMid+halfWidth];
-  console.log(["x","old mid",mid,"new mid",newMid]);
+  console.log(["dimindex",dimindex,"old mid",mid,"new mid",newMid]);
     
   return newDomain;
 };
