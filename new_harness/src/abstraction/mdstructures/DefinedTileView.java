@@ -146,7 +146,7 @@ public class DefinedTileView {
 			}
 			int[] zoomPos = new int[ts.dimensionGroups.length];
 			for(int i = 0; i < total; i++) { // for each zoom level
-				int[] windows = this.ts.getAggregationWindow(zoomPos);
+				long[] windows = this.ts.getAggregationWindow(zoomPos);
 				HashCodeBuilder hb = new HashCodeBuilder();
 				for(int j = 0; j < zoomPos.length; j++) {
 					hb.append(zoomPos[j]);
@@ -237,9 +237,9 @@ public class DefinedTileView {
 		double[] ranges = new double[this.dimbound.dimensions.size()];
 		for(int i = 0; i < ranges.length; i++) {
 			String dimname = this.dimbound.dimensions.get(i);
-			List<Integer> range = this.dimbound.boundaryMap.get(dimname);
-			int low = range.get(0);
-			int high = range.get(1);
+			List<Long> range = this.dimbound.boundaryMap.get(dimname);
+			long low = range.get(0);
+			long high = range.get(1);
 			ranges[i] = high - low + 1;
 			//System.out.println("range for "+i+": "+ranges[i]);
 		}

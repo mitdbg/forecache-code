@@ -20,13 +20,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class MultiDimTileStructure implements java.io.Serializable {
 	private static final long serialVersionUID = -393799966449384155L;
-	public int[][][] aggregationWindows; // length = total dimension groups
+	public long[][][] aggregationWindows; // length = total dimension groups
 										// subarray length = total zoom levels for this dim group
 										// sub-subarray length = # dimensions in dimgroup
 	public int[][] dimensionGroups;
-	public int[] tileWidths; // one per dimension
+	public long[] tileWidths; // one per dimension
 	protected int[] dimensionPositions = null;
-	protected Map<Integer,int[]> dimGroupMap = null;
 	
 	/**
 	 * For a zoom id, return the corresponding aggregation windows. Supports dimension groups.
@@ -34,12 +33,12 @@ public class MultiDimTileStructure implements java.io.Serializable {
 	 * is a zoom level for each dimension group in the tile structure
 	 * @return the aggregation windows for each dimension, for this zoom level
 	 */
-	public int[] getAggregationWindow(int[] zoomPos) {
-		int[] sortedWindows = new int[tileWidths.length];
+	public long[] getAggregationWindow(int[] zoomPos) {
+		long[] sortedWindows = new long[tileWidths.length];
 		getDimensionPositions();
 		int index = 0;
 		for(int i = 0; i < zoomPos.length; i++) {
-			int[] windows = aggregationWindows[i][zoomPos[i]];
+			long[] windows = aggregationWindows[i][zoomPos[i]];
 			for(int j = 0; j < windows.length; j++) {
 				sortedWindows[dimensionPositions[index]] = windows[j];
 				index++;
@@ -59,8 +58,8 @@ public class MultiDimTileStructure implements java.io.Serializable {
 	 */
 	public double[] getNewMid(int[] oldZoomPos, int[] newZoomPos, double[] oldMid) {
 		getDimensionPositions();
-		int[] newWindows = getAggregationWindow(newZoomPos); // windows for each dimension at this zoom level
-		int[] oldWindows = getAggregationWindow(oldZoomPos);
+		long[] newWindows = getAggregationWindow(newZoomPos); // windows for each dimension at this zoom level
+		long[] oldWindows = getAggregationWindow(oldZoomPos);
 		
 		double[] newMid = new double[oldMid.length];
 		for(int i = 0; i < oldMid.length; i++) { // for each dimenison
@@ -177,15 +176,13 @@ public class MultiDimTileStructure implements java.io.Serializable {
 	}
 	
 	protected void getDimensionPositions() {
-		if(dimensionPositions != null && dimGroupMap != null) return;
+		if(dimensionPositions != null) return;
 		dimensionPositions = new int[tileWidths.length];
-		dimGroupMap = new HashMap<Integer,int[]>();
 		int index = 0;
 		for(int i = 0; i < dimensionGroups.length; i++) {
 			int[] group = dimensionGroups[i];
 			for(int j = 0; j < group.length; j++) {
 				dimensionPositions[index] = group[j];
-				dimGroupMap.put(group[j], new int[]{i,j});
 				index++;
 			}
 		}
@@ -194,10 +191,10 @@ public class MultiDimTileStructure implements java.io.Serializable {
 	/****************** Nested Classes *********************/
 	public static class MultiDimTileStructureJson implements java.io.Serializable {
 		private static final long serialVersionUID = -1685745339476813442L;
-		public int[][][] aggregationWindows; // length = total dimension groups
+		public long[][][] aggregationWindows; // length = total dimension groups
 											// subarray length = total zoom levels for this dim group
 											// sub-subarray length = # dimensions in dimgroup
 		public int[][] dimensionGroups;
-		public int[] tileWidths; // one per dimension
+		public long[] tileWidths; // one per dimension
 	}
 }

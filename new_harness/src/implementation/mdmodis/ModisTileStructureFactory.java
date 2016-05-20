@@ -8,18 +8,18 @@ public class ModisTileStructureFactory {
 	// taken from parameters file from old setup
 	// Note: zoom levels 1 and zero were computed incorrectly in the orignial parameters data.
 	// carried over here, as best I could manage.
-	public static int[][][] defaultAggregationWindows = new int[][][]{{
-		new int[]{150,150},
-		new int[]{98,98},
-		new int[]{64,64},
-		new int[]{32,32},
-		new int[]{16,16},
-		new int[]{8,8},
-		new int[]{4,4},
-		new int[]{2,2},
-		new int[]{1,1}}};
+	public static long[][][] defaultAggregationWindows = new long[][][]{{
+		new long[]{150,150},
+		new long[]{98,98},
+		new long[]{64,64},
+		new long[]{32,32},
+		new long[]{16,16},
+		new long[]{8,8},
+		new long[]{4,4},
+		new long[]{2,2},
+		new long[]{1,1}}};
 	public static int[][] defaultDimensionGroups = new int[][]{{0,1}};
-	public static int[] defaultTileWidths = new int[]{300,300}; // one per dimension
+	public static long[] defaultTileWidths = new long[]{300,300}; // one per dimension
 	
 	public static MultiDimTileStructure getDefaultModisTileStructure() {
 		MultiDimTileStructure ts = new MultiDimTileStructure();
@@ -30,7 +30,7 @@ public class ModisTileStructureFactory {
 		return ts;
 	}
 	
-	public static MultiDimTileStructure getModisTileStructure(int[][][] aggregationWindows,int[][] dimensionGroups,int[] tileWidths) {
+	public static MultiDimTileStructure getModisTileStructure(long[][][] aggregationWindows,int[][] dimensionGroups,long[] tileWidths) {
 		MultiDimTileStructure ts = new MultiDimTileStructure();
 		ts.aggregationWindows = aggregationWindows;
 		ts.dimensionGroups = dimensionGroups;
