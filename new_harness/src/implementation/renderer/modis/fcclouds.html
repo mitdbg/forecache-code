@@ -233,9 +233,11 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
                                 //"zlabel":"red","zname":"red",
                                 "zname":zname,"zlabel":zname,
                                 //"width":400,
-                                "width":840,
+                                //"width":840,
+                                "width":480,
                                 //"height":400,
-                                "height":820,
+                                //"height":820,
+                                "height":280,
                                 "padding":{"left":50,"right":70,"top":50,"bottom":50},
                                 "inverted":{"x":false,"y":true,"color":true},
                                 "colorRange":colorbrewer.Spectral[11],
@@ -243,8 +245,28 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
                                 "startingPos":startingPosSets[5],
                                 "cacheSize": cacheSizeSets[0]
           });
+
+          var vis2 =
+          ForeCache.Renderer.Vis.getVis($("#view2"),{"visType":visType,
+                                //"xname":"x","xlabel":"x",
+                                //"yname":"y","ylabel":"y",
+                                "xname":"longitude_e4","xlabel":"longitude_e4",
+                                "yname":"latitude_e4","ylabel":"latitude_e4",
+                                //"zlabel":"red","zname":"red",
+                                "zname":zname,"zlabel":zname,
+                                "width":480,
+                                "height":280,
+                                "padding":{"left":50,"right":70,"top":50,"bottom":50},
+                                "inverted":{"x":false,"y":true,"color":true},
+                                "colorRange":colorbrewer.Spectral[11],
+                                //"startingPos":startingPosSets[1],
+                                "startingPos":startingPosSets[5],
+                                "cacheSize": cacheSizeSets[0]
+          });
+
           // tile manager controls all tile fetching across visualizations
-          var tileManager = new ForeCache.Backend.TileManager(currts,currview,[vis.visObj],{
+          var tileManager = new ForeCache.Backend.TileManager(currts,currview,
+                            [vis.visObj,vis2.visObj],{
                                 //"startingPos":startingPosSets[1],
                                 "startingPos":startingPosSets[5],
                                 "cacheSize": cacheSizeSets[0]
@@ -288,6 +310,7 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
 
          <button id="attribute-button">submit</button>
          <div id="view" class="view"></div>
+         <div id="view2" class="view"></div>
 			</div>
 	</div>
 </body>

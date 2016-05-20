@@ -42,7 +42,7 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
   }
 
   ystats = this.get_stats(this.yindex);
-  console.log(["ydomain",newopts.ydomain,"ystats",ystats]);
+  //console.log(["ydomain",newopts.ydomain,"ystats",ystats]);
   //newopts.ydomain = [ystats.min,ystats.max];
   //newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
   //console.log(ystats);
@@ -74,11 +74,12 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
   //console.log(["dimindices[y]",tile.id.dimindices[this.xindex],"dimindices[y]",tile.id.dimindices[this.yindex]]);
   //console.log(["x tile width",this.tileManager.getDimTileWidth(this.xindex),
   //  "y tile width",this.tileManager.getDimTileWidth(this.yindex)]);
+/*
   console.log(["tile",tile,"xt",xt,"yt",yt,
       "zdomain",this.colorScale.domain(),
       "xw",this.options.boxwidth.x,
       "xy",this.options.boxwidth.y]);
-  console.log(["y domain",this.y.domain(),"y range",this.y.range()]);
+*/
 	for(var i=0; i < rows;i++) {
     var xval = Number(tile.columns[this.xindex][i]) + xt;
     var yval = Number(tile.columns[this.yindex][i]) + yt;
@@ -94,11 +95,6 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
 		
 		this.ctx.beginPath();
  		this.ctx.fillStyle = this.colorScale(zval);
-    if(i < 10) {
-      console.log(["fillStyle",i,"x",x,"y",y,"color",this.ctx.fillStyle,
-        "true y",tile.columns[this.yindex][i],
-        "yval",yval]);
-    }
 		this.ctx.fillRect(x,y, xw, yw);
 		this.ctx.closePath();
 	}

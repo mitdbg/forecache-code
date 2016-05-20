@@ -239,6 +239,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.updateOpts = function() {
   //console.log(["width",newopts.size.width,"height",newopts.size.height]);
 };
 
+// only called when one of the zoom buttons is clicked
 ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
 	var self = this;
 	return function () {
@@ -246,6 +247,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
 			self.mousebusy = true;
 			$('body').css("cursor", "wait");
 		}
+    self.changed = true;
 		var zoomDiff = Number(this.getAttribute("data-zoom"));
 		if(!self.tileManager.zoomClick([self.xindex,self.yindex],[zoomDiff,zoomDiff])) { // no change
 			self.mousebusy = false;
@@ -276,12 +278,12 @@ ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
     var tile = this.tileManager.getTile(i);
     this.renderTile(tile);
     var e = Date.now();
-    console.log(["time to render tile",e-s]); // console statements take ~3ms of time
+    //console.log(["time to render tile",e-s]); // console statements take ~3ms of time
     //ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,{'action':'renderTile','tileId':tile.id.name,'start':s,'end':e});
   };
   this.statesRenderObj.renderUsa(this.tileManager.getAggregationWindow(this.xindex),this.tileManager.getAggregationWindow(this.yindex),this.ctx,this.x,this.y,this.padding);
    var end = Date.now(); // in seconds
-  console.log(["time to render all tiles",end - start]);
+  //console.log(["time to render all tiles",end - start]);
   ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,
     {'action':'render','totalTiles':totalTiles,'start':start,'end':end});
  	
@@ -321,11 +323,12 @@ by the tile manager.
 ForeCache.Renderer.Vis.VisObj.prototype.afterZoom = function() {
 	var self = this;
 	return function() {
+    self.changed = true;
 		if(!self.mousebusy) {
 			self.mousebusy = true;
 			$('body').css("cursor", "wait");
 		}
-		if(self.tileManager.afterZoom()) {
+		if(!self.tileManager.afterZoom()) {
 		  self.mousebusy = false;
 			$('body').css("cursor", "default");
 		}
@@ -348,7 +351,7 @@ d3.scale.linear().domain([color_domain[0],color_domain[1]]).range([offsets.y,l_h
         ticks.push(color_domain[0]+i*step);
     }
     ticks.push(color_domain[1]);
-    console.log(["ticks",ticks]);
+    //console.log(["ticks",ticks]);
     var axis = d3.svg.axis().scale(scale).orient("right").tickValues(ticks).tickFormat(d3.format(".2f"));
     this.legend.selectAll("rect")
         .data(ticks.slice(0,ticks.length-1))

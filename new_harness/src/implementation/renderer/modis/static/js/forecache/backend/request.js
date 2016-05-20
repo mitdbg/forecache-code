@@ -30,11 +30,11 @@ ForeCache.Backend.Request.updateTileWidths = function(oldts,tileWidths,callback)
   var dat = {};
   dat.setts = true;
   //dat.ts = {"aggregationWindows":oldts.aggregationWindows,"tileWidths":tileWidths};
-  console.log("updating tile widths in tile Structure");
+  //console.log("updating tile widths in tile Structure");
   dat.ts = {};
   var properties = oldts.jsonFields;
   for(var i = 0; i < properties.length; i++) {
-    console.log(["property",properties[i]]);
+    //console.log(["property",properties[i]]);
     dat.ts[properties[i]] = oldts[properties[i]];
   }
   dat.ts.tileWidths = oldts.tileWidths;
@@ -59,11 +59,11 @@ ForeCache.Backend.Request.setTileStructure = function(newts,callback) {
   dat.setts = true;
   //dat.ts = {"aggregationWindows":newts.aggregationWindows,"tileWidths":newts.tileWidths};
   dat.ts = {};
-  console.log("setting tile Structure");
+  //console.log("setting tile Structure");
   var properties = newts.jsonFields;
-  console.log([properties,newts]);
+  //console.log([properties,newts]);
   for(var i = 0; i < properties.length; i++) {
-    console.log(["property",properties[i]]);
+    //console.log(["property",properties[i]]);
     dat.ts[properties[i]] = newts[properties[i]];
   }
   var confirmTileStructure = function(jsondata) {
@@ -114,7 +114,7 @@ var dat = {};
     var fetchEnd = Date.now();
     ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,
       {'action':'fetchTileBinary','tileId':tileid.name,'start':fetchStart,'end':fetchEnd});
-    console.log(["time to fetch",fetchEnd-fetchStart]);
+    //console.log(["time to fetch",fetchEnd-fetchStart]);
     //console.log(["arrayBuffer length",arrayBuffer.byteLength]);
     var decodeStart = Date.now();
     var tdecoder = new ForeCache.Backend.TileDecoder(arrayBuffer);
@@ -123,7 +123,7 @@ var dat = {};
     var decodeEnd = Date.now();
     ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,
       {'action':'decodeTile','tileId':tileid.name,'start':decodeStart,'end':decodeEnd});
-    console.log(["time to decode",decodeEnd-decodeStart]);
+    //console.log(["time to decode",decodeEnd-decodeStart]);
 
     callback(tile); // return the tile object
   };

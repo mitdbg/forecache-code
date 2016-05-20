@@ -26,7 +26,7 @@ ForeCache.Backend.TileDecoder.prototype.unpackMdTile = function() {
   var res = this.unpackMdKey(offset);
   var id = res.result;
   offset = res.offset;
-  console.log(["decoded md key",id,"new offset",offset]);
+  //console.log(["decoded md key",id,"new offset",offset]);
 
   var res = this.unpackAttributes(offset);
   offset = res.offset;

@@ -58,7 +58,7 @@ ForeCache.Backend.TileManager.prototype.getStartingTiles = function() {
   ForeCache.Backend.Request.getTiles(self.currentTiles,function(tiles){
     var fetchEnd = Date.now();
     ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,{'action':'fetch','totalTiles':tiles.length,'start':fetchStart,'end':fetchEnd});
-    console.log(['time to fetch all tiles',fetchEnd-fetchStart]);
+    //console.log(['time to fetch all tiles',fetchEnd-fetchStart]);
 
     // store the starting tiles
     self.tileMap.batchInsert(tiles);
@@ -107,6 +107,9 @@ function(dimIndices,diffs) {
   var dimRangeMap = {};
   var newzoom = this.ts.getNewZoomPosition(this.currentZoom,dimIndices,diffs);
   if(!this.ts.zoomLevelChanged(this.currentZoom,newzoom)) { // no change
+    for(var i = 0; i < this.visObjects.length; i++) { // for each chart
+      this.visObjects[i].changed = false;
+    }
     return false;
   }
 
@@ -118,7 +121,7 @@ function(dimIndices,diffs) {
     var newXRange = this.getDimRangeForZoom(this.currentZoom,newzoom,vObj.xindex,vObj.x,this.cacheSize);
     newXRange = vObj.adjustForViewportRatio(newXRange);
     // save the range info for later
-    if(!dimRangeMap.hasOwnProperty(vObj.xindex)) {
+    if(vObj.changed && !dimRangeMap.hasOwnProperty(vObj.xindex)) {
       dimRangeMap[vObj.xindex] = newXRange;
     }
 
@@ -132,7 +135,7 @@ function(dimIndices,diffs) {
       var yScale = vObj.y;
       var newYRange = this.getDimRangeForZoom(this.currentZoom,newzoom,yindex,yScale,this.cacheSize);
       newYRange = vObj.adjustForViewportRatio(newYRange);
-      if(!dimRangeMap.hasOwnProperty(yindex)) {
+      if(vObj.changed && !dimRangeMap.hasOwnProperty(yindex)) {
         dimRangeMap[yindex] = newYRange;
       }
       vObj.y.domain(newYRange);
@@ -149,29 +152,47 @@ function(dimIndices,diffs) {
 // this gets called any time a pan or zoom occurs
 ForeCache.Backend.TileManager.prototype.afterZoom =
 function(drm) {
+  console.log("tile manager after zoom called");
   var self = this;
   var dimRangeMap = {};
   if(arguments.length == 1) { // dimRangeMap already built
+    console.log("got here");
     dimRangeMap = drm;
   } else { // build the dimRangeMap
     for(var i = 0; i < this.visObjects.length; i++) { // for each chart
       var vObj = this.visObjects[i];
       // save the range info for later
-      if(!dimRangeMap.hasOwnProperty(vObj.xindex)) {
+      if(vObj.changed && !dimRangeMap.hasOwnProperty(vObj.xindex)) {
+        console.log(["found change in vis obj",i,"dimindex",vObj.xindex,"domain",vObj.x.domain()]);
         dimRangeMap[vObj.xindex] = vObj.x.domain();
       }
-      // update the vis objects to be consistent with each other
-      vObj.x.domain(dimRangeMap[vObj.xindex]);
+      console.log(["general, domain",vObj.x.domain()]);
       if(vObj.dimensionality == 2) {
-        if(!dimRangeMap.hasOwnProperty(vObj.yindex)) {
+        if(vObj.changed && !dimRangeMap.hasOwnProperty(vObj.yindex)) {
           dimRangeMap[vObj.yindex] = vObj.y.domain();
         }
-        // update the vis objects to be consistent with each other
-        vObj.y.domain(dimRangeMap[vObj.yindex]);
       }
     }
   }
-  console.log(["dimRangeMap",dimRangeMap]);
+  // if anything changed, update the other vis objects to match
+  var changed = false;
+  for(var i = 0; i < this.visObjects.length; i++) { // for each chart
+    var vObj = this.visObjects[i];
+    vObj.changed = false;
+    // update the vis objects to be consistent with each other
+    if(dimRangeMap.hasOwnProperty(vObj.xindex)) {
+      changed = true;
+      //console.log(["old range",vObj.x.domain(),"new range",dimRangeMap[vObj.xindex]]);
+      vObj.x.domain(dimRangeMap[vObj.xindex]);
+    }
+    if(vObj.dimensionality == 2 && dimRangeMap.hasOwnProperty(vObj.yindex)) {
+      changed = true;
+      // update the vis objects to be consistent with each other
+      vObj.y.domain(dimRangeMap[vObj.yindex]);
+    }
+  }
+
+  //console.log(["dimRangeMap",dimRangeMap]);
   // get tile ranges for every dimension, even ones not used by the charts
   var alltiles = [];
   for(var i = 0; i < this.ts.tileWidths.length; i++) {
@@ -205,13 +226,18 @@ function(drm) {
     ForeCache.Backend.Request.getTiles(toFetch,function(tiles) {
       var fetchEnd = Date.now();
       ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,{'action':'fetch','totalTiles':tiles.length,'start':fetchStart,'end':fetchEnd});
-      console.log(['time to fetch all tiles',fetchEnd-fetchStart]);
+      //console.log(['time to fetch all tiles',fetchEnd-fetchStart]);
       self.tileMap.batchInsert(tiles); // insert the fetched tiles
       // tell vis objects to redraw themselves using the new tiles
       for(var i = 0; i < self.visObjects.length; i++) { // for each chart
         self.visObjects[i].redraw()();
       }
     });
+    return true;
+  } else if(changed) { // ranges changed, but no tiles need to be fetched
+    for(var i = 0; i < this.visObjects.length; i++) { // for each chart
+      this.visObjects[i].redraw()();
+    }
     return true;
   } else { // nothing else to do
     return false;
@@ -270,7 +296,7 @@ function(zoomPos,alltiles) {
     }
     var newkey = new ForeCache.Backend.Structures.MultiDimTileKey(di,zoomPos);
     futuretiles.push(newkey);
-    console.log(["newkey",newkey,"tk",tk]);
+    //console.log(["newkey",newkey,"tk",tk]);
     // create the next key
     tk[0]++;
     var j = 0;
@@ -284,6 +310,6 @@ function(zoomPos,alltiles) {
     //console.log(["i",i,"j",j,"di[j]",di[j],"alltiles[j][tk[j]]",alltiles[j][tk[j]],"tk",tk,"alltiles",alltiles]);
   }
   //console.log(["alltiles",alltiles,"future tiles",futuretiles]);
-  console.log(["future tiles",futuretiles]);
+  //console.log(["future tiles",futuretiles]);
   return futuretiles;
 };
