@@ -143,7 +143,15 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function() {
 			.attr("width", this.size.width)
 			.attr("height", this.size.height)
 			.style("fill", "#FFFFFF")
-			.style("opacity",0);
+			.style("opacity",0)
+		  .attr("class","pan-rect");
+
+  this.busyRect = this.vis.append("rect")
+			.attr("width", this.size.width)
+			.attr("height", this.size.height)
+			.style("fill", "#00000")
+			.style("opacity",.4)
+		  .attr("class","busy-rect hide");
 
 	//this.plot.call(d3.behavior.zoom().scaleExtent([1,1]).x(this.x).y(this.y).on("zoom", this.redraw()));
 	this.plot.call(d3.behavior.zoom().scaleExtent([1,1]).x(this.x).y(this.y).on("zoom", this.redraw())
@@ -239,19 +247,47 @@ ForeCache.Renderer.Vis.VisObj.prototype.updateOpts = function() {
   //console.log(["width",newopts.size.width,"height",newopts.size.height]);
 };
 
+// don't let users try to interact with the interface when busy
+ForeCache.Renderer.Vis.VisObj.prototype.disableInteractions = function() {
+  this.plot.attr("class","pan-rect hide");
+  d3.selectAll(this.buttonsDiv.children().toArray()) // make buttons inactive
+    .on("click", function(){console.log("button disabled");});
+};
+
+// make interactions possible again
+ForeCache.Renderer.Vis.VisObj.prototype.enableInteractions = function() {
+  this.plot.attr("class","pan-rect");
+  d3.selectAll(this.buttonsDiv.children().toArray()) // make buttons active
+    .on("click", this.zoomClick());
+};
+
+ForeCache.Renderer.Vis.VisObj.prototype.makeBusy = function() {
+  if(!this.mousebusy) {
+    this.disableInteractions();
+    this.mousebusy = true;
+    this.busyRect.attr("class","busy-rect");
+    $('body').css("cursor", "wait");
+  }
+};
+
+ForeCache.Renderer.Vis.VisObj.prototype.makeNotBusy = function() {
+  if(this.mousebusy) {
+    this.mousebusy = false;
+    this.busyRect.attr("class","busy-rect hide");
+    $("body").css("cursor", "default");
+    this.enableInteractions();
+  }
+};
+
 // only called when one of the zoom buttons is clicked
 ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
 	var self = this;
 	return function () {
-		if(!self.mousebusy) {
-			self.mousebusy = true;
-			$('body').css("cursor", "wait");
-		}
+    self.makeBusy();
     self.changed = true;
 		var zoomDiff = Number(this.getAttribute("data-zoom"));
 		if(!self.tileManager.zoomClick([self.xindex,self.yindex],[zoomDiff,zoomDiff])) { // no change
-			self.mousebusy = false;
-		  $("body").css("cursor", "default");
+      self.makeNotBusy();
     }
 	};
 }
@@ -310,10 +346,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
 	this.ctx.rect(0,0,this.padding.left,this.cy); //4
 	this.ctx.fill();
 	this.ctx.closePath();
-	if(this.mousebusy) {
-		this.mousebusy = false;
-		$("body").css("cursor", "default");
-	}
+  this.makeNotBusy();
 }
 
 /*
@@ -324,13 +357,9 @@ ForeCache.Renderer.Vis.VisObj.prototype.afterZoom = function() {
 	var self = this;
 	return function() {
     self.changed = true;
-		if(!self.mousebusy) {
-			self.mousebusy = true;
-			$('body').css("cursor", "wait");
-		}
+    self.makeBusy();
 		if(!self.tileManager.afterZoom()) {
-		  self.mousebusy = false;
-			$('body').css("cursor", "default");
+      self.makeNotBusy();
 		}
 	};
 }
