@@ -463,8 +463,8 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 	@Override
 	protected String generateBuildTileQuery(View v, MultiDimTileStructure ts,MultiDimTileKey id) {
 		DimensionBoundary dimbound = getDimensionBoundary(v,ts);
-		int[] highs = new int[ts.tileWidths.length];
-		int[] lows = new int[ts.tileWidths.length];
+		long[] highs = new long[ts.tileWidths.length];
+		long[] lows = new long[ts.tileWidths.length];
 		
 		// get the base-0 range in aggregated points
 		for(int i = 0; i < ts.tileWidths.length; i++) {
@@ -473,7 +473,7 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 		}
 		
 		// get the base-0 range in un-aggregated points
-		int[] aggregationWindows = ts.getAggregationWindow(id.zoom);
+		long[] aggregationWindows = ts.getAggregationWindow(id.zoom);
 		for(int i = 0; i < ts.tileWidths.length; i++) {
 			lows[i] = lows[i] * aggregationWindows[i]; // in data points
 			highs[i] = highs[i] * aggregationWindows[i]-1;
@@ -481,8 +481,8 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 		
 		// shift/adjust the raw range to match the array
 		for(int i = 0; i < ts.tileWidths.length; i++) {
-			int min = dimbound.boundaryMap.get(dimbound.dimensions.get(i)).get(0);
-			int max = dimbound.boundaryMap.get(dimbound.dimensions.get(i)).get(1);
+			long min = dimbound.boundaryMap.get(dimbound.dimensions.get(i)).get(0);
+			long max = dimbound.boundaryMap.get(dimbound.dimensions.get(i)).get(1);
 			lows[i] = lows[i] + min; // map to dim ranges
 			highs[i] = highs[i] + min;
 			if(lows[i] < min) {
@@ -668,7 +668,7 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 	// returns a list of all tile keys for a given zoom level
 	public Map<MultiDimTileKey,Boolean> getAllTileKeysForZoomLevel(MultiDimTileStructure ts, DimensionBoundary dimbound, int[] zoomPos) {
 		double[] ranges = getRanges(dimbound);
-		int[] windows = ts.getAggregationWindow(zoomPos);
+		long[] windows = ts.getAggregationWindow(zoomPos);
 		double[] tileCounts = new double[ranges.length];
 		// count tiles along each dimension
 		for(int j = 0; j < ranges.length; j++) { // for each dimension
@@ -684,9 +684,9 @@ public class Scidb14_12OptimizedIqueryTileInterface extends Scidb14_12TileInterf
 		double[] ranges = new double[dimbound.dimensions.size()];
 		for(int i = 0; i < ranges.length; i++) {
 			String dimname = dimbound.dimensions.get(i);
-			List<Integer> range = dimbound.boundaryMap.get(dimname);
-			int low = range.get(0);
-			int high = range.get(1);
+			List<Long> range = dimbound.boundaryMap.get(dimname);
+			long low = range.get(0);
+			long high = range.get(1);
 			ranges[i] = high - low + 1;
 			//System.out.println("range for "+i+": "+ranges[i]);
 		}

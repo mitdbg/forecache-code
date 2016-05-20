@@ -29,8 +29,8 @@ public abstract class Scidb14_12TileInterface extends MultiDimTileInterface {
 		int tileWidth = (int) Math.ceil(Math.pow(tileSize,1 / dimbound.dimensions.size()));
 		int zoomLevels = 1;
 		for(String key : dimbound.boundaryMap.keySet()) {
-			List<Integer> boundaries = dimbound.boundaryMap.get(key);
-			int range = boundaries.get(1) - boundaries.get(0) + 1;
+			List<Long> boundaries = dimbound.boundaryMap.get(key);
+			long range = boundaries.get(1) - boundaries.get(0) + 1;
 			
 			int levels = 1;
 			range /= tileWidth; // go by tile count
@@ -170,9 +170,9 @@ public abstract class Scidb14_12TileInterface extends MultiDimTileInterface {
 			int aggregationWindow, int tileWidth, int zoomLevels) {
 		MultiDimTileStructure ts = new MultiDimTileStructure();
 		String[] dimensionLabels = new String[dimbound.dimensions.size()];
-		ts.tileWidths = new int[dimensionLabels.length];
+		ts.tileWidths = new long[dimensionLabels.length];
 		ts.dimensionGroups = new int[1][dimensionLabels.length];
-		ts.aggregationWindows = new int[1][zoomLevels][dimensionLabels.length];
+		ts.aggregationWindows = new long[1][zoomLevels][dimensionLabels.length];
 		for(int d = 0; d < dimensionLabels.length; d++) {
 			ts.tileWidths[d] = tileWidth;
 			dimensionLabels[d] = dimbound.dimensions.get(d);
@@ -186,8 +186,8 @@ public abstract class Scidb14_12TileInterface extends MultiDimTileInterface {
 	// does not assume that zoom level is built
 	protected String generateBuildTileQuery(View v, MultiDimTileStructure ts,MultiDimTileKey id) {
 		String query = generateBuildZoomLevelQuery(v,ts,id.zoom);
-		int[] highs = new int[ts.tileWidths.length];
-		int[] lows = new int[ts.tileWidths.length];
+		long[] highs = new long[ts.tileWidths.length];
+		long[] lows = new long[ts.tileWidths.length];
 		for(int i = 0; i < ts.tileWidths.length; i++) {
 			lows[i] = ts.tileWidths[i]*id.dimIndices[i];
 			highs[i] = lows[i] + ts.tileWidths[i] - 1;
@@ -198,8 +198,8 @@ public abstract class Scidb14_12TileInterface extends MultiDimTileInterface {
 	// assumes zoom level is already built
 	protected String generateRetrieveTileQuery(View v, MultiDimTileStructure ts,MultiDimTileKey id) {
 		String query = getZoomLevelName(v,ts,id.zoom);
-		int[] highs = new int[ts.tileWidths.length];
-		int[] lows = new int[ts.tileWidths.length];
+		long[] highs = new long[ts.tileWidths.length];
+		long[] lows = new long[ts.tileWidths.length];
 		for(int i = 0; i < ts.tileWidths.length; i++) {
 			lows[i] = ts.tileWidths[i]*id.dimIndices[i];
 			highs[i] = lows[i] + ts.tileWidths[i] - 1;
@@ -210,7 +210,7 @@ public abstract class Scidb14_12TileInterface extends MultiDimTileInterface {
 	// builds, but does not store, the zoom level
 	protected String generateBuildZoomLevelQuery(View v, MultiDimTileStructure ts, int[] zoomPos) {
 		String query = v.getQuery();
-		int[] aggWindow = ts.getAggregationWindow(zoomPos);
+		long[] aggWindow = ts.getAggregationWindow(zoomPos);
 		List<String> summaryFunctions = v.getSummaryFunctions();
 		return generateRegridQuery(query,aggWindow,summaryFunctions);
 	}
@@ -219,7 +219,7 @@ public abstract class Scidb14_12TileInterface extends MultiDimTileInterface {
 		return "remove("+arrayName+")";
 	}
 	
-	protected String generateSubarrayQuery(String query, int[] lows, int[] highs) {
+	protected String generateSubarrayQuery(String query, long[] lows, long[] highs) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("subarray(").append(query);
 		for(int i = 0; i < lows.length; i++) {
@@ -246,7 +246,7 @@ public abstract class Scidb14_12TileInterface extends MultiDimTileInterface {
 	}
 	
 	// execute SciDB regrid statement given the aggregatino windows and summary functions
-	protected String generateRegridQuery(String query, int[] aggWindow, List<String> summaryFunctions) {
+	protected String generateRegridQuery(String query, long[] aggWindow, List<String> summaryFunctions) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("regrid(").append(query);
 		for(int i = 0; i < aggWindow.length; i++) {
@@ -260,7 +260,7 @@ public abstract class Scidb14_12TileInterface extends MultiDimTileInterface {
 	}
 	
 	// execute SciDB regrid statement given the aggregatino windows and summary functions
-	protected String generateOptimizedRegridQuery(String query, int[] aggWindow,
+	protected String generateOptimizedRegridQuery(String query, long[] aggWindow,
 			List<String> attributes, List<String> summaryFunctions, List<String> summaryNames) {
 		boolean optimize = true;
 		for(int i = 0; i < aggWindow.length; i++) {
@@ -381,7 +381,7 @@ public abstract class Scidb14_12TileInterface extends MultiDimTileInterface {
 	public DimensionBoundary parseSchemaDimensionsForDimensionBoundaries(String dimensions) {
 		DimensionBoundary dimbound = new DimensionBoundary();
 		dimbound.dimensions = new ArrayList<String>();
-		dimbound.boundaryMap = new HashMap<String,List<Integer>>();
+		dimbound.boundaryMap = new HashMap<String,List<Long>>();
 		int totalDimensions = dimensions.split("=").length - 1;
 		String[] tokens = dimensions.split(",");
 		int base = 0;
@@ -391,11 +391,11 @@ public abstract class Scidb14_12TileInterface extends MultiDimTileInterface {
 			String name = name_tokens[0];
 			dimbound.dimensions.add(name);
 			String[] boundary_tokens = name_tokens[1].split(":");
-			int low = Integer.parseInt(boundary_tokens[0]);
-			int high = Integer.parseInt(boundary_tokens[1]);
+			long low = Long.parseLong(boundary_tokens[0]);
+			long high = Long.parseLong(boundary_tokens[1]);
 			//int chunk_width = Integer.parseInt(tokens[base+1]);
 			//int chunk_overlap = Integer.parseInt(tokens[base+2]);
-			List<Integer> temp = new ArrayList<Integer>();
+			List<Long> temp = new ArrayList<Long>();
 			temp.add(low);
 			temp.add(high);
 			dimbound.boundaryMap.put(name,temp);

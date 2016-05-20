@@ -28,7 +28,7 @@ public abstract class MultiDimTileInterface {
 	public String getZoomLevelName(View v, MultiDimTileStructure ts, int[] zoomPos) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(v.getName());
-		int[] aggWindow = ts.getAggregationWindow(zoomPos);
+		long[] aggWindow = ts.getAggregationWindow(zoomPos);
 		for(int i = 0; i < aggWindow.length; i++) {
 			sb.append("_").append(aggWindow[i]);
 		}
@@ -82,6 +82,6 @@ public abstract class MultiDimTileInterface {
 	/****************** Nested Classes *******************/
 	public static class DimensionBoundary {
 		public List<String> dimensions;
-		public Map<String,List<Integer>> boundaryMap;
+		public Map<String,List<Long>> boundaryMap;
 	}
 }

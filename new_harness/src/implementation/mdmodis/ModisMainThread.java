@@ -142,7 +142,7 @@ public class ModisMainThread {
 		MultiDimTileStructure ts = ModisTileStructureFactory.
 				getModisTileStructure(ModisTileStructureFactory.defaultAggregationWindows,
 						ModisTileStructureFactory.defaultDimensionGroups,
-						new int[]{100,100}); // changing the tile parameters
+						new long[]{100,100}); // changing the tile parameters
 		//NewTileInterface nti = new Scidb13_3IqueryTileInterface();
 		MultiDimTileInterface nti = new Scidb14_12OptimizedIqueryTileInterface();
 		dtv = new DefinedTileView(v, ts, nti, defaultSigmapFilename,
