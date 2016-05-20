@@ -29,7 +29,8 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
   //newopts.xdomain = [xstats.min,xstats.max];
   //newopts.xdomain = this.adjustForViewportRatio(newopts.xdomain);
   var xm = xstats.mindist; // width of box
-  var xd = xstats.max - xstats.min; // space for boxes in domain
+  //var xd = xstats.max - xstats.min; // space for boxes in domain
+  var xd = Math.abs(newopts.xdomain[0]-newopts.xdomain[1]); // space for boxes in domain
   var xw = newopts.size.width; // space for boxes in range
   if(xm > 0) {
     var numboxes = Math.ceil(xd / xm) + 1;
@@ -37,7 +38,8 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
     if(boxwidth < 1) { // can't have a fraction of a pixel!
       boxwidth = 1; // make it 1 pixel
     }
-    newopts.boxwidth.x = Math.max(Math.round(boxwidth / this.viewportRatio),1);
+    //newopts.boxwidth.x = Math.max(Math.round(boxwidth / this.viewportRatio),1);
+    newopts.boxwidth.x = Math.max(boxwidth,1);//viewport ratio should be accounted for already
     newopts.size.width = numboxes*boxwidth; // make the width more realistic
     newopts.width = newopts.padding.left + newopts.padding.right + newopts.size.width;
     //console.log([xstats,xm,xd,xw,numboxes,boxwidth]);
@@ -50,6 +52,7 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
   //console.log(ystats);
   var ym = ystats.mindist; // height of box
   var yd = ystats.max - ystats.min; // space for boxes in domain
+  var yd = Math.abs(newopts.ydomain[1]-newopts.ydomain[0]); // space for boxes in domain
   var yw = newopts.size.height; // space for boxes in range
   if(ym > 0) {
     var numboxes = Math.ceil(yd / ym) + 1;
@@ -57,7 +60,8 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
     if(boxwidth < 1) { // can't have a fraction of a pixel!
       boxwidth = 1; // make it 1 pixel
     }
-    newopts.boxwidth.y = Math.max(Math.round(boxwidth / this.viewportRatio),1);
+    //newopts.boxwidth.y = Math.max(Math.round(boxwidth / this.viewportRatio),1);
+    newopts.boxwidth.y = Math.max(boxwidth,1);//viewport ratio should be accounted for already
     newopts.size.height = numboxes*boxwidth; // make the height more realistic
     newopts.height = newopts.padding.top + newopts.padding.bottom + newopts.size.height;
     //console.log([ystats,ym,yd,yw,numboxes,boxwidth]);
@@ -82,6 +86,13 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
       "xw",this.options.boxwidth.x,
       "xy",this.options.boxwidth.y]);
 */
+
+  // partition data points by final color
+  var rects = {};
+  var colors = this.colorScale.range();
+  for(var i = 0; i < colors.length ; i++) {
+    rects[colors[i]]=[];
+  }
 	for(var i=0; i < rows;i++) {
     var xval = Number(tile.columns[this.xindex][i]) + xt;
     var yval = Number(tile.columns[this.yindex][i]) + yt;
@@ -94,12 +105,22 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
     if(this.inverted.y) {
       y -= yw;
     }
-		
-		this.ctx.beginPath();
- 		this.ctx.fillStyle = this.colorScale(zval);
-		this.ctx.fillRect(x,y, xw, yw);
-		this.ctx.closePath();
-	}
+    var fillStyle = this.colorScale(zval);
+    rects[fillStyle].push({"x":x,"y":y});
+  }
+
+  // render by color groups
+  for(var i = 0; i < colors.length; i++) {
+	  this.ctx.beginPath();
+    var fillStyle = colors[i];
+    this.ctx.fillStyle = fillStyle;
+    for(var j = 0; j < rects[fillStyle].length; j++) {
+      var p = rects[fillStyle][j];
+		  this.ctx.rect(p.x,p.y,xw,yw);
+    }
+    this.ctx.fill();
+    this.ctx.closePath();
+  }
 
   var xmin = this.x(tile.id.dimindices[this.xindex] * this.tileManager.getDimTileWidth(this.xindex)) + this.padding.left;
   var ymin = this.y(tile.id.dimindices[this.yindex] * this.tileManager.getDimTileWidth(this.yindex)) + this.padding.top;
