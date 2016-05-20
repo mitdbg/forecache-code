@@ -1,0 +1,169 @@
+<html> <head> <META NAME="ROBOTS" CONTENT="NOINDEX">
+<META NAME="ROBOTS" CONTENT="NOFOLLOW">
+	<link rel="stylesheet" type="text/css" href="static/css/forecache.css">
+	<link rel="stylesheet" type="text/css" href="static/css/forecache_heatmap.css">
+	<title>3D Test</title>
+    <script type="text/javascript" src="static/js/colorbrewer.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/jquery.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/d3.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/text-encoding/encoding.js"></script>
+
+    <script type="text/javascript" src="static/js/bezier.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/states.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/coordinates.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/tracker.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/backend/structures.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/backend/decoder.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/backend/request.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/backend/tile_manager.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/newvisobj.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/heatmap.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/line.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/rgbheatmap.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis.js" charset="utf-8"></script>
+    <script type="text/javascript">
+      var cacheSizeSets = [1,2,3];
+      var startingPosSets = [
+          // 0
+          [new ForeCache.Backend.Structures.NewTileKey([0,0],0)],
+
+          // 1
+          [new ForeCache.Backend.Structures.NewTileKey([0,1],0)],
+
+          // 2
+          [new ForeCache.Backend.Structures.NewTileKey([1,1],0)],
+
+          // 3
+          [new ForeCache.Backend.Structures.NewTileKey([0,0],0),
+          new ForeCache.Backend.Structures.NewTileKey([0,1],0),
+          new ForeCache.Backend.Structures.NewTileKey([1,0],0),
+          new ForeCache.Backend.Structures.NewTileKey([1,1],0)],
+
+          // 4
+          [new ForeCache.Backend.Structures.NewTileKey([0,0],0),
+          new ForeCache.Backend.Structures.NewTileKey([0,1],0),
+          new ForeCache.Backend.Structures.NewTileKey([0,2],0),
+          new ForeCache.Backend.Structures.NewTileKey([1,0],0),
+          new ForeCache.Backend.Structures.NewTileKey([1,1],0),
+          new ForeCache.Backend.Structures.NewTileKey([1,2],0),
+          new ForeCache.Backend.Structures.NewTileKey([2,0],0),
+          new ForeCache.Backend.Structures.NewTileKey([2,1],0),
+          new ForeCache.Backend.Structures.NewTileKey([2,2],0)],
+
+          // 5, multi dim
+          [new ForeCache.Backend.Structures.MultiDimTileKey([0,1],[0])],
+
+          // 6, multi dim
+          [new ForeCache.Backend.Structures.MultiDimTileKey([0,1,1],[0,0])]
+
+        ];
+
+      var views = [
+        {//0
+          "name":"ndsi_test_april_3d",
+          "query":"scan(ndsi_test_april_3d)",
+          "attributeNames":["ndsi","total_snow","total_pixiels","avg_snow"],
+          "summaries":["max(ndsi) as ndsi",
+            "sum(total_snow) as total_snow",
+            "sum(total_pixels) as total_pixels",
+            "avg(avg_snow) as avg_snow"],
+          "summaryNames":["ndsi","total_snow","total_pixels","avg_snow"],
+          "connectionType":"scidb"
+        }
+      ];
+      var tss = [
+        // 0
+        new
+ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[1250,1250],[750,750],[375,375],[188,188],[94,94],[47,47]]],[[0,1]],[360,180]),
+        // 1
+        new
+ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[1250,1250],[750,750],[375,375],[188,188],[94,94],[47,47]]],[[0,1]],[360,180]),
+        // 2
+        new ForeCache.Backend.Structures.MultiDimTileStructure(
+          [// param 1: aggregation windows
+            [// first dimension group
+              [5000,5000],[2500,2500],[1250,1250],[750,750],[375,375],[188,188],[94,94],[47,47]
+            ],
+            [// second dimension group
+              [1]
+            ]
+          ],
+          [// param 2: dimension groups
+            [0,1], // first dimension group
+            [2] // second dimension group
+          ],
+          [360,180,3] // param 3: tile widths
+        )
+      ];
+      var currview = views[0];
+      var visType = "heatmap";
+      var currts = tss[2];
+
+      var renderFunc = function() {
+        // these variables are for changing the # tiles visible in the viewport
+        var zindex = currview.summaryNames.indexOf("ndsi");
+        var y2index = currview.summaryNames.indexOf("total_snow");
+
+        var xname = "longitude_e4";
+        var yname = "latitude_e4";
+        var zname = currview.summaryNames[zindex];
+
+        var x2name = "month";
+        var y2name = currview.summaryNames[y2index];
+
+        var vis =
+        ForeCache.Renderer.Vis.getVis($("#view"),{"visType":"heatmap",
+                              "xname":xname,"xlabel":xname,
+                              "yname":yname,"ylabel":yname,
+                              "zname":zname,"zlabel":zname,
+                              "width":480,
+                              "height":280,
+                              "padding":{"left":50,"right":70,"top":50,"bottom":50},
+                              "inverted":{"x":false,"y":true,"color":true},
+                              "colorRange":colorbrewer.Spectral[11]
+        });
+
+        var vis2 =
+        ForeCache.Renderer.Vis.getVis($("#view2"),{"visType":"line",
+                              "xname":x2name,"xlabel":x2name,
+                              "yname":y2name,"ylabel":y2name,
+                              "zname":y2name,"zlabel":y2name,
+                              "width":480,
+                              "height":280,
+                              "padding":{"left":50,"right":70,"top":50,"bottom":50},
+                              "inverted":{"x":false,"y":true,"color":true},
+                              "colorRange":colorbrewer.Spectral[11]
+        });
+
+        // tile manager controls all tile fetching across visualizations
+        var tileManager = new ForeCache.Backend.TileManager(
+          currts, // tiling structure
+          currview, // view
+          [vis.visObj,vis2.visObj], // vis objects
+          { // options
+            "startingPos":startingPosSets[6],
+            "cacheSize": cacheSizeSets[0]
+          }
+        );
+      };
+
+      $(document).ready(function() {
+          renderFunc();
+      });
+
+    </script>
+</head>
+
+
+<body>
+  <div class="main">
+			<h1>3D Test</h1>
+			<div id="content">
+         <div id="view" class="view"></div>
+         <div id="view2" class="view"></div>
+			</div>
+	</div>
+</body>
+
+</html>
+

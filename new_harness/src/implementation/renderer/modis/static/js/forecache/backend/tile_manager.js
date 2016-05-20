@@ -109,7 +109,7 @@ function(dimIndices,diffs) {
   if(!this.ts.zoomLevelChanged(this.currentZoom,newzoom)) { // no change
     for(var i = 0; i < this.visObjects.length; i++) { // for each chart
       this.visObjects[i].changed = false;
-      this.visObjexts[i].makeNotBusy();
+      this.visObjects[i].makeNotBusy();
     }
     return false;
   }

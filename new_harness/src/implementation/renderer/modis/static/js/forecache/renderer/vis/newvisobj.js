@@ -485,6 +485,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.get_stats = function(index) {
   var stats = {};
   var totalTiles = this.tileManager.totalTiles();
   for(var i = 0; i < totalTiles; i++) {
+    //console.log(["totalTiles",totalTiles,"index",index,"tile",this.tileManager.getTile(i)]);
     var col = this.tileManager.getTile(i).columns[index];
     var s = this.get_stats_helper(col);
     if(!stats.hasOwnProperty("min") || (stats.min > s.min)) {

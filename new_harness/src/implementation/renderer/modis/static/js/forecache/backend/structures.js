@@ -126,6 +126,7 @@ ForeCache.Backend.Structures.Tile.prototype.getSize = function() {
 };
 
 ForeCache.Backend.Structures.Tile.prototype.getDomain = function(index) {
+  //console.log(["index",index,"tile",this]);
   var col = this.columns[index];
 	var domain = [];
 	if(col.length > 0) {
@@ -259,13 +260,9 @@ function(oldZoomPos,newZoomPos,dimIndex,oldMid) {
 // lvl 1 = dimension groups, lvl 2 = zoom levels, lvl 3 = aggregation window per dim in group
   // lvl 1 = dimension groups, lvl 2 = dimensions in group
 
-  var newPos = newZoomPos[gd.groupId]; // what is the new zoom level for this dimension group?
-  var oldPos = oldZoomPos[gd.groupId]; // what is the old zoom level for this dimension group?
   // get the aggregation windows for this dimension
-  var newWindow = this.getAggregationWindow(newPos,dimIndex);
-  var oldWindow = this.getAggregationWindow(oldPos,dimIndex);
-  //var newWindow = this.aggregationWindows[gd.groupId][newPos][gd.groupPos];
-  //var oldWindow = this.aggregationWindows[gd.groupId][oldPos][gd.groupPos];
+  var newWindow = this.getAggregationWindow(newZoomPos,dimIndex);
+  var oldWindow = this.getAggregationWindow(oldZoomPos,dimIndex);
   return 1.0 * oldMid * oldWindow / newWindow;
 };
 
@@ -273,7 +270,9 @@ function(oldZoomPos,newZoomPos,dimIndex,oldMid) {
 ForeCache.Backend.Structures.MultiDimTileStructure.prototype.getAggregationWindow =
 function(zoomPos,dimIndex) {
   var gd = this.dimGroupMap[dimIndex];
-  var w = this.aggregationWindows[gd.groupId][zoomPos][gd.groupPos];
+  //console.log(["zoomPos",zoomPos,"dimIndex",dimIndex,"gd",gd,"aggregationWindows",this.aggregationWindows]);
+  var w = this.aggregationWindows[gd.groupId][zoomPos[gd.groupId]][gd.groupPos];
+  //console.log(["zoomPos",zoomPos,"dimIndex",dimIndex,"gd",gd,"window",w]);
   return w;
 };
 
