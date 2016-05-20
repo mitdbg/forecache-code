@@ -79,8 +79,8 @@ ForeCache.Backend.TileManager.prototype.getDomain = function(dimindex) {
   return ForeCache.Backend.Structures.getDomain(this.tileMap.getTiles(),dimindex);
 };
 
-// what is the dimension index for this particular dimension name?
-ForeCache.Backend.TileManager.prototype.getDimIndex = function(dimname) {
+// what is the index for this particular column name?
+ForeCache.Backend.TileManager.prototype.getIndex = function(dimname) {
   var tile0 = this.tileMap.get(this.currentTiles[0]);
   return tile0.getIndex(dimname);
 };
@@ -147,6 +147,13 @@ function(dimIndices,diffs) {
       vObj.y.domain(newYRange);
     }
   }
+
+  // fill in the gaps
+  for(var i = 0; i < this.ts.tileWidths.length; i++) {
+    if(!dimRangeMap.hasOwnProperty(i)) {
+      dimRangeMap[i] = this.getDimRangeForUnusedDim(this.currentZoom,newzoom,i,this.cacheSize);
+    }
+  }
   // update current zoom level after performing calculations
   this.currentZoom = newzoom;
 
@@ -199,17 +206,26 @@ function(drm) {
     }
   }
   if(changed) { // if there was a change in one or more dimensions
+    // fill in the gaps
+    for(var i = 0; i < this.ts.tileWidths.length; i++) {
+      if(!dimRangeMap.hasOwnProperty(i)) {
+        dimRangeMap[i] = this.getDimRangeForUnusedDim(this.currentZoom,this.currentZoom,i,this.cacheSize);
+      }
+    }
     // get tile ranges for every dimension, even ones not used by the charts
     var alltiles = [];
     for(var i = 0; i < this.ts.tileWidths.length; i++) {
       if(dimRangeMap.hasOwnProperty(i)) { // is a chart using it?
         alltiles.push(this.getTileRange(dimRangeMap[i],i));
       } else { // unused dim
-        alltiles.push([0]); // just grab tile 0 along this dimension by default
+        // fetch from the same position we've seen before by default
+        alltiles.push([this.currentTiles[0].dimindices[i]]);
+        //alltiles.push([0]); // just grab tile 0 along this dimension by default
       }
     }
     // get the new tile keys
     var newIDs = this.getFutureTiles(this.currentZoom,alltiles);
+    //console.log(["newIDs",newIDs]);
 
     // get the new tiles to fetch
     var newTileMap = new ForeCache.Backend.Structures.TileMap();
@@ -235,11 +251,13 @@ function(drm) {
         self.tileMap.batchInsert(tiles); // insert the fetched tiles
         // tell vis objects to redraw themselves using the new tiles
         for(var i = 0; i < self.visObjects.length; i++) { // for each chart
+          self.visObjects[i].fixYDomain = true;
           self.visObjects[i].redraw()();
         }
       });
     } else {
       for(var i = 0; i < this.visObjects.length; i++) { // for each chart
+        this.visObjects[i].fixYDomain = true;
         this.visObjects[i].redraw()();
       }
     } 
@@ -256,6 +274,31 @@ ForeCache.Backend.TileManager.prototype.getDimTileWidth = function(dimindex) {
   return this.ts.tileWidths[dimindex];
 };
 
+ForeCache.Backend.TileManager.prototype.getDimRangeForUnusedDim =
+function(currzoom,newzoom,dimindex,cacheSize) {
+  var tile = null;
+  for(var i = 0; i < this.currentTiles.length; i++) { // find first nonempty tile
+    tile = this.tileMap.get(this.currentTiles[i]);
+    if(tile.getSize() > 0) {
+      break;
+    }
+  }
+  var min = tile.id.dimindices[dimindex]*this.ts.tileWidths[dimindex];
+  var max = (tile.id.dimindices[dimindex]+1)*this.ts.tileWidths[dimindex]-1;
+  var domain = [min,max];
+
+  var diff = domain[1]-domain[0];
+  var mid = domain[0] + 1.0*(diff)/2; // midpoint
+  //console.log(["xmid",xmid,"xdomain",xdomain]);
+
+  var newMid = this.ts.getNewMid(currzoom,newzoom,dimindex,mid);
+  var halfWidth = this.ts.tileWidths[dimindex] * cacheSize / 2.0;
+  var newDomain = [newMid-halfWidth,newMid+halfWidth];
+  //console.log(["dimindex",dimindex,"old mid",mid,"new mid",newMid]);
+    
+  return newDomain;
+};
+
 ForeCache.Backend.TileManager.prototype.getDimRangeForZoom =
 function(currzoom,newzoom,dimindex,dimScale,cacheSize) {
   var domain = dimScale.domain(); // raw data values for this zoom level
@@ -266,7 +309,7 @@ function(currzoom,newzoom,dimindex,dimScale,cacheSize) {
   var newMid = this.ts.getNewMid(currzoom,newzoom,dimindex,mid);
   var halfWidth = this.ts.tileWidths[dimindex] * cacheSize / 2.0;
   var newDomain = [newMid-halfWidth,newMid+halfWidth];
-  //console.log(["x","old mid",xmid,"new mid",newXmid]);
+  console.log(["x","old mid",mid,"new mid",newMid]);
     
   return newDomain;
 };

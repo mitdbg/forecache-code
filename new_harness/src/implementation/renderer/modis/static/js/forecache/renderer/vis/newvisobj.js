@@ -20,6 +20,7 @@ ForeCache.Renderer.Vis.VisObj = function(chart, options) {
   this.tileManager = null; // this object manages all tiles for the page
   this.dimensionality = -1; // how many dimensions the visObj uses for navigation
   this.useLegend = true; // whether or not to render the legend
+  this.useUsMap = true; // whether or not to render the US state boundaries
 
 	//default values
   this.viewportRatio = -1; // set later by tile manager
@@ -223,12 +224,12 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function() {
 
 ForeCache.Renderer.Vis.VisObj.prototype.updateOpts = function() {
   var newopts = this.options;
-  this.xindex = this.tileManager.getDimIndex(this.options.xname);
-  this.yindex = this.tileManager.getDimIndex(this.options.yname);
+  this.xindex = this.tileManager.getIndex(this.options.xname);
+  this.yindex = this.tileManager.getIndex(this.options.yname);
   //console.log(["indexes","x",this.xindex,"y",this.yindex]);
   // compute color domain
   if(this.options.hasOwnProperty("zname")) {
-    this.zindex = this.tileManager.getDimIndex(this.options.zname);
+    this.zindex = this.tileManager.getIndex(this.options.zname);
     newopts.zdomain = this.tileManager.getDomain(this.zindex);
     //console.log(["zdom",newopts.zdomain]);
     //console.log(["indexes","x",this.xindex,"y",this.yindex,"z",this.zindex]);
@@ -238,8 +239,10 @@ ForeCache.Renderer.Vis.VisObj.prototype.updateOpts = function() {
   // sparse)
   newopts.xdomain = this.tileManager.getTileDomain(this.xindex);
   newopts.xdomain = this.adjustForViewportRatio(newopts.xdomain);
-  newopts.ydomain = this.tileManager.getTileDomain(this.yindex);
-  if(this.dimensionality == 2) { // is this a 2D navigable visualization?
+  if(this.dimensionality == 1) { // is this a 1D navigable visualization?
+    newopts.ydomain = this.tileManager.getDomain(this.yindex); // don't treat y like a dimension
+  } else if(this.dimensionality == 2) { // is this a 2D navigable visualization?
+    newopts.ydomain = this.tileManager.getTileDomain(this.yindex);
     newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
   }
 	newopts.size = {
@@ -289,7 +292,14 @@ ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
     self.makeBusy();
     self.changed = true;
 		var zoomDiff = Number(this.getAttribute("data-zoom"));
-		if(!self.tileManager.zoomClick([self.xindex,self.yindex],[zoomDiff,zoomDiff])) { // no change
+    // 2D case
+    var dimIndices = [self.xindex,self.yindex];
+    var diffs = [zoomDiff,zoomDiff];
+    if(self.dimensionality== 1) { // 1D case
+      dimIndices = [self.xindex];
+      diffs = [zoomDiff];
+    }
+		if(!self.tileManager.zoomClick(dimIndices,diffs)) { // no change
       self.makeNotBusy();
     }
 	};
@@ -320,7 +330,9 @@ ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
     //console.log(["time to render tile",e-s]); // console statements take ~3ms of time
     //ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,{'action':'renderTile','tileId':tile.id.name,'start':s,'end':e});
   };
-  this.statesRenderObj.renderUsa(this.tileManager.getAggregationWindow(this.xindex),this.tileManager.getAggregationWindow(this.yindex),this.ctx,this.x,this.y,this.padding);
+  if(this.useUsMap) {
+    this.statesRenderObj.renderUsa(this.tileManager.getAggregationWindow(this.xindex),this.tileManager.getAggregationWindow(this.yindex),this.ctx,this.x,this.y,this.padding);
+  }
    var end = Date.now(); // in seconds
   //console.log(["time to render all tiles",end - start]);
   ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,
@@ -441,7 +453,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.redraw = function() {
 		if((self.dimensionality == 1) && self.fixYDomain) {
 			self.fixYDomain = false;
 			var points = self.points;
-      var ydomain = this.tileManager.getTileDomain(self.yindex);
+      var ydomain = self.tileManager.getDomain(self.yindex);
       if(ydomain.length > 0) {
 			  var buffer = .15*(ydomain[1]-ydomain[0]);
 			  if((ydomain.length == 0)||(buffer == 0)) buffer = 1;

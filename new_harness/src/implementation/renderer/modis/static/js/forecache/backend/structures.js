@@ -237,7 +237,7 @@ function(oldZoomPos, dimIndices,diffs) { // ignores dimIndices
     }
   }
   newZoomPos = this.makeValid(newZoomPos);
-  console.log(["updating zoom position","old position",oldZoomPos,"new position",newZoomPos]);
+  //console.log(["updating zoom position","old position",oldZoomPos,"new position",newZoomPos]);
   return newZoomPos;
 };
 
