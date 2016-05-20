@@ -10,6 +10,8 @@ ForeCache.Renderer.Vis.Heatmap = {}
 /* chart parameter is a jquery object. */
 ForeCache.Renderer.Vis.RGBHeatmapObj = function(chart, options) {
   ForeCache.Renderer.Vis.VisObj.call(this,chart,options);
+  this.dimensionality = 2; // overwrite default dimensionality variable
+  this.useLegend = false;
 /*
 {i} red_max,green_max,blue_max
 {0} 0.889761,0.862038,0.897079
@@ -99,14 +101,14 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.updateOpts = function() {
 };
 
 ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.renderTile = function(tile) {
-  console.log(["tile",tile,xt,yt,this.options.boxwidth.x,this.options.boxwidth.y]);
   var rows = tile.getSize();
   //TODO: this is a hack, maybe fix later?
   if(rows == 0) return; // don't render empty tiles...
   var xw = this.options.boxwidth.x;
   var yw = this.options.boxwidth.y;
-  var xt = 1.0 * tile.id.dimindices[0]*this.ts.tileWidths[0];
-  var yt = 1.0 * tile.id.dimindices[1]*this.ts.tileWidths[1];
+  var xt = 1.0 * tile.id.dimindices[this.xindex]*this.tileManager.getDimTileWidth(this.xindex);
+  var yt = 1.0 * tile.id.dimindices[this.yindex]*this.tileManager.getDimTileWidth(this.yindex);
+  console.log(["tile",tile,xt,yt,this.options.boxwidth.x,this.options.boxwidth.y]);
   //console.log(["tile",tile,xt,yt]);
 	for(var i=0; i < rows;i++) {
     var xval = Number(tile.columns[this.xindex][i]) + xt;
@@ -162,10 +164,12 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.renderTile = function(tile) {
 		this.ctx.fillRect(x,y, xw, yw);
 		this.ctx.closePath();
 	}
-  var xmin = this.x(tile.id.dimindices[0] * this.ts.tileWidths[0]) + this.padding.left;
-  var ymin = this.y(tile.id.dimindices[1] * this.ts.tileWidths[1]) + this.padding.top;
-  var xmax = this.x((tile.id.dimindices[0]+1) * this.ts.tileWidths[0]) + this.padding.left;
-  ymax = this.y((tile.id.dimindices[1]+1) * this.ts.tileWidths[1]) + this.padding.top;
+
+  var xmin = this.x(tile.id.dimindices[this.xindex] * this.tileManager.getDimTileWidth(this.xindex)) + this.padding.left;
+  var ymin = this.y(tile.id.dimindices[this.yindex] * this.tileManager.getDimTileWidth(this.yindex)) + this.padding.top;
+  var xmax = this.x((tile.id.dimindices[this.xindex]+1) * this.tileManager.getDimTileWidth(this.xindex)) + this.padding.left;
+  var ymax = this.y((tile.id.dimindices[this.yindex]+1) * this.tileManager.getDimTileWidth(this.yindex)) + this.padding.top;
+
   //console.log(["tile",tile.id.zoom,tile.id.dimindices,"drawing lines",xmin,xmax,ymin,ymax]);
 
 	this.ctx.beginPath();
@@ -216,60 +220,3 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.modifyColor = function() {
 
 /****************** Helper Functions *********************/
 
-// computs max, min, and min dist between any two points for the given column
-// computes stats across all current tiles
-ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.get_stats = function(index) {
-  var stats = {};
-  for(var i = 0; i < this.currentTiles.length; i++) {
-    var id = this.currentTiles[i];
-    var col = this.tileMap.get(id).columns[index];
-    var s = this.get_stats_helper(col);
-    if(!stats.hasOwnProperty("min") || (stats.min > s.min)) {
-      stats.min = s.min;
-    }
-    if(!stats.hasOwnProperty("max") || (stats.max < s.max)) {
-      stats.max = s.max;
-    }
-    if(!stats.hasOwnProperty("mindist") || (stats.mindist > s.mindist)) {
-      stats.mindist = s.mindist;
-    }
-  }
-  return stats;
-};
-
-// compute stats for a single column for one tile
-ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.get_stats_helper = function(col) {
-  var stats = {};
-  if(col.length == 0) {
-    return stats;
-  }
-  var temp = [];
-  var seen = {};
-  // unique values only
-  for(var i = 0; i < col.length; i++) {
-    var val = col[i];
-    if(!seen.hasOwnProperty(val)) {
-        seen[val] = true;
-        temp.push(val);
-    }
-  }
-  // sort the values
-  temp.sort(function(a,b){return Number(a)-Number(b);});
-  stats.min = temp[0];
-  stats.max = temp[temp.length - 1];
-  stats.mindist = -1;
-  if(temp.length > 1) {
-    var prev = temp[0];
-    var mindist = stats.max-stats.min;
-    for(var i = 1; i < temp.length; i++) {
-      var val = temp[i];
-      var dist = val - prev;
-      if(dist < mindist) {
-        mindist = dist;
-      }
-      prev = val;
-    }
-    stats.mindist = mindist;
-  }
-  return stats;
-};

@@ -19,6 +19,7 @@ ForeCache.Renderer.Vis.VisObj = function(chart, options) {
   // bookkeeping data structures
   this.tileManager = null; // this object manages all tiles for the page
   this.dimensionality = -1; // how many dimensions the visObj uses for navigation
+  this.useLegend = true; // whether or not to render the legend
 
 	//default values
   this.viewportRatio = -1; // set later by tile manager
@@ -159,10 +160,11 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function() {
 
 	//this.plot.call(d3.behavior.zoom().x(this.x).y(this.y).on("zoom", this.redraw()));
 
-
-	this.legend = this.svg.append("g")
-			.attr("transform", "translate(" + (this.padding.left+this.size.width) + "," + this.padding.top + ")")
-			.attr("class", "forecache-legend");
+  if(this.useLegend) {
+	  this.legend = this.svg.append("g")
+      .attr("transform", "translate(" + (this.padding.left+this.size.width) + "," + this.padding.top + ")")
+      .attr("class", "forecache-legend");
+  }
 
 
 	// add Chart Title
@@ -193,8 +195,9 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function() {
 			.attr("transform","translate(" + (-this.padding.left+12) + " " + this.size.height/2+") rotate(-90)");
 	}
 
-
-  this.drawLegend(this.options.zlabel,this.padding.right,150,zdom,this.colorScale);
+  if(this.useLegend) {
+    this.drawLegend(this.options.zlabel,this.padding.right,150,zdom,this.colorScale);
+  }
 
 	this.base = d3.select(this.chart);
 	this.canvas = this.base.append("canvas")
@@ -462,5 +465,62 @@ ForeCache.Renderer.Vis.VisObj.prototype.redraw = function() {
 
 ForeCache.Renderer.Vis.VisObj.prototype.log10 = function(val) {
   return Math.log(val) / Math.log(10.0);
-}
+};
 
+// computs max, min, and min dist between any two points for the given column
+// computes stats across all current tiles
+ForeCache.Renderer.Vis.VisObj.prototype.get_stats = function(index) {
+  var stats = {};
+  var totalTiles = this.tileManager.totalTiles();
+  for(var i = 0; i < totalTiles; i++) {
+    var col = this.tileManager.getTile(i).columns[index];
+    var s = this.get_stats_helper(col);
+    if(!stats.hasOwnProperty("min") || (stats.min > s.min)) {
+      stats.min = s.min;
+    }
+    if(!stats.hasOwnProperty("max") || (stats.max < s.max)) {
+      stats.max = s.max;
+    }
+    if(!stats.hasOwnProperty("mindist") || (stats.mindist > s.mindist)) {
+      stats.mindist = s.mindist;
+    }
+  }
+  return stats;
+};
+
+// compute stats for a single column for one tile
+ForeCache.Renderer.Vis.VisObj.prototype.get_stats_helper = function(col) {
+  var stats = {};
+  if(col.length == 0) {
+    return stats;
+  }
+  var temp = [];
+  var seen = {};
+  // unique values only
+  for(var i = 0; i < col.length; i++) {
+    var val = col[i];
+    if(!seen.hasOwnProperty(val)) {
+        seen[val] = true;
+        temp.push(val);
+    }
+  }
+  // sort the values
+  temp.sort(function(a,b){return Number(a)-Number(b);});
+  stats.min = temp[0];
+  stats.max = temp[temp.length - 1];
+  stats.mindist = -1;
+  if(temp.length > 1) {
+    var prev = temp[0];
+    var mindist = stats.max-stats.min;
+    for(var i = 1; i < temp.length; i++) {
+      var val = temp[i];
+      var dist = val - prev;
+      if(dist < mindist) {
+        mindist = dist;
+      }
+      prev = val;
+    }
+    stats.mindist = mindist;
+  }
+  return stats;
+};

@@ -11,6 +11,7 @@ ForeCache.Renderer.Vis.Heatmap = {}
 ForeCache.Renderer.Vis.HeatmapObj = function(chart, options) {
   ForeCache.Renderer.Vis.VisObj.call(this,chart,options);
   this.dimensionality = 2; // overwrite default dimensionality variable
+  this.useLegend = true;
 };
 ForeCache.Renderer.Vis.HeatmapObj.prototype = Object.create(ForeCache.Renderer.Vis.VisObj.prototype);
 ForeCache.Renderer.Vis.HeatmapObj.prototype.constructor = ForeCache.Renderer.Vis.HeatmapObj;
@@ -102,7 +103,7 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
   var xmin = this.x(tile.id.dimindices[this.xindex] * this.tileManager.getDimTileWidth(this.xindex)) + this.padding.left;
   var ymin = this.y(tile.id.dimindices[this.yindex] * this.tileManager.getDimTileWidth(this.yindex)) + this.padding.top;
   var xmax = this.x((tile.id.dimindices[this.xindex]+1) * this.tileManager.getDimTileWidth(this.xindex)) + this.padding.left;
-  ymax = this.y((tile.id.dimindices[this.yindex]+1) * this.tileManager.getDimTileWidth(this.yindex)) + this.padding.top;
+  var ymax = this.y((tile.id.dimindices[this.yindex]+1) * this.tileManager.getDimTileWidth(this.yindex)) + this.padding.top;
   //console.log(["tile",tile.id.zoom,tile.id.dimindices,"drawing lines",xmin,xmax,ymin,ymax]);
 
   this.ctx.save();
@@ -154,60 +155,4 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.modifyColor = function() {
 
 /****************** Helper Functions *********************/
 
-// computs max, min, and min dist between any two points for the given column
-// computes stats across all current tiles
-ForeCache.Renderer.Vis.HeatmapObj.prototype.get_stats = function(index) {
-  var stats = {};
-  var totalTiles = this.tileManager.totalTiles();
-  for(var i = 0; i < totalTiles; i++) {
-    var col = this.tileManager.getTile(i).columns[index];
-    var s = this.get_stats_helper(col);
-    if(!stats.hasOwnProperty("min") || (stats.min > s.min)) {
-      stats.min = s.min;
-    }
-    if(!stats.hasOwnProperty("max") || (stats.max < s.max)) {
-      stats.max = s.max;
-    }
-    if(!stats.hasOwnProperty("mindist") || (stats.mindist > s.mindist)) {
-      stats.mindist = s.mindist;
-    }
-  }
-  return stats;
-};
 
-// compute stats for a single column for one tile
-ForeCache.Renderer.Vis.HeatmapObj.prototype.get_stats_helper = function(col) {
-  var stats = {};
-  if(col.length == 0) {
-    return stats;
-  }
-  var temp = [];
-  var seen = {};
-  // unique values only
-  for(var i = 0; i < col.length; i++) {
-    var val = col[i];
-    if(!seen.hasOwnProperty(val)) {
-        seen[val] = true;
-        temp.push(val);
-    }
-  }
-  // sort the values
-  temp.sort(function(a,b){return Number(a)-Number(b);});
-  stats.min = temp[0];
-  stats.max = temp[temp.length - 1];
-  stats.mindist = -1;
-  if(temp.length > 1) {
-    var prev = temp[0];
-    var mindist = stats.max-stats.min;
-    for(var i = 1; i < temp.length; i++) {
-      var val = temp[i];
-      var dist = val - prev;
-      if(dist < mindist) {
-        mindist = dist;
-      }
-      prev = val;
-    }
-    stats.mindist = mindist;
-  }
-  return stats;
-};
