@@ -84,7 +84,6 @@ ForeCache.Backend.Structures.TileMap.prototype.get = function(id) {
 
 ForeCache.Backend.Structures.TileMap.prototype.insert = function(tile) {
   this.tiles[tile.id.name] = tile;
-  console.log(["inserting tile",tile.id.name,tile]);
 };
 
 ForeCache.Backend.Structures.TileMap.prototype.containsKey = function(id) {

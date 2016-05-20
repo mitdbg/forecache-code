@@ -14,7 +14,9 @@
     <script type="text/javascript" src="static/js/forecache/backend/structures.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/backend/decoder.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/backend/request.js" charset="utf-8"></script>
-    <script type="text/javascript" src="static/js/forecache/renderer/vis/visobj.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/backend/tile_manager.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/forecache/renderer/vis/newvisobj.js" charset="utf-8"></script>
+    <!--<script type="text/javascript" src="static/js/forecache/renderer/vis/visobj.js" charset="utf-8"></script>-->
     <script type="text/javascript" src="static/js/forecache/renderer/vis/heatmap.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/renderer/vis/line.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/renderer/vis/rgbheatmap.js" charset="utf-8"></script>
@@ -209,11 +211,14 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
       // an attribute was selected from the menu. Create a new visualization
       function renderAttribute(id,visType) {
           $("#view").empty(); // clear the old view
+/*
           ForeCache.Backend.Request.simpleReset(function() {
               ForeCache.Backend.Request.setView(currview,function() {
                   ForeCache.Backend.Request.setTileStructure(currts,function(){renderFunc(id,visType);});
               });
           });         
+*/
+        renderFunc(id,visType);
       };
 
       var renderFunc = function(id,visType) {
@@ -234,6 +239,12 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
                                 "padding":{"left":50,"right":70,"top":50,"bottom":50},
                                 "inverted":{"x":false,"y":true,"color":true},
                                 "colorRange":colorbrewer.Spectral[11],
+                                //"startingPos":startingPosSets[1],
+                                "startingPos":startingPosSets[5],
+                                "cacheSize": cacheSizeSets[0]
+          });
+          // tile manager controls all tile fetching across visualizations
+          var tileManager = new ForeCache.Backend.TileManager(currts,currview,[vis.visObj],{
                                 //"startingPos":startingPosSets[1],
                                 "startingPos":startingPosSets[5],
                                 "cacheSize": cacheSizeSets[0]

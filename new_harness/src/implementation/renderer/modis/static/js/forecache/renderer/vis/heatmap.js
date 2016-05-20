@@ -10,6 +10,7 @@ ForeCache.Renderer.Vis.Heatmap = {}
 /* chart parameter is a jquery object. */
 ForeCache.Renderer.Vis.HeatmapObj = function(chart, options) {
   ForeCache.Renderer.Vis.VisObj.call(this,chart,options);
+  this.dimensionality = 2; // overwrite default dimensionality variable
 };
 ForeCache.Renderer.Vis.HeatmapObj.prototype = Object.create(ForeCache.Renderer.Vis.VisObj.prototype);
 ForeCache.Renderer.Vis.HeatmapObj.prototype.constructor = ForeCache.Renderer.Vis.HeatmapObj;
@@ -41,7 +42,7 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
   }
 
   ystats = this.get_stats(this.yindex);
-  //console.log(["ydomain",newopts.ydomain,"ystats",ystats]);
+  console.log(["ydomain",newopts.ydomain,"ystats",ystats]);
   //newopts.ydomain = [ystats.min,ystats.max];
   //newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
   //console.log(ystats);
@@ -63,14 +64,21 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
 };
 
 ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
-  console.log(["tile",tile,xt,yt,"zdomain",this.colorScale.domain(),this.options.boxwidth.x,this.options.boxwidth.y]);
   var rows = tile.getSize();
   //TODO: this is a hack, maybe fix later?
   if(rows == 0) return; // don't render empty tiles...
   var xw = this.options.boxwidth.x;
   var yw = this.options.boxwidth.y;
-  var xt = 1.0 * tile.id.dimindices[0]*this.ts.tileWidths[0];
-  var yt = 1.0 * tile.id.dimindices[1]*this.ts.tileWidths[1];
+  var xt = 1.0 * tile.id.dimindices[this.xindex]*this.tileManager.getDimTileWidth(this.xindex);
+  var yt = 1.0 * tile.id.dimindices[this.yindex]*this.tileManager.getDimTileWidth(this.yindex);
+  //console.log(["dimindices[y]",tile.id.dimindices[this.xindex],"dimindices[y]",tile.id.dimindices[this.yindex]]);
+  //console.log(["x tile width",this.tileManager.getDimTileWidth(this.xindex),
+  //  "y tile width",this.tileManager.getDimTileWidth(this.yindex)]);
+  console.log(["tile",tile,"xt",xt,"yt",yt,
+      "zdomain",this.colorScale.domain(),
+      "xw",this.options.boxwidth.x,
+      "xy",this.options.boxwidth.y]);
+  console.log(["y domain",this.y.domain(),"y range",this.y.range()]);
 	for(var i=0; i < rows;i++) {
     var xval = Number(tile.columns[this.xindex][i]) + xt;
     var yval = Number(tile.columns[this.yindex][i]) + yt;
@@ -86,14 +94,19 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
 		
 		this.ctx.beginPath();
  		this.ctx.fillStyle = this.colorScale(zval);
+    if(i < 10) {
+      console.log(["fillStyle",i,"x",x,"y",y,"color",this.ctx.fillStyle,
+        "true y",tile.columns[this.yindex][i],
+        "yval",yval]);
+    }
 		this.ctx.fillRect(x,y, xw, yw);
 		this.ctx.closePath();
 	}
 
-  var xmin = this.x(tile.id.dimindices[0] * this.ts.tileWidths[0]) + this.padding.left;
-  var ymin = this.y(tile.id.dimindices[1] * this.ts.tileWidths[1]) + this.padding.top;
-  var xmax = this.x((tile.id.dimindices[0]+1) * this.ts.tileWidths[0]) + this.padding.left;
-  ymax = this.y((tile.id.dimindices[1]+1) * this.ts.tileWidths[1]) + this.padding.top;
+  var xmin = this.x(tile.id.dimindices[this.xindex] * this.tileManager.getDimTileWidth(this.xindex)) + this.padding.left;
+  var ymin = this.y(tile.id.dimindices[this.yindex] * this.tileManager.getDimTileWidth(this.yindex)) + this.padding.top;
+  var xmax = this.x((tile.id.dimindices[this.xindex]+1) * this.tileManager.getDimTileWidth(this.xindex)) + this.padding.left;
+  ymax = this.y((tile.id.dimindices[this.yindex]+1) * this.tileManager.getDimTileWidth(this.yindex)) + this.padding.top;
   //console.log(["tile",tile.id.zoom,tile.id.dimindices,"drawing lines",xmin,xmax,ymin,ymax]);
 
   this.ctx.save();
@@ -149,9 +162,9 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.modifyColor = function() {
 // computes stats across all current tiles
 ForeCache.Renderer.Vis.HeatmapObj.prototype.get_stats = function(index) {
   var stats = {};
-  for(var i = 0; i < this.currentTiles.length; i++) {
-    var id = this.currentTiles[i];
-    var col = this.tileMap.get(id).columns[index];
+  var totalTiles = this.tileManager.totalTiles();
+  for(var i = 0; i < totalTiles; i++) {
+    var col = this.tileManager.getTile(i).columns[index];
     var s = this.get_stats_helper(col);
     if(!stats.hasOwnProperty("min") || (stats.min > s.min)) {
       stats.min = s.min;

@@ -60,7 +60,8 @@ ForeCache.Backend.Request.setTileStructure = function(newts,callback) {
   //dat.ts = {"aggregationWindows":newts.aggregationWindows,"tileWidths":newts.tileWidths};
   dat.ts = {};
   console.log("setting tile Structure");
-  var properties = newts.jsonFields
+  var properties = newts.jsonFields;
+  console.log([properties,newts]);
   for(var i = 0; i < properties.length; i++) {
     console.log(["property",properties[i]]);
     dat.ts[properties[i]] = newts[properties[i]];
