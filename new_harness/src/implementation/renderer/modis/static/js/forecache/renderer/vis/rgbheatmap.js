@@ -64,7 +64,8 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.updateOpts = function() {
   //newopts.xdomain = [xstats.min,xstats.max];
   //newopts.xdomain = this.adjustForViewportRatio(newopts.xdomain);
   var xm = xstats.mindist; // width of box
-  var xd = xstats.max - xstats.min; // space for boxes in domain
+  //var xd = xstats.max - xstats.min; // space for boxes in domain
+  var xd = Math.abs(newopts.xdomain[0]-newopts.xdomain[1]); // space for boxes in domain
   var xw = newopts.size.width; // space for boxes in range
   if(xm > 0) {
     var numboxes = Math.ceil(xd / xm) + 1;
@@ -72,7 +73,8 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.updateOpts = function() {
     if(boxwidth < 1) { // can't have a fraction of a pixel!
       boxwidth = 1; // make it 1 pixel
     }
-    newopts.boxwidth.x = Math.max(Math.round(boxwidth / this.viewportRatio),1);
+    //newopts.boxwidth.x = Math.max(Math.round(boxwidth / this.viewportRatio),1);
+    newopts.boxwidth.x = Math.max(boxwidth,1);//viewport ratio should be accounted for already
     newopts.size.width = numboxes*boxwidth; // make the width more realistic
     newopts.width = newopts.padding.left + newopts.padding.right + newopts.size.width;
     //console.log([xstats,xm,xd,xw,numboxes,boxwidth]);
@@ -84,7 +86,8 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.updateOpts = function() {
   //newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
   //console.log(ystats);
   var ym = ystats.mindist; // height of box
-  var yd = ystats.max - ystats.min; // space for boxes in domain
+  //var yd = ystats.max - ystats.min; // space for boxes in domain
+  var yd = Math.abs(newopts.ydomain[1]-newopts.ydomain[0]); // space for boxes in domain
   var yw = newopts.size.height; // space for boxes in range
   if(ym > 0) {
     var numboxes = Math.ceil(yd / ym) + 1;
@@ -92,7 +95,8 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.updateOpts = function() {
     if(boxwidth < 1) { // can't have a fraction of a pixel!
       boxwidth = 1; // make it 1 pixel
     }
-    newopts.boxwidth.y = Math.max(Math.round(boxwidth / this.viewportRatio),1);
+    //newopts.boxwidth.y = Math.max(Math.round(boxwidth / this.viewportRatio),1);
+    newopts.boxwidth.y = Math.max(boxwidth,1);//viewport ratio should be accounted for already
     newopts.size.height = numboxes*boxwidth; // make the height more realistic
     newopts.height = newopts.padding.top + newopts.padding.bottom + newopts.size.height;
     //console.log([ystats,ym,yd,yw,numboxes,boxwidth]);
@@ -103,12 +107,13 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.updateOpts = function() {
 ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.renderTile = function(tile) {
   var rows = tile.getSize();
   //TODO: this is a hack, maybe fix later?
+  console.log(["rows",rows]);
   if(rows == 0) return; // don't render empty tiles...
   var xw = this.options.boxwidth.x;
   var yw = this.options.boxwidth.y;
   var xt = 1.0 * tile.id.dimindices[this.xindex]*this.tileManager.getDimTileWidth(this.xindex);
   var yt = 1.0 * tile.id.dimindices[this.yindex]*this.tileManager.getDimTileWidth(this.yindex);
-  console.log(["tile",tile,xt,yt,this.options.boxwidth.x,this.options.boxwidth.y]);
+  //console.log(["tile",tile,xt,yt,this.options.boxwidth.x,this.options.boxwidth.y]);
   //console.log(["tile",tile,xt,yt]);
 	for(var i=0; i < rows;i++) {
     var xval = Number(tile.columns[this.xindex][i]) + xt;
@@ -172,24 +177,25 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.renderTile = function(tile) {
 
   //console.log(["tile",tile.id.zoom,tile.id.dimindices,"drawing lines",xmin,xmax,ymin,ymax]);
 
+  this.ctx.save();
 	this.ctx.beginPath();
+  this.ctx.setLineDash([6,3]);
  	this.ctx.strokeStyle = "black";
+  this.ctx.strokeWidth = 2;
 	this.ctx.moveTo(xmin,ymin);
 	this.ctx.lineTo(xmin,ymax);
-	this.ctx.stroke();
 
 	this.ctx.moveTo(xmax,ymin);
 	this.ctx.lineTo(xmax,ymax);
-	this.ctx.stroke();
 
   this.ctx.moveTo(xmin,ymin);
 	this.ctx.lineTo(xmax,ymin);
-	this.ctx.stroke();
 
   this.ctx.moveTo(xmin,ymax);
 	this.ctx.lineTo(xmax,ymax);
 	this.ctx.stroke();
 	this.ctx.closePath();
+  this.ctx.restore();
 
 
 /*

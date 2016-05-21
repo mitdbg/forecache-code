@@ -51,7 +51,7 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
   //newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
   //console.log(ystats);
   var ym = ystats.mindist; // height of box
-  var yd = ystats.max - ystats.min; // space for boxes in domain
+  //var yd = ystats.max - ystats.min; // space for boxes in domain
   var yd = Math.abs(newopts.ydomain[1]-newopts.ydomain[0]); // space for boxes in domain
   var yw = newopts.size.height; // space for boxes in range
   if(ym > 0) {
