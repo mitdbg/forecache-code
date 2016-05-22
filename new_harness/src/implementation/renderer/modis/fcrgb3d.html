@@ -54,7 +54,8 @@
           [new ForeCache.Backend.Structures.MultiDimTileKey([0,1],[0])],
 
           // 6, multi dim
-          [new ForeCache.Backend.Structures.MultiDimTileKey([0,1,1],[0,0])]
+          [new ForeCache.Backend.Structures.MultiDimTileKey([0,1,1],[0,0]),
+          new ForeCache.Backend.Structures.MultiDimTileKey([0,1,0],[0,0])]
 
         ];
 
@@ -115,13 +116,12 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
                               "xname":xname,"xlabel":xname,
                               "yname":yname,"ylabel":yname,
                               "zname":zname,"zlabel":zname,
-                              "width":480,
-                              "height":280,
+                              "width":840,
+                              "height":460,
                               "padding":{"left":50,"right":70,"top":50,"bottom":50},
                               "inverted":{"x":false,"y":true,"color":true},
                               "colorRange":colorbrewer.Spectral[11]
         });
-
         var vis2 =
         ForeCache.Renderer.Vis.getVis($("#view2"),{"visType":"line",
                               "xname":x2name,"xlabel":x2name,
@@ -139,6 +139,7 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
           currts, // tiling structure
           currview, // view
           [vis.visObj,vis2.visObj], // vis objects
+          //[vis.visObj], // vis objects
           { // options
             "startingPos":startingPosSets[6],
             "cacheSize": cacheSizeSets[0]

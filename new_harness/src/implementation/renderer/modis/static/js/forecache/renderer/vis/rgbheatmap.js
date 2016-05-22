@@ -105,30 +105,44 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.updateOpts = function() {
 };
 
 ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.renderTile = function(tile) {
+  console.log(["rendering tile",tile.id,tile.getSize()]);
   var rows = tile.getSize();
   //TODO: this is a hack, maybe fix later?
-  console.log(["rows",rows]);
   if(rows == 0) return; // don't render empty tiles...
   var xw = this.options.boxwidth.x;
   var yw = this.options.boxwidth.y;
   var xt = 1.0 * tile.id.dimindices[this.xindex]*this.tileManager.getDimTileWidth(this.xindex);
   var yt = 1.0 * tile.id.dimindices[this.yindex]*this.tileManager.getDimTileWidth(this.yindex);
   //console.log(["tile",tile,xt,yt,this.options.boxwidth.x,this.options.boxwidth.y]);
-  //console.log(["tile",tile,xt,yt]);
+  var xrange = this.x.range();
+  if(this.inverted.x) {
+    xrange = [xrange[1],xrange[0]];
+  }
+  var yrange = this.y.range();
+  if(this.inverted.y) {
+    yrange = [yrange[1],yrange[0]];
+  }
+  //console.log(["tile",tile,xt,yt,xrange,yrange,this.size.width,this.size.height,this.cx,this.cy]);
+
+  var imd = this.ctx.getImageData(this.padding.left,this.padding.top,this.size.width,this.size.height);
+  var data = imd.data;
 	for(var i=0; i < rows;i++) {
     var xval = Number(tile.columns[this.xindex][i]) + xt;
     var yval = Number(tile.columns[this.yindex][i]) + yt;
     //var zval = tile.columns[this.zindex][i];
-		var x = this.x(xval)+this.padding.left;
-		var y = this.y(yval)+this.padding.top;
+		var x = this.x(xval);//+this.padding.left;
+		var y = this.y(yval);//+this.padding.top;
     if(this.inverted.x) { // shift back in pixel space to account for inversion
       x -= xw;
     }
     if(this.inverted.y) {
       y -= yw;
     }
-		
-		this.ctx.beginPath();
+	  //if(i < 1) {
+    //  console.log(["x",Math.floor(x),"y",y,"xrange",xrange,"yrange",yrange]);
+    //}
+	
+		//this.ctx.beginPath();
    
 /*
  		this.ctx.fillStyle = "rgb("
@@ -159,6 +173,7 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.renderTile = function(tile) {
       this.blueBezierMap[Math.min(255,Math.max(0,Math.floor(255*tile.columns[Number(tile.getIndex("blue"))][i])))]+")";
 */
 
+/*
     this.ctx.fillStyle = "rgb("+
       this.bezierMap[Math.min(255,Math.max(0,Math.floor(this.redBrightnessScale(tile.columns[Number(tile.getIndex("red"))][i]))))]+","+
       this.bezierMap[Math.min(255,Math.max(0,Math.floor(this.greenBrightnessScale(tile.columns[Number(tile.getIndex("green"))][i]))))]+","+
@@ -168,7 +183,29 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.renderTile = function(tile) {
     //console.log(["fill style:",this.ctx.fillStyle,x,y,xw,yw]);
 		this.ctx.fillRect(x,y, xw, yw);
 		this.ctx.closePath();
+*/
+
+    for(var e = 0; e < xw; e++) {
+      for(var f = 0; f < yw; f++) {
+        if(x < xrange[0] || x > xrange[1] || y < yrange[0] || y > yrange[1]) {
+          //console.log(["index",i,"x",Math.floor(x),"y",Math.floor(y),"baseIndex",baseIndex,"xrange",xrange,"yrange",yrange]);
+          continue;
+        }
+        var baseIndex = (Math.floor(y+f))*imd.width*4 + (Math.floor(x+e))*4;
+        //var baseIndex = (Math.floor(y+f)-this.padding.top)*imd.width*4 + (Math.floor(x+e)-this.padding.left)*4;
+        //console.log(["baseIndex",baseIndex,"width",imd.width,"x",x,"y",y]);
+        data[baseIndex] = this.bezierMap[Math.min(255,Math.max(0,Math.floor(this.redBrightnessScale(tile.columns[Number(tile.getIndex("red"))][i]))))]; // red
+        data[baseIndex+1] =
+this.bezierMap[Math.min(255,Math.max(0,Math.floor(this.greenBrightnessScale(tile.columns[Number(tile.getIndex("green"))][i]))))]; // green
+        data[baseIndex+2] =
+this.bezierMap[Math.min(255,Math.max(0,Math.floor(this.blueBrightnessScale(tile.columns[Number(tile.getIndex("blue"))][i]))))]; // blue
+        data[baseIndex+3] = 255; // alpha
+        //console.log(["rgba",data[baseIndex],data[baseIndex+1],data[baseIndex+2],data[baseIndex+3]]);
+    
+      }
+    }
 	}
+  this.ctx.putImageData(imd,this.padding.left,this.padding.top);
 
   var xmin = this.x(tile.id.dimindices[this.xindex] * this.tileManager.getDimTileWidth(this.xindex)) + this.padding.left;
   var ymin = this.y(tile.id.dimindices[this.yindex] * this.tileManager.getDimTileWidth(this.yindex)) + this.padding.top;
