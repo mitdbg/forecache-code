@@ -15,12 +15,15 @@ ForeCache.Renderer.Vis = ForeCache.Renderer.Vis || {};
 ForeCache.Renderer.Vis.VisObj = function(chart, options) {
 	var self = this;
 
+  this.doneRendering = {};
+  this.previousRenderState = {};
   this.statesRenderObj = new StatesRenderer.renderObj();
   // bookkeeping data structures
   this.tileManager = null; // this object manages all tiles for the page
   this.dimensionality = -1; // how many dimensions the visObj uses for navigation
   this.useLegend = true; // whether or not to render the legend
   this.useUsMap = true; // whether or not to render the US state boundaries
+  this.removeDuplicates = false // consolidate and remove duplicate points
 
 	//default values
   this.viewportRatio = -1; // set later by tile manager
@@ -276,8 +279,16 @@ ForeCache.Renderer.Vis.VisObj.prototype.makeBusy = function() {
   }
 };
 
+
+ForeCache.Renderer.Vis.VisObj.prototype.doneRenderingTile = function(tile) {
+  this.doneRendering[tile.id.name] = true;
+  if(this.tileManager.checkDoneRendering()) {
+    this.tileManager.makeNotBusy();
+  }
+};
+
 ForeCache.Renderer.Vis.VisObj.prototype.makeNotBusy = function() {
-  if(this.mousebusy) {
+  if(this.mousebusy) {// && this.tileManager.checkDoneRendering()) {
     this.mousebusy = false;
     this.busyRect.attr("class","busy-rect hide");
     $("body").css("cursor", "default");
@@ -289,7 +300,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.makeNotBusy = function() {
 ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
 	var self = this;
 	return function () {
-    self.makeBusy();
+    self.tileManager.makeBusy();
     self.changed = true;
 		var zoomDiff = Number(this.getAttribute("data-zoom"));
     // 2D case
@@ -300,7 +311,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
       diffs = [zoomDiff];
     }
 		if(!self.tileManager.zoomClick(dimIndices,diffs)) { // no change
-      self.makeNotBusy();
+    //  self.tileManager.makeNotBusy();
     }
 	};
 }
@@ -321,6 +332,13 @@ ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
 	this.ctx.fill();
 	this.ctx.closePath();
 
+  if(this.removeDuplicates) {
+    var stuff = this.tileManager.getSpan(this);
+    var rows = stuff[0];
+    var xts = stuff[1];
+    var yts = stuff[2];
+    this.renderRowsHelper(rows,xts,yts);
+  } else {
   var totalTiles = this.tileManager.totalTiles();
   for(var i = 0; i < totalTiles; i++) {
     var s = Date.now();
@@ -330,6 +348,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
     //console.log(["time to render tile",e-s]); // console statements take ~3ms of time
     //ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,{'action':'renderTile','tileId':tile.id.name,'start':s,'end':e});
   };
+  }
   if(this.useUsMap) {
     this.statesRenderObj.renderUsa(this.tileManager.getAggregationWindow(this.xindex),this.tileManager.getAggregationWindow(this.yindex),this.ctx,this.x,this.y,this.padding);
   }
@@ -361,7 +380,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
 	this.ctx.rect(0,0,this.padding.left,this.cy); //4
 	this.ctx.fill();
 	this.ctx.closePath();
-  this.makeNotBusy();
+  //this.tileManager.makeNotBusy();
 }
 
 /*
@@ -372,9 +391,9 @@ ForeCache.Renderer.Vis.VisObj.prototype.afterZoom = function() {
 	var self = this;
 	return function() {
     self.changed = true;
-    self.makeBusy();
+    self.tileManager.makeBusy();
 		if(!self.tileManager.afterZoom()) {
-      self.makeNotBusy();
+    //  self.tileManager.makeNotBusy();
 		}
 	};
 }
@@ -420,6 +439,7 @@ d3.scale.linear().domain([color_domain[0],color_domain[1]]).range([offsets.y,l_h
 ForeCache.Renderer.Vis.VisObj.prototype.redraw = function() {
 	var self = this;
 	return function() {
+    self.cancelNextFrames();
 		var tx = function(d) { 
 			return "translate(" + self.x(d) + ",0)"; 
 		},
@@ -471,6 +491,14 @@ ForeCache.Renderer.Vis.VisObj.prototype.redraw = function() {
 			.on("zoomend",self.afterZoom()));
 		self.canvasUpdate();		
 	}	
+};
+
+ForeCache.Renderer.Vis.VisObj.prototype.cancelNextFrames = function() {
+  var tileNames = Object.keys(this.previousRenderState);
+  for(var i = 0; i < tileNames.length; i++) {
+    window.cancelAnimationFrame(this.previousRenderState[tileNames[i]].nextAnimationRequest);
+    delete this.previousRenderState[tileNames[i]];
+  }
 };
 
 /****************** Helper Functions *********************/

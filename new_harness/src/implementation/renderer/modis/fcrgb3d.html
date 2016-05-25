@@ -2,7 +2,7 @@
 <META NAME="ROBOTS" CONTENT="NOFOLLOW">
 	<link rel="stylesheet" type="text/css" href="static/css/forecache.css">
 	<link rel="stylesheet" type="text/css" href="static/css/forecache_heatmap.css">
-	<title>3D RGB Test</title>
+	<title>Task 1</title>
     <script type="text/javascript" src="static/js/colorbrewer.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/jquery.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/d3.js" charset="utf-8"></script>
@@ -116,9 +116,9 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
                               "xname":xname,"xlabel":xname,
                               "yname":yname,"ylabel":yname,
                               "zname":zname,"zlabel":zname,
-                              "width":840,
-                              "height":460,
-                              "padding":{"left":50,"right":70,"top":50,"bottom":50},
+                              "width":480,
+                              "height":240,
+                              "padding":{"left":50,"right":70,"top":10,"bottom":50},
                               "inverted":{"x":false,"y":true,"color":true},
                               "colorRange":colorbrewer.Spectral[11]
         });
@@ -128,8 +128,8 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
                               "yname":y2name,"ylabel":y2name,
                               "zname":y2name,"zlabel":y2name,
                               "width":480,
-                              "height":280,
-                              "padding":{"left":50,"right":70,"top":50,"bottom":50},
+                              "height":240,
+                              "padding":{"left":50,"right":70,"top":10,"bottom":50},
                               "inverted":{"x":false,"y":true,"color":true},
                               "colorRange":colorbrewer.Spectral[11]
         });
@@ -157,10 +157,17 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
 
 <body>
   <div class="main">
-			<h1>3D Test</h1>
+			<h1>Task 1</h1>
 			<div id="content">
+         <div id="global" class="">
+          <h2> global view</h2>
+          <img src="global2.png" height="100"></img>
+         </div>
+          <h2>Latitude-Longitude view</h2>
          <div id="view" class="view"></div>
+          <h2>Time view</h2>
          <div id="view2" class="view"></div>
+          <button>Take Snapshot</button>
 			</div>
 	</div>
 </body>

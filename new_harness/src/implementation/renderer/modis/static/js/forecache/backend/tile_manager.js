@@ -101,23 +101,31 @@ ForeCache.Backend.TileManager.prototype.getAggregationWindow = function(dimindex
   return this.ts.getAggregationWindow(this.currentZoom,dimindex);
 };
 
+ForeCache.Backend.TileManager.prototype.makeBusy = function() {
+  for(var i = 0; i < this.visObjects.length; i++) { // for each chart
+    this.visObjects[i].makeBusy();
+  }
+};
+
+ForeCache.Backend.TileManager.prototype.makeNotBusy = function() {
+  for(var i = 0; i < this.visObjects.length; i++) { // for each chart
+    this.visObjects[i].changed = false;
+    this.visObjects[i].makeNotBusy();
+  }
+};
+
 // called when a zoom happens on some visualization
 ForeCache.Backend.TileManager.prototype.zoomClick =
 function(dimIndices,diffs) {
   var dimRangeMap = {};
   var newzoom = this.ts.getNewZoomPosition(this.currentZoom,dimIndices,diffs);
   if(!this.ts.zoomLevelChanged(this.currentZoom,newzoom)) { // no change
-    for(var i = 0; i < this.visObjects.length; i++) { // for each chart
-      this.visObjects[i].changed = false;
-      this.visObjects[i].makeNotBusy();
-    }
+    this.makeNotBusy();
     return false;
   }
 
   // make charts busy until done
-  for(var i = 0; i < this.visObjects.length; i++) { // for each chart
-    this.visObjects[i].makeBusy();
-  }
+  this.makeBusy();
 
   // zoom level changed, prepare to get new tiles
   var changed = [];
@@ -169,9 +177,8 @@ ForeCache.Backend.TileManager.prototype.afterZoom =
 function(drm) {
   var self = this;
   var dimRangeMap = {};
-  for(var i = 0; i < this.visObjects.length; i++) { // for each chart
-    this.visObjects[i].makeBusy();
-  }
+  // make charts busy until done
+  this.makeBusy();
   var changed = [];
   for(var i = 0; i < this.ts.tileWidths.length; i++) {
     changed.push(false);
@@ -269,28 +276,131 @@ function(drm) {
         //console.log(['time to fetch all tiles',fetchEnd-fetchStart]);
         self.tileMap.batchInsert(tiles); // insert the fetched tiles
         // tell vis objects to redraw themselves using the new tiles
-        for(var i = 0; i < self.visObjects.length; i++) { // for each chart
-          self.visObjects[i].fixYDomain = true;
-          self.visObjects[i].redraw()();
-        }
+        self.renderAllVisObjects();
       });
-    } else {
-      for(var i = 0; i < this.visObjects.length; i++) { // for each chart
-        this.visObjects[i].fixYDomain = true;
-        this.visObjects[i].redraw()();
-      }
+    } else { // change but no new tiles retrieved
+      this.renderAllVisObjects();
     } 
     return true;
   } else { // nothing else to do
-    for(var i = 0; i < this.visObjects.length; i++) { // for each chart
-      this.visObjects[i].makeNotBusy();
-    }
+    this.makeNotBusy();
     return false;
+  }
+};
+
+// removes duplicate rows for visObj
+ForeCache.Backend.TileManager.prototype.getSpan = function(vObj) {
+  var span = {};
+  var rows = [];
+  var xts = [];
+  var yts = [];
+  if(vObj.dimensionality == 1) {
+    for(var i = 0; i < this.currentTiles.length; i++) {
+      var tile = this.tileMap.get(this.currentTiles[i]);
+      var xt = 1.0 * tile.id.dimindices[vObj.xindex]*this.getDimTileWidth(vObj.xindex);
+      var rowCount = tile.getSize();
+      for(var j = 0; j < rowCount; j++) {
+        var xval = tile.columns[vObj.xindex][j]+xt;
+/*
+        if(j > (rowCount - 10)) {
+          console.log(["j",j,"xval",xval]);
+        }
+*/
+        if(!span.hasOwnProperty(xval)) {
+          var row = []; 
+          for(var k = 0; k < tile.columns.length; k++) {
+            row.push(tile.columns[k][j]);
+          }
+          rows.push(row);
+          xts.push(xt);
+          span[xval] = true;
+        }
+      }
+    }
+  } else { // vObj.dimensionality == 2
+    for(var i = 0; i < this.currentTiles.length; i++) {
+      var tile = this.tileMap.get(this.currentTiles[i]);
+      var xt = 1.0 * tile.id.dimindices[vObj.xindex]*this.getDimTileWidth(vObj.xindex);
+      var yt = 1.0 * tile.id.dimindices[vObj.yindex]*this.getDimTileWidth(vObj.yindex);
+      var rowCount = tile.getSize();
+      for(var j = 0; j < rowCount; j++) {
+        var xval = tile.columns[vObj.xindex][j]+xt;
+        if(!span.hasOwnProperty(xval)) {
+          var row = []; 
+          for(var k = 0; k < tile.columns.length; k++) {
+            row.push(tile.columns[k][j]);
+          }
+          rows.push(row);
+          xts.push(xt);
+          yts.push(xt);
+          span[xval] = {};
+          span[xval][yval] = true; 
+        } else {
+          var span2 = span[xval];
+          var yval = tile.columns[vObj.yindex][j]+yt;
+          if(!span2.hasOwnProperty(yval)) {
+            var row = []; 
+            for(var k = 0; k < tile.columns.length; k++) {
+              row.push(tile.columns[k][j]);
+            }
+            rows.push(row);
+            span[xval][yval] = true;
+          }
+        }
+      }
+    }
+  }
+/*
+  for(var i = 0; i < rows.length && i < 10; i++) {
+    console.log(["rows","i",i,rows[i],"x index",vObj.xindex]);
+  }
+*/
+  console.log(["non duplicate row count",rows.length]);
+  return [rows,xts,yts];
+};
+
+ForeCache.Backend.TileManager.prototype.renderAllVisObjects = function() {
+  var totalRows = 0;
+  for(var i = 0; i < this.currentTiles.length; i++) {
+    totalRows += this.tileMap.get(this.currentTiles[i]).getSize();
+  }
+  for(var i = 0; i < this.visObjects.length; i++) { // for each chart
+    //var rows = this.getSpan(this.visObjects[i]);
+    //console.log(["total non-duplicate rows",rows.length,"total Rows",totalRows]);
+    this.visObjects[i].fixYDomain = true;
+    this.visObjects[i].redraw()();
   }
 };
 
 ForeCache.Backend.TileManager.prototype.getDimTileWidth = function(dimindex) {
   return this.ts.tileWidths[dimindex];
+};
+
+ForeCache.Backend.TileManager.prototype.checkDoneRendering = function(visObj) {
+  for(var i = 0; i < this.visObjects.length; i++) {
+    if(!this.checkDoneRenderingForVisObj(this.visObjects[i])) {
+      return false;
+    }
+  }
+  return true;
+};
+
+ForeCache.Backend.TileManager.prototype.checkDoneRenderingForVisObj = function(visObj) {
+  for(var j = 0; j < this.currentTiles.length; j++) {
+    if(!visObj.doneRendering[this.currentTiles[j].name]) {
+      return false;
+    }
+  }
+  return true;
+};
+
+ForeCache.Backend.TileManager.prototype.setDoneRenderingFalse = function() {
+  for(var i = 0; i < this.visObjects.length; i++) {
+    this.visObjects[i].doneRendering = {}; // clear the rendering flags
+    for(var j = 0; j < this.currentTiles.length; j++) {
+      this.visObjects[i].doneRendering[this.currentTiles[j].name] = false;
+    }
+  }
 };
 
 ForeCache.Backend.TileManager.prototype.getDimRangeForUnusedDim =
@@ -328,7 +438,7 @@ function(currzoom,newzoom,dimindex,dimScale,cacheSize) {
   var newMid = this.ts.getNewMid(currzoom,newzoom,dimindex,mid);
   var halfWidth = this.ts.tileWidths[dimindex] * cacheSize / 2.0;
   var newDomain = [newMid-halfWidth,newMid+halfWidth];
-  console.log(["dimindex",dimindex,"old mid",mid,"new mid",newMid]);
+  //console.log(["dimindex",dimindex,"old mid",mid,"new mid",newMid]);
     
   return newDomain;
 };

@@ -70,9 +70,13 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.updateOpts = function() {
 };
 
 ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
+  console.log(["rendering tile",tile.id,tile.getSize()]);
   var rows = tile.getSize();
   //TODO: this is a hack, maybe fix later?
-  if(rows == 0) return; // don't render empty tiles...
+  if(rows == 0) {
+    this.doneRenderingTile(tile);
+    return; // don't render empty tiles...
+  }
   var xw = this.options.boxwidth.x;
   var yw = this.options.boxwidth.y;
   var xt = 1.0 * tile.id.dimindices[this.xindex]*this.tileManager.getDimTileWidth(this.xindex);
@@ -168,6 +172,7 @@ ForeCache.Renderer.Vis.HeatmapObj.prototype.renderTile = function(tile) {
 		this.ctx.closePath();
   }
 */
+  this.doneRenderingTile(tile);
 };
 
 
