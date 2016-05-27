@@ -503,6 +503,8 @@ ForeCache.Renderer.Vis.VisObj.prototype.cancelNextFrames = function() {
 
 /****************** Helper Functions *********************/
 
+//TODO: create a function to generate snapshot info for the current visualization
+
 ForeCache.Renderer.Vis.VisObj.prototype.log10 = function(val) {
   return Math.log(val) / Math.log(10.0);
 };
@@ -525,8 +527,16 @@ ForeCache.Renderer.Vis.VisObj.prototype.get_stats = function(index) {
     if(!stats.hasOwnProperty("mindist") || (stats.mindist > s.mindist)) {
       stats.mindist = s.mindist;
     }
+    if(!stats.hasOwnProperty("maxdist") || (stats.maxdist > s.maxdist)) {
+      stats.maxdist = s.maxdist;
+    }
   }
   return stats;
+};
+
+// goes from '#000000' to (r,g,b)
+ForeCache.Renderer.Vis.VisObj.prototype.hex_to_rgb = function(hexString) {
+  var rstring = parseInt(x,16);
 };
 
 // compute stats for a single column for one tile
@@ -550,18 +560,24 @@ ForeCache.Renderer.Vis.VisObj.prototype.get_stats_helper = function(col) {
   stats.min = temp[0];
   stats.max = temp[temp.length - 1];
   stats.mindist = -1;
+  stats.maxdist = -1;
   if(temp.length > 1) {
     var prev = temp[0];
     var mindist = stats.max-stats.min;
+    var maxdist = mindist;
     for(var i = 1; i < temp.length; i++) {
       var val = temp[i];
       var dist = val - prev;
       if(dist < mindist) {
         mindist = dist;
       }
+      if(dist > maxdist) {
+        maxdist = dist
+      }
       prev = val;
     }
     stats.mindist = mindist;
+    stats.maxdist = maxdist;
   }
   return stats;
 };

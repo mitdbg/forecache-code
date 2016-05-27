@@ -64,6 +64,7 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.updateOpts = function() {
   //newopts.xdomain = [xstats.min,xstats.max];
   //newopts.xdomain = this.adjustForViewportRatio(newopts.xdomain);
   var xm = xstats.mindist; // width of box
+  var xmaxdist = xstats.maxdist; // width of box
   //var xd = xstats.max - xstats.min; // space for boxes in domain
   var xd = Math.abs(newopts.xdomain[0]-newopts.xdomain[1]); // space for boxes in domain
   var xw = newopts.size.width; // space for boxes in range
@@ -86,6 +87,8 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.updateOpts = function() {
   //newopts.ydomain = this.adjustForViewportRatio(newopts.ydomain);
   //console.log(ystats);
   var ym = ystats.mindist; // height of box
+  var ymaxdist = ystats.maxdist; // height of box
+  console.log(["xmindist",xm,"xmaxdist",xmaxdist,"ymindist",ym,"ymaxdist",ymaxdist]);
   //var yd = ystats.max - ystats.min; // space for boxes in domain
   var yd = Math.abs(newopts.ydomain[1]-newopts.ydomain[0]); // space for boxes in domain
   var yw = newopts.size.height; // space for boxes in range

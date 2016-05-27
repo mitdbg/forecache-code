@@ -21,6 +21,7 @@
     <script type="text/javascript" src="static/js/forecache/renderer/vis/line.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/renderer/vis/rgbheatmap.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/forecache/renderer/vis.js" charset="utf-8"></script>
+    <script type="text/javascript" src="static/js/userstudy.js" charset="utf-8"></script>
     <script type="text/javascript">
       var cacheSizeSets = [1,2,3];
       var startingPosSets = [
@@ -145,6 +146,8 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
             "cacheSize": cacheSizeSets[0]
           }
         );
+        var uso = new UserStudyObj(tileManager,$("#snapshot-silo"),"http://localhost:5000/");
+        uso.enableSnapshotButton($("#snapshot-button"),0);
       };
 
       $(document).ready(function() {
@@ -167,7 +170,10 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
          <div id="view" class="view"></div>
           <h2>Time view</h2>
          <div id="view2" class="view"></div>
-          <button>Take Snapshot</button>
+         <button id="snapshot-button">Take Snapshot</button>
+          <hr>
+          <h2>Snapshots</h2>
+          <div id="snapshot-silo"></div>
 			</div>
 	</div>
 </body>
