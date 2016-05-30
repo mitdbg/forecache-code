@@ -10,6 +10,7 @@ ForeCache.Renderer.Vis.Heatmap = {}
 /* chart parameter is a jquery object. */
 ForeCache.Renderer.Vis.RGBHeatmapObj = function(chart, options) {
   ForeCache.Renderer.Vis.VisObj.call(this,chart,options);
+  this.name = "rgbheatmap";
   this.dimensionality = 2; // overwrite default dimensionality variable
   this.useLegend = false;
 /*
@@ -108,7 +109,7 @@ ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.updateOpts = function() {
 };
 
 ForeCache.Renderer.Vis.RGBHeatmapObj.prototype.renderTile = function(tile) {
-  console.log(["rendering tile",tile.id,tile.getSize()]);
+  //console.log(["rendering tile",tile.id,tile.getSize()]);
   var rows = tile.getSize();
   //TODO: this is a hack, maybe fix later?
   if(rows == 0) {

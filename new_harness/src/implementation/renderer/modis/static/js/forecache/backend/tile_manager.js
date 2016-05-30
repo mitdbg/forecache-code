@@ -272,7 +272,11 @@ function(drm) {
       var fetchStart = Date.now();
       ForeCache.Backend.Request.getTiles(toFetch,function(tiles) {
         var fetchEnd = Date.now();
-        ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,{'action':'fetch','totalTiles':tiles.length,'start':fetchStart,'end':fetchEnd});
+        var tileNames = [];
+        for(var i = 0; i < tiles.length; i++) {
+          tileNames.push(tiles[i].id.name);
+        }
+        ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,{'action':'fetch','totalTiles':tiles.length,'tileNames':tileNames,'start':fetchStart,'end':fetchEnd});
         //console.log(['time to fetch all tiles',fetchEnd-fetchStart]);
         self.tileMap.batchInsert(tiles); // insert the fetched tiles
         // tell vis objects to redraw themselves using the new tiles
@@ -355,7 +359,7 @@ ForeCache.Backend.TileManager.prototype.getSpan = function(vObj) {
     console.log(["rows","i",i,rows[i],"x index",vObj.xindex]);
   }
 */
-  console.log(["non duplicate row count",rows.length]);
+  //console.log(["non duplicate row count",rows.length]);
   return [rows,xts,yts];
 };
 

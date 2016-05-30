@@ -15,6 +15,7 @@ ForeCache.Renderer.Vis = ForeCache.Renderer.Vis || {};
 ForeCache.Renderer.Vis.VisObj = function(chart, options) {
 	var self = this;
 
+  this.name = "newvisobj";
   this.doneRendering = {};
   this.previousRenderState = {};
   this.statesRenderObj = new StatesRenderer.renderObj();
@@ -346,7 +347,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
     this.renderTile(tile);
     var e = Date.now();
     //console.log(["time to render tile",e-s]); // console statements take ~3ms of time
-    //ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,{'action':'renderTile','tileId':tile.id.name,'start':s,'end':e});
+    ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,{'action':'renderTile','tileId':tile.id.name,'start':s,'end':e,'viewName':this.name});
   };
   }
   if(this.useUsMap) {
@@ -355,7 +356,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
    var end = Date.now(); // in seconds
   //console.log(["time to render all tiles",end - start]);
   ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,
-    {'action':'render','totalTiles':totalTiles,'start':start,'end':end});
+    {'action':'render','totalTiles':totalTiles,'start':start,'end':end,'viewName':this.name});
  	
 	this.ctx.beginPath();
 	this.ctx.fillStyle=this.blankStyle;

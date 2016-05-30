@@ -12,6 +12,7 @@ ForeCache.Renderer.Vis.LineObj = function(chart, options) {
   ForeCache.Renderer.Vis.VisObj.call(this,chart, options);
   this.dimensionality = 1; // overwrite default dimensionality variable
   this.useLegend = false;
+  this.name = "line";
   this.useUsMap = false;
   this.removeDuplicates = true;
 };

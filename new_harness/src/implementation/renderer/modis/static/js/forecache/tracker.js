@@ -1,42 +1,46 @@
 var ForeCache = ForeCache || {};
 ForeCache.Tracker = {};
-
-/************* Classes *************/
-
 ForeCache.Tracker.perTileLogName = "perTile";
 ForeCache.Tracker.perInteractionLogName = "perInteraction";
 
+/************* Classes *************/
 
 // The Tracker object is used to record performance data
 // for data retrieval and data rendering
-ForeCache.Tracker = function(chart, options) {
+ForeCache.Tracker.TrackerObj = function(chart, options) {
   this.logs = {};
 }
 
-ForeCache.Tracker.prototype.containsLog = function(logName) {
+
+// returns the list of names for the logs stored by this object
+ForeCache.Tracker.TrackerObj.prototype.getLogNames = function() {
+  return Object.keys(this.logs);
+};
+
+ForeCache.Tracker.TrackerObj.prototype.containsLog = function(logName) {
   return this.logs.hasOwnProperty(logName);
 }
 
-ForeCache.Tracker.prototype.startLog = function(logName) {
+ForeCache.Tracker.TrackerObj.prototype.startLog = function(logName) {
   this.logs[logName] = new ForeCache.LogObj();
 };
 
-ForeCache.Tracker.prototype.clearLog = function(logName) {
+ForeCache.Tracker.TrackerObj.prototype.clearLog = function(logName) {
   this.logs[logName].clear();
 };
 
-ForeCache.Tracker.prototype.appendToLog = function(logName,recordObj) {
+ForeCache.Tracker.TrackerObj.prototype.appendToLog = function(logName,recordObj) {
     this.logs[logName].addRecord(recordObj);
     //console.log(recordObj);
 }
 
-ForeCache.Tracker.prototype.printLogToConsole = function(logName) {
-  var output = this.logs[logName].exportRecords(',');
-  console.log(['output for log',logName,output]);
+ForeCache.Tracker.TrackerObj.prototype.printLogToConsole = function(logName) {
+  //var output = this.logs[logName].exportRecords(',');
+  console.log(['output for log',logName,this.logs[logName]]);
 };
 
 
-ForeCache.Tracker.prototype.flushLogData = function(logName) {
+ForeCache.Tracker.TrackerObj.prototype.flushLogData = function(logName) {
   var output = this.logs[logName].exportTsv();
   this.logs[logName] = []; // empty the log
   return output;
@@ -69,7 +73,7 @@ ForeCache.LogObj.prototype.exportTsv = function() {
 ForeCache.LogObj.prototype.exportRecords = function(delim) {
   var output = [];
   if(this.records.length > 0) {
-    var keys = this.records[0].keys();
+    var keys = Object.keys(this.records[0]);
     for(var i = 0; i < this.records.length; i++) {
       var record = this.records[i];
       var values = [];
@@ -89,7 +93,7 @@ ForeCache.LogObj.prototype.exportRecords = function(delim) {
 /****************** Helper Functions *********************/
 
 //TODO: remove duplicate uuid function
-ForeCache.Tracker.prototype.uuid = function() {
+ForeCache.Tracker.TrackerObj.prototype.uuid = function() {
     var d = new Date().getTime();
     var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = (d + Math.random()*16)%16 | 0;
@@ -102,6 +106,6 @@ ForeCache.Tracker.prototype.uuid = function() {
 
 
 /****************** Instantiations *********************/
-ForeCache.globalTracker = new ForeCache.Tracker();
+ForeCache.globalTracker = new ForeCache.Tracker.TrackerObj();
 ForeCache.globalTracker.startLog(ForeCache.Tracker.perTileLogName);
 ForeCache.globalTracker.startLog(ForeCache.Tracker.perInteractionLogName);

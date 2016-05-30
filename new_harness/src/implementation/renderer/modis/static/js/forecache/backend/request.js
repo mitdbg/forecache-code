@@ -124,7 +124,6 @@ var dat = {};
     ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perTileLogName,
       {'action':'decodeTile','tileId':tileid.name,'start':decodeStart,'end':decodeEnd});
     //console.log(["time to decode",decodeEnd-decodeStart]);
-
     callback(tile); // return the tile object
   };
   var fetchStart = Date.now();

@@ -11,6 +11,7 @@ ForeCache.Renderer.Vis.Heatmap = {}
 ForeCache.Renderer.Vis.HeatmapObj = function(chart, options) {
   ForeCache.Renderer.Vis.VisObj.call(this,chart,options);
   this.dimensionality = 2; // overwrite default dimensionality variable
+  this.name = "heatmap";
   this.useLegend = true;
   this.useUsMap = true;
 };

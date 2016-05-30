@@ -23,6 +23,8 @@
     <script type="text/javascript" src="static/js/forecache/renderer/vis.js" charset="utf-8"></script>
     <script type="text/javascript" src="static/js/userstudy.js" charset="utf-8"></script>
     <script type="text/javascript">
+      var taskname = "rgb-3d-task";
+      var userid = UserStudy.createUuid(); // this needs to be consistent across tasks
       var cacheSizeSets = [1,2,3];
       var startingPosSets = [
           // 0
@@ -146,8 +148,15 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
             "cacheSize": cacheSizeSets[0]
           }
         );
-        var uso = new UserStudy.UserStudyObj(tileManager,$("#snapshot-silo"),"http://localhost:5000/");
+        var uso = new UserStudy.UserStudyObj( // create this object per page
+          taskname, // name of current task
+          userid, // id for the current user
+          tileManager, // tile manager for managing views on this page
+          $("#snapshot-silo"), // dom object to store snapshots in
+          "http://localhost:5000" // url for backend logger
+        );
         uso.enableSnapshotButton($("#snapshot-button"),0);
+        uso.enableFinishButton($("#finish-button"));
       };
 
       $(document).ready(function() {
@@ -171,6 +180,7 @@ ForeCache.Backend.Structures.MultiDimTileStructure([[[5000,5000],[2500,2500],[12
           <h2>Time view</h2>
          <div id="view2" class="view"></div>
          <button id="snapshot-button">Take Snapshot</button>
+         <button id="finish-button">Finish Task</button>
           <hr>
           <h2>Snapshots</h2>
           <div id="snapshot-silo"></div>
