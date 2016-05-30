@@ -160,7 +160,9 @@ ForeCache.Renderer.Vis.VisObj.prototype.finishSetup = function() {
 		  .attr("class","busy-rect hide");
 
 	//this.plot.call(d3.behavior.zoom().scaleExtent([1,1]).x(this.x).y(this.y).on("zoom", this.redraw()));
-	this.plot.call(d3.behavior.zoom().scaleExtent([1,1]).x(this.x).y(this.y).on("zoom", this.redraw())
+	this.plot.call(d3.behavior.zoom().scaleExtent([1,1]).x(this.x).y(this.y)
+      .on("zoomstart",this.recordDragStart())
+      .on("zoom", this.redraw())
 			.on("zoomend",this.afterZoom()));
 
 	//this.plot.call(d3.behavior.zoom().x(this.x).y(this.y).on("zoom", this.redraw()));
@@ -304,16 +306,14 @@ ForeCache.Renderer.Vis.VisObj.prototype.zoomClick = function() {
     self.tileManager.makeBusy();
     self.changed = true;
 		var zoomDiff = Number(this.getAttribute("data-zoom"));
-    // 2D case
-    var dimIndices = [self.xindex,self.yindex];
-    var diffs = [zoomDiff,zoomDiff];
-    if(self.dimensionality== 1) { // 1D case
-      dimIndices = [self.xindex];
-      diffs = [zoomDiff];
+    // 1D case
+    var dimIndices = [self.xindex];
+    var diffs = [zoomDiff];
+    if(self.dimensionality== 2) { // 2D case
+      dimIndices = [self.xindex,self.yindex];
+      diffs = [zoomDiff,zoomDiff];
     }
-		if(!self.tileManager.zoomClick(dimIndices,diffs)) { // no change
-    //  self.tileManager.makeNotBusy();
-    }
+		self.tileManager.zoomClick(self.viewName,dimIndices,diffs);
 	};
 }
 
@@ -355,8 +355,8 @@ ForeCache.Renderer.Vis.VisObj.prototype.canvasUpdate = function() {
   }
    var end = Date.now(); // in seconds
   //console.log(["time to render all tiles",end - start]);
-  ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,
-    {'action':'render','totalTiles':totalTiles,'start':start,'end':end,'viewName':this.name});
+  //ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,
+  //  {'action':'render','totalTiles':totalTiles,'start':start,'end':end,'viewName':this.name});
  	
 	this.ctx.beginPath();
 	this.ctx.fillStyle=this.blankStyle;
@@ -393,9 +393,7 @@ ForeCache.Renderer.Vis.VisObj.prototype.afterZoom = function() {
 	return function() {
     self.changed = true;
     self.tileManager.makeBusy();
-		if(!self.tileManager.afterZoom()) {
-    //  self.tileManager.makeNotBusy();
-		}
+		self.tileManager.afterZoom({"interactionType":"pan","state":{"dragStart":self.dragStart,"dragEnd":d3.mouse(this)},"viewName":self.viewName});
 	};
 }
 
@@ -488,10 +486,20 @@ ForeCache.Renderer.Vis.VisObj.prototype.redraw = function() {
 			.attr("class", "y forecache-axis")
 			.call(self.yAxis);
 
-		self.plot.call(d3.behavior.zoom().scaleExtent([1,1]).x(self.x).y(self.y).on("zoom", self.redraw())
+		self.plot.call(d3.behavior.zoom().scaleExtent([1,1]).x(self.x).y(self.y)
+      .on("zoomstart",self.recordDragStart())
+      .on("zoom", self.redraw())
 			.on("zoomend",self.afterZoom()));
 		self.canvasUpdate();		
 	}	
+};
+
+ForeCache.Renderer.Vis.VisObj.prototype.recordDragStart = function() {
+  var self = this;
+  return function() {
+    self.dragStart = d3.mouse(this);
+    console.log(["mouse coords",d3.mouse(this)]);
+  };
 };
 
 ForeCache.Renderer.Vis.VisObj.prototype.cancelNextFrames = function() {

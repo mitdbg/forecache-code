@@ -55,9 +55,11 @@ ForeCache.Backend.TileManager.prototype.getStartingTiles = function() {
   var self = this;
   var fetchStart = Date.now();
   // get the starting data, then finish doing setup
+  ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,
+    {'interactionData':{"interactionType":"start","state":{},"viewName":null},
+    'toFetch':this.currentTiles,'timestampMillis':fetchStart});
   ForeCache.Backend.Request.getTiles(self.currentTiles,function(tiles){
     var fetchEnd = Date.now();
-    ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,{'action':'fetch','totalTiles':tiles.length,'start':fetchStart,'end':fetchEnd});
     //console.log(['time to fetch all tiles',fetchEnd-fetchStart]);
 
     // store the starting tiles
@@ -116,7 +118,7 @@ ForeCache.Backend.TileManager.prototype.makeNotBusy = function() {
 
 // called when a zoom happens on some visualization
 ForeCache.Backend.TileManager.prototype.zoomClick =
-function(dimIndices,diffs) {
+function(viewName,dimIndices,diffs) {
   var dimRangeMap = {};
   var newzoom = this.ts.getNewZoomPosition(this.currentZoom,dimIndices,diffs);
   if(!this.ts.zoomLevelChanged(this.currentZoom,newzoom)) { // no change
@@ -132,26 +134,35 @@ function(dimIndices,diffs) {
   for(var i = 0; i < this.ts.tileWidths.length; i++) {
     changed.push(false);
   }
+  var newMids = {};
+  var oldMids = {};
   for(var i = 0; i < this.visObjects.length; i++) { // for each chart
     var vObj = this.visObjects[i];
 
     // compute the new scale ranges
-    var newXRange = this.getDimRangeForZoom(this.currentZoom,newzoom,vObj.xindex,vObj.x,this.cacheSize);
+    var newXRangeResult = this.getDimRangeForZoom(this.currentZoom,newzoom,vObj.xindex,vObj.x,this.cacheSize);
+    var newXRange = newXRangeResult.newDomain;
+    // {"newDomain":newDomain,"newMid":newMid};
     newXRange = vObj.adjustForViewportRatio(newXRange);
     if(vObj.changed && !changed[vObj.xindex]) { // we found a new change
       changed[vObj.xindex] = true;
       dimRangeMap[vObj.xindex] = newXRange;
+      newMids[vObj.xindex] = newXRangeResult.newMid;
+      oldMids[vObj.xindex] = newXRangeResult.oldMid;
     } else if (!dimRangeMap.hasOwnProperty(vObj.xindex)) { // no change yet, but add range anyway
       dimRangeMap[vObj.xindex] = newXRange;
     }
 
     // do the same for y axis
     if(vObj.dimensionality == 2) {
-      var newYRange = this.getDimRangeForZoom(this.currentZoom,newzoom,vObj.yindex,vObj.y,this.cacheSize);
+      var newYRangeResult = this.getDimRangeForZoom(this.currentZoom,newzoom,vObj.yindex,vObj.y,this.cacheSize);
+      var newYRange = newYRangeResult.newDomain;
       newYRange = vObj.adjustForViewportRatio(newYRange);
       if(vObj.changed && !changed[vObj.yindex]) { // we found a new change
         changed[vObj.yindex] = true;
         dimRangeMap[vObj.yindex] = newYRange;
+        newMids[vObj.yindex] = newYRangeResult.newMid;
+        oldMids[vObj.yindex] = newYRangeResult.oldMid;
       } else if (!dimRangeMap.hasOwnProperty(vObj.yindex)) { // no change yet, but add range anyway
         dimRangeMap[vObj.yindex] = newYRange;
       }
@@ -164,17 +175,20 @@ function(dimIndices,diffs) {
       dimRangeMap[i] = this.getDimRangeForUnusedDim(this.currentZoom,newzoom,i,this.cacheSize);
     }
   }
+  var interactionData =
+{"interactionType":"zoom","state":{"oldMids":oldMids,"oldZoom":this.currentZoom,"newMids":newMids,"newZoom":newzoom},"viewName":viewName};
   // update current zoom level after performing calculations
   this.currentZoom = newzoom;
 
   // go and actually get the tiles
-  return this.afterZoom(dimRangeMap);
+  return this.afterZoom(interactionData,dimRangeMap);
 };
 
-// drm parameter is optional (passed by zoomClick function, not passed otherwise)
+// interactionData: details about the interaction that triggered this call
+// drm [optional]: calculated dimension ranges (passed by zoomClick function, not passed otherwise)
 // this gets called any time a pan or zoom occurs
 ForeCache.Backend.TileManager.prototype.afterZoom =
-function(drm) {
+function(interactionData,drm) {
   var self = this;
   var dimRangeMap = {};
   // make charts busy until done
@@ -183,7 +197,7 @@ function(drm) {
   for(var i = 0; i < this.ts.tileWidths.length; i++) {
     changed.push(false);
   }
-  if(arguments.length == 1) { // dimRangeMap already built
+  if(arguments.length == 2) { // dimRangeMap already built
     dimRangeMap = drm;
     for(var i = 0; i < this.visObjects.length; i++) { // for each chart
       var vObj = this.visObjects[i];
@@ -268,15 +282,12 @@ function(drm) {
     this.currentTiles = newIDs; // record the new list of tiles
     //console.log(["to fetch",toFetch.length,toFetch]);
     //console.log(["current tiles",this.currentTiles.length,this.currentTiles,this.tileMap]);
+    var fetchStart = Date.now();
+    ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,{'interactionData':interactionData,'toFetch':toFetch,'timestampMillis':fetchStart});
+
     if(toFetch.length > 0) {
-      var fetchStart = Date.now();
       ForeCache.Backend.Request.getTiles(toFetch,function(tiles) {
         var fetchEnd = Date.now();
-        var tileNames = [];
-        for(var i = 0; i < tiles.length; i++) {
-          tileNames.push(tiles[i].id.name);
-        }
-        ForeCache.globalTracker.appendToLog(ForeCache.Tracker.perInteractionLogName,{'action':'fetch','totalTiles':tiles.length,'tileNames':tileNames,'start':fetchStart,'end':fetchEnd});
         //console.log(['time to fetch all tiles',fetchEnd-fetchStart]);
         self.tileMap.batchInsert(tiles); // insert the fetched tiles
         // tell vis objects to redraw themselves using the new tiles
@@ -444,7 +455,7 @@ function(currzoom,newzoom,dimindex,dimScale,cacheSize) {
   var newDomain = [newMid-halfWidth,newMid+halfWidth];
   //console.log(["dimindex",dimindex,"old mid",mid,"new mid",newMid]);
     
-  return newDomain;
+  return {"newDomain":newDomain,"newMid":newMid,"oldMid":mid};
 };
 
 ForeCache.Backend.TileManager.prototype.getTileRange = function(dimRange,dimindex) {
